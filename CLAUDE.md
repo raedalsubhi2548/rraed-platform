@@ -1,0 +1,56 @@
+# CLAUDE.md — منصة رائد (rraed.com)
+
+Project memory for Claude Code. Read this before any change.
+
+## Talking to the owner (Raed)
+- Reply in Arabic, Saudi dialect. Short, direct, do the work instead of explaining it.
+- Never invent numbers, prices or facts. Leave a blank and ask.
+- Never paste or ask for secrets (API keys, tokens, passwords) in chat or commits. Secrets live only in Vercel / Supabase settings, and Raed enters them himself.
+- No instructional notes/hints inside the admin dashboard UI — he is the owner and asked for a clean dashboard.
+- Legal/government content gets a "for clarification, not legal advice" note.
+- Ask before: downloads, form submissions, account/setting changes, anything irreversible. Never hard-delete data.
+
+## What this is
+Custom-coded store for Raed's services (Salla store design, landing pages, pixels/Google tools, government paperwork…).
+- Store: https://rraed.com — Admin: https://admin.rraed.com (same app, host-switched in `src/lib/host.js`).
+- Repo: `raedalsubhi2548/waarfe-store`. Work on branch `redesign`; deploy = merge into `main` and push (Vercel auto-deploys `main`).
+
+## Stack
+- React 18 + Vite SPA, Tailwind v4, lucide icons, Radix.
+- Build-time SSR prerender: `npm run build` = client build + `vite build --ssr src/entry-server.jsx` + `scripts/prerender.mjs`
+  (renderToString with StaticRouter, embeds `#__catalog` JSON, client uses hydrateRoot). Every public route + sitemap.xml are prerendered.
+- Supabase (project `dpjobithiiryniconytd`): auth, Postgres with RLS + SECURITY DEFINER RPCs, storage (`products` public, `downloads` private).
+- Vercel serverless functions in `api/` (Tap payments, email via nodemailer SMTP, PDF invoices via PDFKit, rebuild hook, visitor hits).
+- Payments: Tap hosted page (`api/tap-charge.js` → `src_all`), confirmation by re-fetching the charge from Tap (`api/_shared.js confirmCharge`), webhook `api/tap-webhook.js`. A 100% coupon order is marked paid without Tap.
+- Demo mode: no Supabase env → `src/lib/local.js` (localStorage). Real mode → `src/lib/supa.js`. `src/lib/api.js` picks one.
+
+## Key places
+- `src/lib/theme.js` — store designer settings: defaults, `mergeSettings` (sanitizes everything: URLs, links, colors, text caps), `themeCss`. One `site_settings` row (id `main`).
+- `src/pages/admin/Designer.jsx` — «مصمم المتجر» (home blocks, brand, header/footer, store info) with live preview iframe (`/admin/preview`). Publishing triggers a rebuild through `api/rebuild.js` (Vercel deploy hook) because settings are baked into the prerendered HTML.
+- `src/pages/admin/Reports.jsx` + `supabase/reports.sql` (`admin_report` RPC) + `api/hit.js` — first-party visitor analytics (bots filtered; owner excluded via `?notrack=1`, set automatically by the «عرض المتجر» link).
+- `src/lib/seo.js` — titles, descriptions, canonical, JSON-LD for every route (used at runtime and at prerender).
+- `src/lib/slug.js` — products/categories live at top level (`/salla-store-design`); `RESERVED` names; old `/p/` `/c/` paths 301 in `vercel.json`.
+- Blog: `src/data/blog/index.js` (meta + FAQ + sources), `src/data/blog/posts/<slug>.js` (custom markdown: `##`, `###`, `- `, `1. `, `> `, `| a | b |`, `**bold**`, `[text](url)`, `[[service:product-id]]`), rendered by `src/components/blog/Rich.jsx`. Articles must only use facts from Salla help center (help.salla.sa) or our own service pages, and cite them in `sources`.
+- `vercel.json` — strict CSP (update it when adding any third-party script/frame), redirects, headers.
+- `public/llms.txt` — keep in sync when adding pages.
+
+## Database (Supabase) — SQL files, run by Raed in the SQL Editor (never by us)
+Order: `schema.sql` → `seed.sql` → `options.sql` → `hardening.sql` → `designer.sql` → `security-2026-10.sql` → `reports.sql`.
+`reports.sql` is confirmed run on production; `security-2026-10.sql` was handed over but not confirmed — ask Raed before relying on it. Re-running `schema.sql` reopens weaker grants — if it is ever re-run, re-run `security-2026-10.sql` after it.
+New DB changes = a new SQL file in `supabase/` that Raed runs; test it first on a local Postgres 16 (`/usr/lib/postgresql/16/bin`) with stubbed `auth.uid()`.
+
+## Env vars (names only; values are in Vercel)
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `TAP_SECRET_KEY`, `SITE_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `ORDER_NOTIFY_TO` (optional), `VERCEL_DEPLOY_HOOK`.
+The owner's order copies go to ORDER_NOTIFY_TO, else every admin account's email, else the store email.
+
+## Rules that broke things before
+- Don't break checkout, Tap or Supabase flows. After any change touching them, test the demo checkout and keep the server as the only place prices/totals are computed (`place_order`).
+- Hydration: anything that differs between server and first client render (cart, dates, settings changes) must load after hydration or use `suppressHydrationWarning`.
+- Keep `mergeSettings` as the only way settings reach the page; never render raw settings.
+- The embedded Tap card SDK was tried and reverted (key was bound to another domain). Don't re-add without a domain-registered key.
+- Contact numbers: store WhatsApp 0536090915. Brand name «منصة رائد».
+
+## Deploy checklist
+1. `npm run build` (must pass; prerender throws on bad slugs/addresses).
+2. Commit on `redesign`, push, merge into `main`, push, back to `redesign`.
+3. Wait for Vercel (`gh api repos/raedalsubhi2548/waarfe-store/commits/main/status`), then check the live page.
