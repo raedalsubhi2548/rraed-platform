@@ -20,7 +20,7 @@ function ScrollLine() {
     on(); addEventListener('scroll', on, { passive: true })
     return () => removeEventListener('scroll', on)
   }, [])
-  return <span className="absolute inset-x-0 bottom-0 h-px origin-right bg-[linear-gradient(270deg,transparent,var(--silver-lo),var(--silver-hi))]" style={{ transform: `scaleX(${p})` }} aria-hidden="true" />
+  return <span className="absolute inset-x-0 bottom-0 h-px origin-right bg-gradient-to-l from-accent via-[#e6ecf5] to-accent" style={{ transform: `scaleX(${p})` }} aria-hidden="true" />
 }
 
 export default function SiteHeader() {
@@ -39,14 +39,13 @@ export default function SiteHeader() {
   const accountTo = user ? '/account' : '/login'
 
   // the clear header floats over a dark hero: only when the home page starts with one (the designer previews it at /admin/preview)
-  const night = loc.pathname === '/' || loc.pathname === '/admin/preview' // the home page is the night route
-  const home = night && settings.home.find((b) => b.on)?.type === 'hero'
+  const home = (loc.pathname === '/' || loc.pathname === '/admin/preview') && settings.home.find((b) => b.on)?.type === 'hero'
   const clear = home && !scrolled
-  const ink = clear ? 'text-white hover:bg-white/10' : 'text-primary hover:bg-[color-mix(in_srgb,var(--primary)_8%,transparent)]'
-  const link = ({ isActive }) => cn('relative px-2.5 py-2 text-[14.5px] font-medium transition-colors after:absolute after:inset-x-2.5 after:bottom-1 after:h-px after:origin-center after:scale-x-0 after:bg-[var(--silver-lo)] after:transition-transform after:duration-500 hover:after:scale-x-100', clear ? (isActive ? 'text-white after:scale-x-100' : 'text-white/75 hover:text-white') : (isActive ? 'text-primary after:scale-x-100' : 'text-foreground/80 hover:text-primary'))
+  const ink = clear ? 'text-on-inverse hover:bg-white/10' : 'text-primary hover:bg-sunken'
+  const link = ({ isActive }) => cn('relative px-2.5 py-2 text-[14.5px] font-medium transition-colors after:absolute after:inset-x-2.5 after:bottom-1 after:h-px after:origin-center after:scale-x-0 after:bg-accent after:transition-transform after:duration-500 hover:after:scale-x-100', clear ? (isActive ? 'text-accent after:scale-x-100' : 'text-on-inverse/85 hover:text-accent') : (isActive ? 'text-primary after:scale-x-100' : 'text-foreground/80 hover:text-primary'))
 
   return (
-    <header className={cn('sticky top-0 z-40 transition-[background-color,box-shadow,backdrop-filter] duration-500', !scrolled ? 'bg-transparent' : night ? 'bg-[color-mix(in_srgb,var(--night-1)_86%,transparent)] shadow-[0_1px_0_var(--line-night),0_18px_40px_-24px_rgb(0_0_0/0.9)] backdrop-blur-xl' : 'bg-background/85 shadow-[0_1px_0_var(--border),0_14px_34px_-24px_color-mix(in_srgb,var(--p-green-900)_40%,transparent)] backdrop-blur-xl')}>
+    <header className={cn('sticky top-0 z-40 transition-[background-color,box-shadow,backdrop-filter] duration-500', !scrolled ? 'bg-transparent' : 'bg-background/80 shadow-[0_10px_30px_-20px_color-mix(in_srgb,var(--p-green-900)_35%,transparent)] backdrop-blur-xl')}>
       <div className="container-w grid h-[var(--header-height)] grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div className="flex items-center gap-1">
           <button className={cn(iconBtn, ink, 'lg:hidden')} onClick={() => setMenu(true)} aria-label="أقسام المتجر">
@@ -65,8 +64,8 @@ export default function SiteHeader() {
 
         <Link to="/" className="relative grid h-full w-36 place-items-center sm:w-44" aria-label={`${settings.store.name} — الرئيسية`}>
           {/* white logo melts into the navy hero; the navy one takes over once the header turns white */}
-          <img src={settings.logoLight} alt="" width="458" height="248" className={cn('absolute h-[calc(52px*var(--logo-scale,1))] max-w-full w-auto object-contain transition-[opacity,scale] duration-700 ease-[cubic-bezier(.16,1,.3,1)] sm:h-[calc(62px*var(--logo-scale,1))]', clear || night ? 'scale-100 opacity-100' : 'pointer-events-none scale-90 opacity-0')} />
-          <img src={settings.logo} alt={settings.store.name} width="458" height="248" className={cn('relative h-[calc(44px*var(--logo-scale,1))] max-w-full w-auto object-contain transition-[opacity,scale] duration-700 ease-[cubic-bezier(.16,1,.3,1)] sm:h-[calc(48px*var(--logo-scale,1))]', clear || night ? 'scale-110 opacity-0' : 'scale-100 opacity-100')} />
+          <img src={settings.logoLight} alt="" width="458" height="248" className={cn('absolute h-[calc(52px*var(--logo-scale,1))] max-w-full w-auto object-contain transition-[opacity,scale] duration-700 ease-[cubic-bezier(.16,1,.3,1)] sm:h-[calc(62px*var(--logo-scale,1))]', clear ? 'scale-100 opacity-100' : 'pointer-events-none scale-90 opacity-0')} />
+          <img src={settings.logo} alt={settings.store.name} width="458" height="248" className={cn('relative h-[calc(44px*var(--logo-scale,1))] max-w-full w-auto object-contain transition-[opacity,scale] duration-700 ease-[cubic-bezier(.16,1,.3,1)] sm:h-[calc(48px*var(--logo-scale,1))]', clear ? 'scale-110 opacity-0' : 'scale-100 opacity-100')} />
         </Link>
 
         <div className="flex items-center justify-end gap-0.5">
@@ -81,9 +80,9 @@ export default function SiteHeader() {
           <button
             onClick={() => setCartOpen(true)}
             aria-label={`السلة، ${count} عناصر`}
-            className={cn('ms-1 inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 shadow-[0_8px_20px_-8px_rgb(0_0_0/0.5)] transition-colors', clear ? 'bg-[var(--silver-hi)] text-[var(--night-1)]' : 'bg-primary text-primary-foreground hover:bg-primary-hover')}
+            className={cn('ms-1 inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 shadow-[0_8px_20px_-8px_rgb(0_0_0/0.5)] transition-colors', clear ? 'bg-background text-primary' : 'bg-primary text-primary-foreground hover:bg-primary-hover')}
           >
-            <ShoppingBag className="size-[18px]" />
+            <ShoppingBag className={cn('size-[18px]', clear ? 'text-primary' : 'text-on-inverse')} />
             <span className="tabular text-sm font-semibold">{count}</span>
           </button>
         </div>

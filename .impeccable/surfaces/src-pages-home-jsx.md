@@ -2,17 +2,24 @@
 version: 1
 slug: "src-pages-home-jsx"
 primary_target: "src/pages/Home.jsx"
-related_targets: ["src/components/home/ServiceTicket.jsx","src/pages/admin/AdminLayout.jsx"]
+related_targets: []
 ---
 
-# Surface: storefront (home first, then shop, product, header/footer) + admin shell
+# Surface: storefront home (/)
 
-Mode: Persuade (storefront) · Operate (admin). Audience: Saudi starters and Salla merchants, mostly on phones at night, arriving from Snap/TikTok/WhatsApp. Action: pick a service on the route and add it to cart. Proof: real prices per stage, real lead times, published Salla ratings. Constraints: brand navy + silver with the Raed logo (pinned by owner 16 Oct 2026); home is the owner's block list from the store designer; checkout/payments untouched.
+Mode: Persuade. Audience: Saudi starters and existing Salla merchants, mostly mobile, arriving from ads/WhatsApp. Action: pick a service and add it to cart, or open the full catalog. Proof: published Salla reviews, real prices, real lead time (store design 2–6 days); portfolio images and real numbers pending from Raed. Constraints: brand colors/logo/plain Arabic font fixed; Tailwind + shadcn primitives; RTL.
 
 ## Direction contract
-THESIS: The store as a journey from zero to first order: one silver route runs the whole home page and every service sits on its stage with its real price. Refuses the dark hero with device mockups over a uniform card grid.
-OWN-WORLD: Midnight navy ground (#070d1e to #0f1c3d), polished silver only on hairlines, nodes, price numerals and the primary pill; porcelain (#f4f6fa) for reading/checkout pages. Service plates: deep navy panels with a 1px silver-gradient rim, a stage mark, what's included, tabular silver price. Readex Pro light display, IBM Plex Sans Arabic text.
-STORY: 1) see the four stages and their starting prices at once; 2) tap a stage, see its services; 3) walk the route down the page, stage by stage; 4) proof (ratings, work); 5) FAQ; 6) WhatsApp close.
-FIRST VIEWPORT: Navy field. Start side: owner's headline in large light display, one-line text, silver CTA pill + ghost "شوف أعمالنا". Other side: the Route panel, four stations on a vertical silver line with the cheapest real price each; the active station glows. Mobile: headline, CTA, Route panel stacked.
-FORM: grounded candidate 3 of 3 (safer register, user-picked "رحلة من الصفر لأول طلب"); seed 1868ea33 reroll 1.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+seed: c777a116 (degraded roll, assigned candidate 6, user had no preference)
+
+THESIS: A store is something you can track. The page reads like a shipment waybill for your business — from paperwork to first order — instead of the category-default banner + product-card grid.
+
+OWN-WORLD: Cream paper ground, forest-green ink, gold used only as the stamp/seal and the "current stop". Ticket/receipt cards with perforated notched edges, thin rule dividers, tabular numerals, status chips, a vertical/horizontal tracking line with stops. Readex Pro display, Almarai text.
+
+STORY: 1) see the whole route at once with real prices per stop; 2) pick a stop, see its services; 3) proof (reviews, delivered stores); 4) price list; 5) FAQ; 6) WhatsApp close.
+
+FIRST VIEWPORT: Left/right split — headline + primary CTA, and a live "waybill" card: tracking number, four stops (وثّق / جهّز / فعّل / سوّق) with a gold stamp on the active stop and the cheapest real price per stop. Mobile: headline, CTA, then the waybill card stacked.
+
+SIGNATURE: Tapping a stop advances the tracking line (animated fill + stamp) and swaps the services list below — the same tracker later powers the customer order page.
+
+RISK: Logistics vocabulary could read cold; keep it warm with Saudi copy and real reviews, and never fake tracking numbers as real orders (label as example).

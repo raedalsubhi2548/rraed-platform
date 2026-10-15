@@ -38,7 +38,7 @@ export default function Shop({ categoryId: fromProps }) {
   }, [products, categoryId, q, sort])
 
   const set = (k, v) => { const n = new URLSearchParams(params); v ? n.set(k, v) : n.delete(k); setParams(n, { replace: true }) }
-  const chip = (on) => cn('inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-[background-color,color,border-color] duration-300', on ? 'border-primary bg-primary text-primary-foreground shadow-[0_10px_24px_-14px_color-mix(in_srgb,var(--p-green-900)_80%,transparent)]' : 'border-[var(--border-strong)] bg-surface text-foreground hover:border-primary')
+  const chip = (on) => cn('inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border-[1.5px] px-4 text-sm font-semibold transition-colors', on ? 'border-primary bg-primary text-primary-foreground' : 'border-border-strong text-primary hover:border-primary')
 
   return (
     <div className="container-w py-10 sm:py-14 [--notch:var(--background)]">
@@ -69,12 +69,12 @@ export default function Shop({ categoryId: fromProps }) {
       </div>
 
       {!catalogReady ? (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="aspect-[3/4] rounded-[22px]" />)}</div>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="aspect-[4/5]" />)}</div>
       ) : list.length === 0 ? (
         <Empty icon={Search} title="ما فيه خدمة تطابق بحثك" action={<Button variant="outline" onClick={() => setParams({})}>مسح البحث</Button>}>امسح البحث أو اختر قسماً آخر.</Empty>
       ) : (
         <><h2 className="sr-only">{cat?.name || 'الخدمات'}</h2>
-        <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">{list.map((p) => <ServiceTicket key={p.id} p={p} />)}</div></>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-4">{list.map((p) => <ServiceTicket key={p.id} p={p} />)}</div></>
       )}
     </div>
   )

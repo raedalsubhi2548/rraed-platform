@@ -65,14 +65,14 @@ export default function Product({ slug: fromProps }) {
 
       <div className="grid items-start gap-8 lg:grid-cols-[1fr_1.05fr] lg:gap-14">
         <div className="lg:sticky lg:top-[calc(var(--header-height)+24px)]">
-          <div className="rim plate relative overflow-hidden rounded-[30px]">
+          <div className="relative overflow-hidden rounded-xl bg-sunken shadow-card">
             <img src={p.image} alt={p.name} width="500" height="500" onError={(e) => { if (!e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = 1; e.currentTarget.src = coverFor(p) } }} className="aspect-square w-full object-cover" />
             {p.badge && <Badge variant="green" className="absolute top-4 start-4 text-sm">{p.badge}</Badge>}
           </div>
         </div>
 
         <div>
-          <h1 className="text-balance font-display text-[2.1rem] font-light leading-[1.3] text-foreground sm:text-[2.9rem]">{p.name}</h1>
+          <h1 className="text-balance font-display text-display-sm font-semibold leading-tight text-primary sm:text-display-md">{p.name}</h1>
           {rating && (
             <a href={rating.reviews.length ? '#reviews' : undefined} className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground">
               <Stars size={15} /><span className="tabular font-semibold text-foreground">5.0</span><span>({rating.count} تقييم)</span>
@@ -82,7 +82,7 @@ export default function Product({ slug: fromProps }) {
 
           <Ticket className="mt-6" head={
             <div className="flex flex-wrap items-baseline gap-3 p-5">
-              <span className="tabular font-display text-[2.6rem] font-light leading-none text-foreground">{money(effectivePrice(p))}</span>
+              <span className="tabular font-display text-4xl font-semibold text-primary">{money(effectivePrice(p))}</span>
               {onSale && <s className="tabular text-muted-foreground">{money(p.price)}</s>}
               {onSale && <Badge variant="soft" className="bg-success-soft text-success">وفّر {money(p.price - p.salePrice)}</Badge>}
               {p.perUnit && <span className="text-sm text-muted-foreground">{p.perUnit}</span>}
@@ -134,15 +134,15 @@ export default function Product({ slug: fromProps }) {
         </div>
       </div>
 
-      <section className="mt-20 grid gap-8 border-t border-[var(--border)] pt-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-14">
+      <section className="mt-16 grid gap-8 border-t-2 border-primary pt-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-14">
         <div>
-          <h2 className="font-display text-[1.9rem] font-light text-foreground sm:text-[2.3rem]">عن الخدمة</h2>
+          <h2 className="font-display text-2xl font-semibold text-primary">عن الخدمة</h2>
           <p className="mt-3 max-w-[60ch] text-[17px] leading-9">{intro}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {sections.map((s) => (
-            <div key={s.title} className="rim plate rounded-[22px] p-6">
-              <h3 className="mb-3 font-display text-[16px] font-medium text-foreground">{s.title}</h3>
+            <div key={s.title} className="rounded-lg bg-surface p-5 shadow-hairline ring-1 ring-border">
+              <h3 className="mb-3 font-display font-semibold text-primary">{s.title}</h3>
               <ul className="grid gap-2">
                 {s.items.map((it) => <li key={it} className="flex gap-2 text-[15px] leading-7"><Check className="mt-1.5 size-3.5 shrink-0 rounded-full bg-accent p-0.5 text-primary" strokeWidth={3} />{it}</li>)}
               </ul>
@@ -153,11 +153,11 @@ export default function Product({ slug: fromProps }) {
 
       {rating?.reviews.length > 0 && (
         <section id="reviews" className="mt-16 scroll-mt-28">
-          <h2 className="font-display text-[1.9rem] font-light text-foreground sm:text-[2.3rem]">آراء العملاء عن الخدمة</h2>
+          <h2 className="font-display text-2xl font-semibold text-primary">آراء العملاء عن الخدمة</h2>
           <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><Stars size={14} />5.0 من {rating.count} تقييم في متجرنا على سلة</p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {rating.reviews.map((r) => (
-              <figure key={r.name + r.date} className="rim plate grid content-start gap-3 rounded-[22px] p-6">
+              <figure key={r.name + r.date} className="grid content-start gap-3 rounded-lg bg-surface p-5 shadow-hairline ring-1 ring-border">
                 <Stars size={13} />
                 <blockquote className="text-[15px] leading-7">{r.text}</blockquote>
                 <figcaption className="text-sm font-semibold text-primary">{r.name}</figcaption>
@@ -168,9 +168,9 @@ export default function Product({ slug: fromProps }) {
       )}
 
       {related.length > 0 && (
-        <section className="mt-20">
-          <h2 className="mb-8 font-display text-[1.9rem] font-light text-foreground sm:text-[2.3rem]">من نفس القسم</h2>
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">{related.map((r) => <ServiceTicket key={r.id} p={r} />)}</div>
+        <section className="mt-16">
+          <h2 className="mb-6 font-display text-2xl font-semibold text-primary">من نفس القسم</h2>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-4">{related.map((r) => <ServiceTicket key={r.id} p={r} />)}</div>
         </section>
       )}
     </div>

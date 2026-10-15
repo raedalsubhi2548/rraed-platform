@@ -3,6 +3,3 @@ dist
 .env
 .env.local
 dist-ssr
-
-.tmp-build.sh
-.tmp-edit.cjs

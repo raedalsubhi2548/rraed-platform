@@ -10,34 +10,34 @@ import { EMAIL, waLink, localPhone } from '@/lib/format.js'
 /** The page settles into deep navy: no hard edge, the white logo sits right on it, like in the header. */
 export default function SiteFooter() {
   const { categories, settings } = useApp()
-  const col = 'mb-4 text-[13px] font-semibold text-muted-foreground'
-  const item = 'group flex min-h-9 items-center gap-2 text-[14px] text-foreground/80 transition-colors hover:text-foreground'
+  const col = 'mb-4 text-[13px] font-semibold text-on-inverse/55'
+  const item = 'group flex min-h-9 items-center gap-2 text-[14px] text-on-inverse/80 transition-colors hover:text-white'
   return (
-    <footer className="relative mt-10">
-      {/* the page settles into the night: the same midnight the home page is drawn on */}
-      <div className="h-32 bg-[linear-gradient(180deg,var(--background),var(--night-1))] sm:h-44" aria-hidden="true" />
-      <div className="night relative -mt-px overflow-hidden bg-[linear-gradient(180deg,var(--night-1),var(--night-0))] text-foreground">
-        <span className="pointer-events-none absolute top-0 left-1/2 h-[420px] w-[900px] -translate-x-1/2 bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--p-gold-400)_10%,transparent),transparent)]" aria-hidden="true" />
+    <footer className="relative mt-10 text-on-inverse">
+      {/* cream melts into green */}
+      <div className="h-40 bg-[linear-gradient(180deg,var(--background),var(--p-green-800)_85%,var(--p-green-900))] sm:h-56" aria-hidden="true" />
+      <div className="relative -mt-px overflow-hidden bg-[linear-gradient(180deg,var(--p-green-900),var(--p-green-950))]">
+        <span className="pointer-events-none absolute top-0 left-1/2 size-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgb(255_255_255/0.06),transparent)]" aria-hidden="true" />
 
         <div className="container-w relative pb-10">
           {/* closing invitation */}
           {settings.footer.cta && <div className="mx-auto max-w-xl text-center">
-            <h2 className="font-script text-[2.1rem] font-light leading-[1.35] sm:text-[3rem]">{settings.footer.ctaTitle}</h2>
-            {settings.footer.ctaText && <p className="mt-3 text-[15.5px] leading-8 text-muted-foreground">{settings.footer.ctaText}</p>}
+            <h2 className="font-script text-[2rem] font-bold leading-[1.5] sm:text-[2.6rem]">{settings.footer.ctaTitle}</h2>
+            {settings.footer.ctaText && <p className="mt-2 text-[15.5px] leading-8 text-on-inverse/75">{settings.footer.ctaText}</p>}
             <a href={waLink('السلام عليكم، أبي استشارة: من وين أبدأ متجري؟')} target="_blank" rel="noreferrer"
-              className="mt-8 inline-flex items-center gap-3 rounded-full bg-primary py-2 ps-2 pe-6 text-primary-foreground shadow-[0_18px_40px_-16px_rgb(0_0_0/0.9)] transition-transform hover:-translate-y-0.5">
-              <span className="grid size-10 place-items-center rounded-full bg-[var(--night-1)] text-[var(--silver-hi)]"><MessageCircle className="size-5" /></span>
-              <span className="text-start leading-tight"><span className="block text-[11.5px] opacity-70">استشرنا على واتساب</span><b dir="ltr" className="tabular text-[17px]">{localPhone()}</b></span>
+              className="mt-6 inline-flex items-center gap-3 rounded-full bg-background py-2 ps-2 pe-6 text-primary shadow-[0_18px_36px_-16px_rgb(0_0_0/0.6)] transition-transform hover:-translate-y-0.5">
+              <span className="grid size-10 place-items-center rounded-full bg-primary text-on-inverse"><MessageCircle className="size-5" /></span>
+              <span className="text-start leading-tight"><span className="block text-[11.5px] text-primary/70">استشرنا على واتساب</span><b dir="ltr" className="tabular text-[17px]">{localPhone()}</b></span>
             </a>
           </div>}
 
-          <div className={cn('grid gap-12 lg:grid-cols-[1fr_2.2fr] lg:gap-16', settings.footer.cta ? 'mt-16 border-t border-[var(--border)] pt-12' : 'pt-4')}>
+          <div className={cn('grid gap-12 lg:grid-cols-[1fr_2.2fr] lg:gap-16', settings.footer.cta ? 'mt-16 border-t border-white/10 pt-12' : 'pt-4')}>
             {/* brand */}
             <div className="flex flex-col items-center gap-5 text-center lg:items-start lg:text-start">
               <Link to="/" className="block" aria-label={`${settings.store.name} — الرئيسية`}>
                 <img src={settings.logoLight} alt={settings.store.name} width="458" height="248" loading="lazy" className="h-[calc(76px*var(--logo-scale,1))] w-auto sm:h-[calc(84px*var(--logo-scale,1))]" />
               </Link>
-              <p className="max-w-[30ch] text-[14.5px] leading-7 text-muted-foreground">{settings.footer.about}</p>
+              <p className="max-w-[30ch] text-[14.5px] leading-7 text-on-inverse/70">{settings.footer.about}</p>
               <Social className="foot-social" />
             </div>
 
@@ -75,10 +75,10 @@ export default function SiteFooter() {
           </div>
 
           {/* bottom bar: payments + rights, on one clean line on desktop */}
-          <div className="mt-12 flex flex-col items-center gap-5 border-t border-[var(--border)] pt-7 lg:flex-row-reverse lg:justify-between">
+          <div className="mt-12 flex flex-col items-center gap-5 border-t border-white/10 pt-7 lg:flex-row-reverse lg:justify-between">
             {settings.footer.payments && <PayIcons size="sm" className="w-full max-w-[320px]" />}
-            <p className="text-center text-[13px] text-muted-foreground lg:text-start">
-              جميع الحقوق محفوظة لـ<b className="font-semibold text-foreground/80">{settings.store.name}</b> <span dir="ltr" className="tabular" suppressHydrationWarning>© {new Date().getFullYear()}</span>
+            <p className="text-center text-[13px] text-on-inverse/55 lg:text-start">
+              جميع الحقوق محفوظة لـ<b className="font-semibold text-on-inverse/80">{settings.store.name}</b> <span dir="ltr" className="tabular" suppressHydrationWarning>© {new Date().getFullYear()}</span>
             </p>
           </div>
         </div>
