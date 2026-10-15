@@ -18,7 +18,7 @@ export const DEFAULT_STORE = {
   social: { instagram: '', x: '', tiktok: '', snapchat: '' },
 }
 export const FONTS = {
-  heading: [['marhey', 'مرحي (الأصلي)', "'Marhey'"], ['plex', 'آي بي إم بلكس', "'IBM Plex Sans Arabic'"], ['cairo', 'القاهرة', "'Cairo'"], ['tajawal', 'تجوال', "'Tajawal'"], ['almarai', 'المراعي', "'Almarai'"], ['elmessiri', 'المسيري', "'El Messiri'"], ['reemkufi', 'ريم كوفي', "'Reem Kufi'"]],
+  heading: [['readex', 'ريدكس برو (الأصلي)', "'Readex Pro'"], ['marhey', 'مرحي', "'Marhey'"], ['plex', 'آي بي إم بلكس', "'IBM Plex Sans Arabic'"], ['cairo', 'القاهرة', "'Cairo'"], ['tajawal', 'تجوال', "'Tajawal'"], ['almarai', 'المراعي', "'Almarai'"], ['elmessiri', 'المسيري', "'El Messiri'"], ['reemkufi', 'ريم كوفي', "'Reem Kufi'"]],
   body: [['plex', 'آي بي إم بلكس (الأصلي)', "'IBM Plex Sans Arabic'"], ['cairo', 'القاهرة', "'Cairo'"], ['tajawal', 'تجوال', "'Tajawal'"], ['almarai', 'المراعي', "'Almarai'"]],
 }
 export const RADII = [['round', 'دائرية (الأصلي)'], ['soft', 'ناعمة'], ['sharp', 'حادة']]
@@ -177,7 +177,7 @@ export function mergeSettings(raw) {
       social: Object.fromEntries(Object.keys(DEFAULT_STORE.social).map((k) => [k, /^https:\/\//i.test(s.store?.social?.[k] || '') ? safeLink(s.store.social[k], '') : ''])),
     },
     fonts: {
-      heading: FONTS.heading.some(([k]) => k === s.fonts?.heading) ? s.fonts.heading : 'marhey',
+      heading: FONTS.heading.some(([k]) => k === s.fonts?.heading) ? s.fonts.heading : 'readex',
       body: FONTS.body.some(([k]) => k === s.fonts?.body) ? s.fonts.body : 'plex',
     },
     radius: RADII.some(([k]) => k === s.radius) ? s.radius : 'round',
@@ -219,7 +219,7 @@ export function themeCss(settings) {
   }
   if (s.logoScale !== 100) v.push(['--logo-scale', String(s.logoScale / 100)])
   const fam = (list, k) => list.find(([x]) => x === k)[2]
-  if (s.fonts.heading !== 'marhey') v.push(['--p-font-script', `${fam(FONTS.heading, s.fonts.heading)}, 'IBM Plex Sans Arabic', sans-serif`])
+  if (s.fonts.heading !== 'readex') v.push(['--p-font-script', `${fam(FONTS.heading, s.fonts.heading)}, 'IBM Plex Sans Arabic', sans-serif`])
   if (s.fonts.body !== 'plex') { const f = `${fam(FONTS.body, s.fonts.body)}, 'IBM Plex Sans Arabic', system-ui, sans-serif`; v.push(['--p-font-text', f], ['--p-font-display', f]) }
   if (s.radius === 'soft') v.push(['--p-radius-pill', '14px'], ['--p-radius-lg', '14px'], ['--p-radius-xl', '18px'])
   if (s.radius === 'sharp') v.push(['--p-radius-pill', '6px'], ['--p-radius-lg', '6px'], ['--p-radius-xl', '8px'], ['--p-radius-md', '6px'], ['--p-radius-sm', '4px'])

@@ -1,7 +1,12 @@
-/* Fonts served from rraed.com itself (no Google Fonts round-trip, nothing blocking the first paint). Marhey (headings) loads its Arabic subset only; digits and Latin fall back to IBM Plex Sans Arabic. */
-@import '@fontsource/marhey/arabic-500.css';
-@import '@fontsource/marhey/arabic-600.css';
-@import '@fontsource/marhey/arabic-700.css';
+/* Fonts served from rraed.com itself (no Google Fonts round-trip, nothing blocking the first paint).
+   Readex Pro carries the display voice (light, wide, calm); IBM Plex Sans Arabic carries the text.
+   Marhey and the other designer fonts load only when picked in the store designer (StoreTheme.jsx). */
+@import '@fontsource/readex-pro/arabic-300.css';
+@import '@fontsource/readex-pro/latin-300.css';
+@import '@fontsource/readex-pro/arabic-400.css';
+@import '@fontsource/readex-pro/latin-400.css';
+@import '@fontsource/readex-pro/arabic-500.css';
+@import '@fontsource/readex-pro/latin-500.css';
 @import '@fontsource/ibm-plex-sans-arabic/arabic-300.css';
 @import '@fontsource/ibm-plex-sans-arabic/latin-300.css';
 @import '@fontsource/ibm-plex-sans-arabic/arabic-400.css';

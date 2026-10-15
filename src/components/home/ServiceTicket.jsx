@@ -1,54 +1,61 @@
 import { Link } from 'react-router-dom'
-import { Heart, Plus } from 'lucide-react'
+import { Heart, Plus, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/state.jsx'
 import { money, effectivePrice } from '@/lib/format.js'
 import { coverFor } from '@/lib/cover.js'
 import { productPath } from '@/lib/slug.js'
+import { SERVICE_RATINGS } from '@/data/reviews.js'
 
-/** A white card pinned with a navy pin: straight, equal height, everything on the same lines across a row. */
+/** A service plate: the picture melts into a deep panel with a polished silver rim; light runs around the rim
+ *  on hover. Name, what it is, a real rating when one exists, and the price in silver numerals. Inside a
+ *  `.night` region it renders midnight; on the light pages it renders porcelain. */
 export default function ServiceTicket({ p, className }) {
-  const { addToCart, toggleWish, wishlist, categories } = useApp()
-  const cat = categories?.find((c) => c.id === p.categoryId)
+  const { addToCart, toggleWish, wishlist } = useApp()
   const wished = wishlist.includes(p.id)
   const sale = p.salePrice && p.salePrice < p.price
+  const rating = SERVICE_RATINGS[p.id]
   return (
-    <div className={cn('group relative h-full pt-2.5', className)}>
-      {/* the pin */}
-      <span className="pointer-events-none absolute top-0 left-1/2 z-20 -translate-x-1/2" aria-hidden="true">
-        <span className="block size-[16px] rounded-full bg-[radial-gradient(circle_at_35%_30%,#5d7cb5,var(--p-green-800)_55%,var(--p-green-950))] shadow-[0_4px_5px_-1px_rgb(0_0_0/0.45),inset_0_-2px_3px_rgb(0_0_0/0.3)]" />
-        <span className="absolute top-[3px] left-[5px] size-[5px] rounded-full bg-white/70 blur-[0.5px]" />
-      </span>
-      <article className="relative flex h-full flex-col rounded-[14px] bg-white p-2.5 pt-3.5 shadow-[0_1px_2px_color-mix(in_srgb,var(--p-green-900)_8%,transparent),0_18px_32px_-22px_color-mix(in_srgb,var(--p-green-900)_50%,transparent)] ring-1 ring-[var(--p-green-900)]/[0.07] transition-[translate,box-shadow] duration-500 ease-[cubic-bezier(.16,1,.3,1)] group-hover:-translate-y-1 group-hover:shadow-[0_2px_4px_color-mix(in_srgb,var(--p-green-900)_6%,transparent),0_28px_44px_-24px_color-mix(in_srgb,var(--p-green-900)_60%,transparent)]">
-        <Link to={productPath(p.id)} className="relative block overflow-hidden rounded-[10px] bg-sunken">
-          <img src={p.image} srcSet={p.image?.startsWith('/api/art?') ? `${p.image}&w=300 300w, ${p.image} 600w` : undefined} sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 260px" alt={p.name} loading="lazy" decoding="async" width="500" height="500" onError={(e) => { if (!e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = 1; e.currentTarget.src = coverFor(p) } }}
-            className="aspect-square w-full object-cover transition-transform duration-[1.2s] ease-[cubic-bezier(.16,1,.3,1)] group-hover:scale-[1.04]" />
-        </Link>
-        <button type="button" onClick={() => toggleWish(p.id)} aria-pressed={wished} aria-label={wished ? 'إزالة من الأمنيات' : 'إضافة إلى الأمنيات'}
-          className={cn('absolute top-[16px] end-[12px] z-10 grid size-11 place-items-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-colors', wished ? 'text-danger' : 'text-primary/60 hover:text-primary')}>
-          <Heart className="size-[15px]" fill={wished ? 'currentColor' : 'none'} />
-        </button>
-        {(p.badge || sale) && (
-          <span className="absolute top-[24px] start-[18px] z-10 max-w-[calc(100%-76px)] truncate rounded-full bg-primary/90 px-2.5 py-1 text-[11px] font-medium leading-none text-on-inverse backdrop-blur">{sale ? 'خصم' : p.badge}</span>
+    <article className={cn('rim plate group relative flex h-full flex-col overflow-hidden rounded-[22px] transition-[translate,box-shadow] duration-500 ease-[cubic-bezier(.16,1,.3,1)] hover:-translate-y-1', className)}>
+      <Link to={productPath(p.id)} className="relative block overflow-hidden" tabIndex={-1} aria-hidden="true">
+        <img src={p.image} srcSet={p.image?.startsWith('/api/art?') ? `${p.image}&w=300 300w, ${p.image} 600w` : undefined} sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 280px" alt="" loading="lazy" decoding="async" width="500" height="375"
+          onError={(e) => { if (!e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = 1; e.currentTarget.src = coverFor(p) } }}
+          className="aspect-[4/3] w-full object-cover transition-[scale,filter] duration-[1.4s] ease-[cubic-bezier(.16,1,.3,1)] group-hover:scale-[1.05] group-hover:brightness-110" />
+        {/* the picture settles into the plate: no seam between image and panel */}
+        <span className="absolute inset-x-0 bottom-0 h-1/2 bg-[linear-gradient(180deg,transparent,var(--plate-end,var(--surface)))]" aria-hidden="true" />
+      </Link>
+
+      <button type="button" onClick={() => toggleWish(p.id)} aria-pressed={wished} aria-label={wished ? `إزالة ${p.name} من الأمنيات` : `إضافة ${p.name} إلى الأمنيات`}
+        className={cn('absolute top-2.5 end-2.5 z-10 grid size-11 place-items-center rounded-full bg-[var(--night-1)]/55 text-white ring-1 ring-white/25 backdrop-blur-md transition-[background-color,color]', wished ? 'text-[#ff8c8c]' : 'hover:bg-[var(--night-1)]/80')}>
+        <Heart className="size-[16px]" fill={wished ? 'currentColor' : 'none'} strokeWidth={1.8} />
+      </button>
+      {(p.badge || sale) && (
+        <span className="absolute top-3.5 start-3 z-10 max-w-[calc(100%-72px)] truncate rounded-full bg-[var(--silver-hi)] px-2.5 py-1 text-[11px] font-semibold leading-none text-[var(--night-1)] shadow-[0_6px_14px_-6px_rgb(0_0_0/0.6)]">{sale ? 'خصم' : p.badge}</span>
+      )}
+
+      <div className="relative -mt-6 flex flex-1 flex-col px-3.5 pb-3.5 sm:px-5 sm:pb-5">
+        {rating && (
+          <span className="mb-2 inline-flex w-fit items-center gap-1 text-[11.5px] text-muted-foreground">
+            <Star className="size-3.5 fill-[var(--silver-lo)] text-[var(--silver-lo)]" strokeWidth={0} /><b className="tabular font-semibold text-foreground">5.0</b><span className="tabular">({rating.count})</span>
+          </span>
         )}
-        <div className="flex flex-1 flex-col px-1 pt-3">
-          {cat && <span className="mb-1 block truncate text-[11.5px] text-muted-foreground">{cat.name}</span>}
-          <h3 className="line-clamp-2 h-[2.9rem] text-[14px] font-semibold leading-[1.45rem] text-primary">
-            <Link to={productPath(p.id)} className="after:absolute after:inset-0">{p.name}</Link>
-          </h3>
-          <div className="mt-auto flex min-h-[3.4rem] items-center justify-between gap-2 border-t border-primary/10 pt-2.5">
-            <p className="tabular leading-tight">
-              <span className="text-[16px] font-bold text-primary">{money(effectivePrice(p))}</span>
-              {sale && <s className="ms-1.5 text-xs text-muted-foreground">{money(p.price)}</s>}
-              {p.perUnit && <span className="block text-[11px] text-muted-foreground">{p.perUnit}</span>}
-            </p>
-            <button type="button" onClick={() => addToCart(p.id)} aria-label={`أضف ${p.name} للسلة`}
-              className="relative z-10 grid size-11 shrink-0 place-items-center rounded-full bg-primary text-on-inverse shadow-[0_8px_16px_-8px_color-mix(in_srgb,var(--p-green-900)_70%,transparent)] transition-[background-color,scale] duration-300 hover:scale-105 hover:bg-primary-hover active:scale-95">
-              <Plus className="size-[18px]" />
-            </button>
-          </div>
+        <h3 className="line-clamp-2 font-display text-[14.5px] font-medium leading-[1.55] text-foreground sm:text-[16.5px]">
+          <Link to={productPath(p.id)} className="outline-none after:absolute after:inset-0 after:z-[1] after:rounded-[22px] focus-visible:after:outline-2 focus-visible:after:outline-offset-[-3px] focus-visible:after:outline-[var(--ring)]">{p.name}</Link>
+        </h3>
+        {p.summary && <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-[1.75] text-muted-foreground sm:text-[13.5px]">{p.summary}</p>}
+
+        <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+          <p className="leading-none">
+            {sale && <s className="tabular mb-1 block text-[12px] text-muted-foreground">{money(p.price)}</s>}
+            <span className="tabular font-display text-[19px] font-light text-foreground sm:text-[23px]">{money(effectivePrice(p))}</span>
+            {p.perUnit && <span className="mt-1 block text-[11px] text-muted-foreground">{p.perUnit}</span>}
+          </p>
+          <button type="button" onClick={() => addToCart(p.id)} aria-label={`أضف ${p.name} للسلة`}
+            className="relative z-[3] grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_22px_-10px_rgb(0_0_0/0.7)] transition-[scale,box-shadow] duration-300 hover:scale-105 hover:shadow-[0_0_0_4px_color-mix(in_srgb,var(--primary)_18%,transparent)] active:scale-95">
+            <Plus className="size-[18px]" strokeWidth={2.2} />
+          </button>
         </div>
-      </article>
-    </div>
+      </div>
+    </article>
   )
 }

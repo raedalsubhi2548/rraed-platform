@@ -7,6 +7,7 @@ import { themeCss } from '@/lib/theme.js'
 /** The owner's colours and logo size (store designer) as CSS variables over the design tokens. */
 // fonts the owner can pick (the original two are always loaded by fonts.css); each loads only when chosen
 const FONT_CSS = {
+  marhey: () => [import('@fontsource/marhey/arabic-500.css'), import('@fontsource/marhey/arabic-600.css'), import('@fontsource/marhey/arabic-700.css')],
   cairo: () => [import('@fontsource/cairo/arabic-400.css'), import('@fontsource/cairo/arabic-500.css'), import('@fontsource/cairo/arabic-700.css')],
   tajawal: () => [import('@fontsource/tajawal/arabic-400.css'), import('@fontsource/tajawal/arabic-500.css'), import('@fontsource/tajawal/arabic-700.css')],
   almarai: () => [import('@fontsource/almarai/arabic-400.css'), import('@fontsource/almarai/arabic-700.css')],
@@ -31,7 +32,7 @@ export function AnnouncementBar() {
       <Megaphone className="size-4 shrink-0 text-accent" aria-hidden="true" />{a.text}
     </span>
   )
-  const cls = 'relative z-50 block bg-[var(--p-green-950)] text-on-inverse'
+  const cls = 'relative z-50 block bg-[var(--night-0)] text-[var(--ink-night)]'
   if (!a.link) return <div className={cls}>{inner}</div>
   return /^https:/i.test(a.link)
     ? <a href={a.link} target="_blank" rel="noopener noreferrer" className={cls + ' hover:text-accent'}>{inner}</a>

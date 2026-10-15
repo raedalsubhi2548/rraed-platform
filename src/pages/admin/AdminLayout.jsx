@@ -96,7 +96,7 @@ export default function AdminLayout() {
   return (
     <ConfirmProvider>
       <div className="min-h-dvh bg-background lg:grid lg:grid-cols-[264px_1fr]">
-        <aside className="sticky top-0 hidden h-dvh flex-col gap-7 overflow-hidden bg-[radial-gradient(120%_60%_at_100%_0%,#2c4470,#1b2b44_45%,#0f1a2c)] p-5 text-white lg:flex">
+        <aside className="sticky top-0 hidden h-dvh flex-col gap-7 overflow-hidden bg-[radial-gradient(120%_50%_at_100%_0%,var(--night-4),var(--night-1)_55%,var(--night-0))] p-5 text-white shadow-[inset_-1px_0_0_var(--line-night)] lg:flex">
           <span className="pointer-events-none absolute -bottom-24 -start-24 size-72 rounded-full border-[14px] border-white/[0.04]" aria-hidden="true" />
           <div className="relative pt-1"><Brand dark /></div>
           <div className="relative flex-1 overflow-y-auto"><Nav pending={pending} dark /></div>

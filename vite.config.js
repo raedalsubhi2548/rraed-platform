@@ -8,6 +8,8 @@ export default defineConfig(({ isSsrBuild }) => ({
   plugins: [react(), tailwindcss()],
   base: '/',
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  // local preview only: product art is rendered by a Vercel function, so borrow the live one
+  preview: { proxy: { '/api/art': { target: 'https://rraed.com', changeOrigin: true } } },
   build: {
     rollupOptions: {
       output: {

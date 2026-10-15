@@ -43,8 +43,10 @@ export default function Layout() {
   const home = pathname === '/' || pathname === '/admin/preview' // the store designer previews the home page there
   // single-segment paths may be a category or a service: wait for the catalog before naming the page
   useSeo(pathname === '/admin/preview' ? null : catalogReady || /^\/(shop|work|reviews|blog|contact|policies|cart|checkout|login|account|order)(\/|$)/.test(pathname) || pathname === '/' ? pathname.replace(/\/$/, '') || '/' : null, seoData)
+  // the home page is the night route: the whole shell (header, page, footer) joins it
+  useEffect(() => { document.documentElement.classList.toggle('night-root', home); return () => document.documentElement.classList.remove('night-root') }, [home])
   return (
-    <>
+    <div className={home ? 'night bg-background' : undefined}>
       <ThemeStyle />
       <a href="#main" className="skip">انتقل للمحتوى</a>
       <AnnouncementBar />
@@ -61,6 +63,6 @@ export default function Layout() {
       </main>
       <SiteFooter />
       <CartDrawer />
-    </>
+    </div>
   )
 }

@@ -44,8 +44,8 @@
   --p-teal-100: #e3f1e8;
 
   /* Type */
-  --p-font-display: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  --p-font-script: 'Marhey', 'IBM Plex Sans Arabic', sans-serif;
+  --p-font-display: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --p-font-script: 'Readex Pro', 'IBM Plex Sans Arabic', sans-serif;
   --p-font-text: 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
   /* Major-third scale, 16px base */
   --p-size-12: 0.75rem;
@@ -146,6 +146,67 @@
 
   --header-height: 72px;
   --container: 1240px;
+
+  /* ---------- 4. WORLD: the night route ----------
+     Midnight grounds, silver only on hairlines, nodes, numerals and the primary pill.
+     Derived from the brand primitives, so a palette picked in the store designer still carries through. */
+  --night-0: color-mix(in srgb, var(--p-green-950) 52%, #000);
+  --night-1: color-mix(in srgb, var(--p-green-950) 80%, #000);
+  --night-2: var(--p-green-950);
+  --night-3: color-mix(in srgb, var(--p-green-900) 70%, var(--p-green-950));
+  --night-4: color-mix(in srgb, var(--p-green-800) 80%, var(--p-green-950));
+  --silver-hi: #f6f8fc;
+  --silver: color-mix(in srgb, var(--p-gold-400) 62%, #ffffff);
+  --silver-lo: var(--p-gold-500);
+  --ink-night: #e9eef6;
+  --muted-night: color-mix(in srgb, var(--p-gold-400) 78%, var(--p-green-950));
+  --line-night: color-mix(in srgb, var(--p-gold-400) 16%, transparent);
+  --rim: linear-gradient(140deg, rgb(255 255 255 / 0.62), color-mix(in srgb, var(--p-gold-400) 20%, transparent) 26%, color-mix(in srgb, var(--p-gold-400) 6%, transparent) 58%, rgb(255 255 255 / 0.34));
+  --rim-day: linear-gradient(140deg, color-mix(in srgb, var(--p-green-900) 30%, transparent), color-mix(in srgb, var(--p-green-900) 8%, transparent) 40%, color-mix(in srgb, var(--p-gold-500) 40%, transparent));
+  --shadow-plate: 0 2px 6px rgb(0 0 0 / 0.25), 0 30px 60px -30px rgb(0 0 0 / 0.75);
+  --shadow-plate-day: 0 1px 2px color-mix(in srgb, var(--p-green-900) 8%, transparent), 0 28px 50px -30px color-mix(in srgb, var(--p-green-900) 45%, transparent);
+}
+
+/* A night region: the semantic layer is re-pointed, so every component inside (buttons, accordions,
+   fields, plates) renders in silver on midnight without its own dark variant. */
+.night {
+  --background: var(--night-1);
+  --foreground: var(--ink-night);
+  --surface: var(--night-3);
+  --surface-sunken: var(--night-2);
+  --surface-inverse: var(--silver-hi);
+  --on-inverse: var(--night-1);
+  --muted-foreground: var(--muted-night);
+  --subtle-foreground: color-mix(in srgb, var(--muted-night) 70%, var(--night-1));
+  --primary: var(--silver-hi);
+  --primary-hover: #ffffff;
+  --primary-foreground: var(--night-1);
+  --accent: var(--silver);
+  --accent-hover: var(--silver-hi);
+  --accent-foreground: var(--night-1);
+  --accent-text: var(--silver);
+  --border: var(--line-night);
+  --border-strong: color-mix(in srgb, var(--p-gold-400) 30%, transparent);
+  --ring: var(--silver);
+  --success-soft: color-mix(in srgb, var(--p-teal-700) 25%, var(--night-2));
+  --danger-soft: color-mix(in srgb, var(--p-red-600) 25%, var(--night-2));
+  --warning-soft: color-mix(in srgb, var(--p-amber-700) 25%, var(--night-2));
+  /* component knobs are computed where they are declared, so they are re-declared here */
+  --btn-primary-bg: var(--primary);
+  --btn-primary-bg-hover: var(--primary-hover);
+  --btn-primary-fg: var(--primary-foreground);
+  --btn-accent-bg: var(--accent);
+  --btn-accent-fg: var(--accent-foreground);
+  --ticket-bg: var(--surface);
+  --ticket-notch: var(--background);
+  --ticket-rule: var(--border-strong);
+  --chip-bg: var(--surface-sunken);
+  --chip-fg: var(--primary);
+  --chip-bg-active: var(--primary);
+  --chip-fg-active: var(--primary-foreground);
+  --rim-active: var(--rim);
+  --shadow-active: var(--shadow-plate);
+  color: var(--foreground);
 }
 
 /* Tailwind v4 theme mapping — utilities read the semantic layer */

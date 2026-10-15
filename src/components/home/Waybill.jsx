@@ -23,17 +23,11 @@ export function Barcode({ value, className }) {
 }
 
 // The ticket shell: notched sides + perforated rule between head and body.
-export function Ticket({ head, children, className, notchTone = 'var(--ticket-notch)' }) {
+export function Ticket({ head, children, className }) {
   return (
-    <div className={cn('relative rounded-[var(--ticket-radius)] bg-[var(--ticket-bg)] shadow-card', className)}>
+    <div className={cn('rim plate relative rounded-[26px]', className)}>
       {head}
-      {head && (
-        <div className="relative h-px" aria-hidden="true">
-          <span className="absolute -start-3 -top-3 size-6 rounded-full" style={{ background: notchTone }} />
-          <span className="absolute -end-3 -top-3 size-6 rounded-full" style={{ background: notchTone }} />
-          <span className="absolute inset-x-5 top-0 border-t-2 border-dashed border-[var(--ticket-rule)]" />
-        </div>
-      )}
+      {head && <div className="mx-5 h-px bg-[linear-gradient(90deg,transparent,var(--border-strong),transparent)]" aria-hidden="true" />}
       {children}
     </div>
   )

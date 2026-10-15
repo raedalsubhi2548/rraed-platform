@@ -10,7 +10,7 @@ export function AdminHead({ title, lead, back, action }) {
     <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
         {back}
-        <h1 className="truncate font-display text-2xl font-semibold text-primary sm:text-[28px]">{title}</h1>
+        <h1 className="truncate font-display text-[26px] font-light text-foreground sm:text-[32px]">{title}</h1>
         {lead && <p className="mt-1 text-sm text-muted-foreground">{lead}</p>}
       </div>
       {action && <div className="flex flex-wrap gap-2">{action}</div>}
@@ -47,7 +47,7 @@ export function Segments({ value, onChange, options }) {
 }
 
 export function TableCard({ children, className }) {
-  return <div className={cn('overflow-hidden rounded-lg bg-surface shadow-hairline ring-1 ring-border', className)}><div className="overflow-x-auto">{children}</div></div>
+  return <div className={cn('rim plate overflow-hidden rounded-[22px]', className)}><div className="overflow-x-auto">{children}</div></div>
 }
 export const Table = ({ className, ...p }) => <table className={cn('w-full min-w-[640px] border-collapse text-sm', className)} {...p} />
 export const Th = ({ className, ...p }) => <th className={cn('whitespace-nowrap border-b border-border bg-sunken/60 px-4 py-3 text-start text-xs font-bold text-muted-foreground', className)} {...p} />
