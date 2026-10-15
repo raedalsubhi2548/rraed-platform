@@ -191,7 +191,12 @@
       "permanent": true
     },
     {
-      "source": "/(ar|en|fr|it|de|es|tr|ur)/?",
+      "source": "/:lang(ar|en|fr|it|de|es|tr|ur)",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ar|en|fr|it|de|es|tr|ur)/",
       "destination": "/",
       "permanent": true
     },
