@@ -191,7 +191,7 @@
       "permanent": true
     },
     {
-      "source": "/:lang(ar|en|fr|it|de|es|tr|ur)",
+      "source": "/(ar|en|fr|it|de|es|tr|ur)/?",
       "destination": "/",
       "permanent": true
     },
@@ -211,7 +211,7 @@
       "permanent": true
     },
     {
-      "source": "/orders.html",
+      "source": "/(orders|orders\\.html)",
       "destination": "/account",
       "permanent": true
     }
