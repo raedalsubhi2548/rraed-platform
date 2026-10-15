@@ -189,6 +189,31 @@
       "source": "/p/:slug",
       "destination": "/:slug",
       "permanent": true
+    },
+    {
+      "source": "/:lang(ar|en|fr|it|de|es|tr|ur)",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ar|en|fr|it|de|es|tr|ur)/:path*",
+      "destination": "/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/(privacy|terms|privacy\\.html|terms\\.html)",
+      "destination": "/policies",
+      "permanent": true
+    },
+    {
+      "source": "/contact.html",
+      "destination": "/contact",
+      "permanent": true
+    },
+    {
+      "source": "/orders.html",
+      "destination": "/account",
+      "permanent": true
     }
   ]
 }
