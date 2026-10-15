@@ -18,6 +18,19 @@ if (on) {
 
 export const track = (name, params = {}) => { if (on) window.gtag('event', name, params) }
 
+// ---- Snap Pixel (affec170-…) --------------------------------------------------------------------------------------
+// Same rule as GA: a file loaded from sc-static.net (allowed in vercel.json's CSP), only on the real store, never on admin.
+// Purchases are also sent server side (api/_snap.js, Conversions API) with the same id, so Snap counts each order once.
+export const SNAP_PIXEL = 'affec170-fb55-4e08-a99f-405236853160'
+const snapOn = on && !location.pathname.startsWith('/admin')
+if (snapOn) {
+  const q = (window.snaptr = function snaptr() { q.handleRequest ? q.handleRequest.apply(q, arguments) : q.queue.push(arguments) }) // eslint-disable-line prefer-rest-params
+  q.queue = []
+  document.head.appendChild(Object.assign(document.createElement('script'), { async: true, src: 'https://sc-static.net/scevent.min.js' }))
+  window.snaptr('init', SNAP_PIXEL, {})
+}
+export const snap = (name, params = {}) => { if (snapOn) window.snaptr('track', name, params) }
+
 // ---- Our own visitor count (لوحة التحكم ← التقارير) --------------------------------------------------------------
 // Sent to /api/hit on the store's own domain, so ad blockers and missing cookie consent don't hide visitors.
 // The owner's own visits are left out: «عرض المتجر» in the dashboard opens the store with ?notrack=1, which marks that browser.
@@ -72,13 +85,24 @@ export function hit(kind, path) {
 }
 
 const item = (l) => ({ item_id: l.productId || l.product?.id, item_name: l.name || l.product?.name, price: Number(l.unit ?? l.price) || 0, quantity: l.qty || 1 })
-export const trackAddToCart = (p, qty, unit) => hit('cart') || track('add_to_cart', { currency: 'SAR', value: unit * qty, items: [{ item_id: p.id, item_name: p.name, price: unit, quantity: qty }] })
-export const trackBeginCheckout = (lines, value) => hit('checkout') || track('begin_checkout', { currency: 'SAR', value, items: lines.map(item) })
+export const trackAddToCart = (p, qty, unit) => {
+  hit('cart')
+  track('add_to_cart', { currency: 'SAR', value: unit * qty, items: [{ item_id: p.id, item_name: p.name, price: unit, quantity: qty }] })
+  snap('ADD_CART', { item_ids: [p.id], item_category: p.categoryId, price: unit * qty, currency: 'SAR', number_items: qty })
+}
+export const trackBeginCheckout = (lines, value) => {
+  hit('checkout')
+  track('begin_checkout', { currency: 'SAR', value, items: lines.map(item) })
+  snap('START_CHECKOUT', { item_ids: lines.map((l) => l.productId || l.product?.id), price: value, currency: 'SAR', number_items: lines.reduce((n, l) => n + (l.qty || 1), 0) })
+}
+export const trackViewProduct = (p, price) => snap('VIEW_CONTENT', { item_ids: [p.id], item_category: p.categoryId, price, currency: 'SAR' })
 export const trackPurchase = (order) => {
   // once per order, even if the return page is reloaded
   const k = 'raed:ga-purchase:' + order.id
   try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1') } catch { /* ignore */ }
   track('purchase', { transaction_id: String(order.number), currency: 'SAR', value: Number(order.total) || 0, items: (order.items || []).map(item) })
+  // client_dedup_id = the order id, the same event_id the server sends to the Conversions API
+  snap('PURCHASE', { transaction_id: String(order.number), client_dedup_id: String(order.id), price: Number(order.total) || 0, currency: 'SAR', item_ids: (order.items || []).map((l) => l.productId), number_items: (order.items || []).reduce((n, l) => n + (l.qty || 1), 0) })
 }
 
 /** Sends a page_view for each page the visitor opens. */
@@ -88,7 +112,7 @@ export function usePageViews() {
   useEffect(() => {
     if (!on || loc.pathname.startsWith('/admin')) return
     // let the page set its <title> first
-    const t = setTimeout(() => track('page_view', { page_location: location.href, page_path: loc.pathname + loc.search, page_title: document.title }), 50)
+    const t = setTimeout(() => { track('page_view', { page_location: location.href, page_path: loc.pathname + loc.search, page_title: document.title }); snap('PAGE_VIEW') }, 50)
     return () => clearTimeout(t)
   }, [loc.pathname, loc.search])
 }
