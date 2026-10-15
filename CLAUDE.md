@@ -59,3 +59,8 @@ The owner's order copies go to ORDER_NOTIFY_TO, else every admin account's email
 1. `npm run build` (must pass; prerender throws on bad slugs/addresses).
 2. Commit on `redesign`, push, merge into `main`, push, back to `redesign`.
 3. Wait for Vercel (`gh api repos/raedalsubhi2548/rraed-platform/commits/main/status`), then check the live page.
+
+## Decisions (Oct 2026)
+- Snap Pixel `affec170-…` is in `src/lib/analytics.js` (PAGE_VIEW, VIEW_CONTENT, ADD_CART, START_CHECKOUT, PURCHASE) and the Conversions API in `api/_snap.js` (PURCHASE when an order is marked paid, deduplicated by order id). Token only in Vercel: `SNAP_CAPI_TOKEN` (Raed added it). CSP allows sc-static.net and tr.snapchat.com. Never remove these.
+- A full "night route" luxury redesign was built and rejected by Raed on 16 Oct 2026; it lives on branch `luxury` only. The live design is the earlier one (backup tag `backup-2026-10-16-before-luxury`).
+- Security audit 16 Oct 2026: no secrets in git history or client bundles; anon role denied on orders/profiles/coupons/visits/wishlists/product_files and on the RPCs (security-2026-10.sql confirmed applied); headers strict. Open item: react-router 6.x has moderate advisories fixed only in v7 (breaking); the login `next` redirect is validated as a defence.
