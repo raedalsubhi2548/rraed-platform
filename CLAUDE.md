@@ -34,6 +34,8 @@ Custom-coded store for Raed's services (Salla store design, landing pages, pixel
   Raed's direction (Oct 2026): articles sell benefits and features to attract clients and rank on keywords — no step-by-step setup tutorials. Each one ends with the matching `[[service:…]]` cards.
 - Copy protection: `Layout.jsx` adds `.no-copy` (no select/copy/right-click/image drag) on public pages; cart, checkout, order, account and login stay copyable. Admin is not affected.
 - Unknown addresses: `vercel.json` sends only app routes and single-segment slugs to `200.html`; anything else gets `404.html` with a real 404 status.
+- Old URLs Google still knows (from the Salla era and an older static site) are 308-redirected in `vercel.json`: `/en/…`, `/fr/…` etc. → same path, `privacy`/`terms` → `/policies`, `contact.html` → `/contact`, `orders(.html)` → `/account`. Vercel rejects `/?` in a redirect source (deploy fails) — use two rules.
+- Search Console (sc-domain:rraed.com), 15 Oct 2026: validation started for 5xx, 404, 403 and the 3 merchant-listing issues; indexing requested for /blog, all 6 posts, /salla-store-design, /add-products. Product-snippet rating warnings remain on the 6 services with no Salla ratings (by design, no fake reviews).
 - `vercel.json` — strict CSP (update it when adding any third-party script/frame), redirects, headers.
 - `public/llms.txt` — keep in sync when adding pages.
 
