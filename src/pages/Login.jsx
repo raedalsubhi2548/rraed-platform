@@ -21,7 +21,7 @@ export default function Login() {
   const [params] = useSearchParams()
   // only same-site paths (blocks //evil.com and /\\evil.com open redirects)
   const rawNext = params.get('next') || ''
-  const next = /^\/(?![\/\\])/.test(rawNext) ? rawNext : ''
+  const next = /^\/(?![\/\\])[^\\\s]*$/.test(rawNext) ? rawNext : '' // a same-site path only: no //, no backslash or space anywhere
   const [mode, setMode] = useState(['up', 'forgot'].includes(params.get('mode')) ? params.get('mode') : 'in') // in · up · code (confirm sign-up) · forgot · reset
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', code: '' })
   const [info, setInfo] = useState('')
