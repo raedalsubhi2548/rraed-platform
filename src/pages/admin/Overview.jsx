@@ -37,7 +37,7 @@ function SalesChart({ orders, days }) {
   const tickEvery = days > 14 ? 5 : days > 7 ? 2 : 1
   return (
     <figure>
-      <p className="tabular font-display text-3xl font-semibold text-primary">{money(total)}</p>
+      <p className="tabular font-display text-[34px] font-light text-foreground">{money(total)}</p>
       <figcaption className="text-sm text-muted-foreground">المبيعات المدفوعة آخر {days} يوم · أعلى يوم {money(max === 1 ? 0 : max)}</figcaption>
       <svg viewBox={`0 0 ${W} ${H + 26}`} className="mt-4 w-full" role="img" aria-label={`رسم المبيعات آخر ${days} يوم`}>
         <defs>
@@ -65,7 +65,7 @@ function Kpi({ icon: I, label, value, delta, to, tone }) {
         <span className="text-sm font-semibold text-muted-foreground">{label}</span>
         <span className={cn('grid size-9 place-items-center rounded-full', tone || 'bg-sunken text-primary')}><I className="size-[18px]" /></span>
       </div>
-      <p className="tabular mt-3 font-display text-2xl font-semibold text-primary sm:text-[28px]">{value}</p>
+      <p className="tabular mt-3 font-display text-[26px] font-light text-foreground sm:text-[32px]">{value}</p>
       {delta != null && (
         <p className={cn('mt-1 flex items-center gap-1 text-xs font-bold', delta >= 0 ? 'text-success' : 'text-danger')}>
           {delta >= 0 ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />}
@@ -74,8 +74,36 @@ function Kpi({ icon: I, label, value, delta, to, tone }) {
       )}
     </>
   )
-  const cls = 'block rounded-lg bg-surface p-5 shadow-hairline ring-1 ring-border transition-shadow'
-  return to ? <Link to={to} className={cn(cls, 'hover:shadow-card')}>{body}</Link> : <div className={cls}>{body}</div>
+  const cls = 'rim plate block rounded-[22px] p-5 transition-[translate] duration-300'
+  return to ? <Link to={to} className={cn(cls, 'hover:-translate-y-0.5')}>{body}</Link> : <div className={cls}>{body}</div>
+}
+
+/** Every order on the same route the store sells: from awaiting payment to completed. Each stop opens its orders;
+ *  the stop with work waiting on you glows. */
+const ROUTE = ['pending', 'paid', 'in_progress', 'review', 'completed']
+function OrderRoute({ orders }) {
+  const stops = ROUTE.map((id) => ({ id, label: ORDER_STATUSES.find((s) => s.id === id)?.label, n: orders.filter((o) => o.status === id).length }))
+  const cancelled = orders.filter((o) => o.status === 'cancelled').length
+  const hot = (id) => ['paid', 'in_progress'].includes(id)
+  return (
+    <Panel title="مسار الطلبات" className="mt-4" action={cancelled > 0 && <Link to="/admin/orders?status=cancelled" className="tabular text-sm text-muted-foreground hover:text-danger">ملغي {num(cancelled)}</Link>}>
+      <ol className="relative grid grid-cols-5 gap-1">
+        <span className="route-line absolute inset-x-[10%] top-[22px] h-px [background:linear-gradient(90deg,transparent,var(--border-strong)_8%,var(--border-strong)_92%,transparent)]" aria-hidden="true" />
+        {stops.map((s) => {
+          const lit = hot(s.id) && s.n > 0
+          return (
+            <li key={s.id} className="relative">
+              <Link to={`/admin/orders?status=${s.id}`} className="group grid justify-items-center gap-2 rounded-2xl px-1 py-1 text-center">
+                <span className={cn('tabular relative z-10 grid size-11 place-items-center rounded-full font-display text-[16px] transition-[box-shadow,background-color] duration-300',
+                  lit ? 'bg-primary text-primary-foreground shadow-[0_0_0_6px_color-mix(in_srgb,var(--primary)_12%,transparent),0_10px_24px_-8px_color-mix(in_srgb,var(--primary)_70%,transparent)]' : s.n ? 'bg-surface text-foreground ring-1 ring-[var(--border-strong)] group-hover:ring-primary' : 'bg-sunken text-muted-foreground ring-1 ring-[var(--border)]')}>{num(s.n)}</span>
+                <span className={cn('text-[12.5px] leading-snug sm:text-[13.5px]', lit ? 'font-semibold text-foreground' : 'text-muted-foreground')}>{s.label}</span>
+              </Link>
+            </li>
+          )
+        })}
+      </ol>
+    </Panel>
+  )
 }
 
 export default function Overview() {
@@ -147,16 +175,7 @@ export default function Overview() {
         </Panel>
       </div>
 
-      {dist.length > 0 && (
-        <Panel title="توزيع الطلبات" className="mt-4">
-          <div className="flex h-3 overflow-hidden rounded-full bg-sunken" role="img" aria-label="توزيع الطلبات حسب الحالة">
-            {dist.map((s) => <span key={s.id} className={cn('h-full border-s-2 border-surface first:border-0', { pending: 'bg-warning', paid: 'bg-success', in_progress: 'bg-[#23507c]', review: 'bg-[#6a3a8a]', completed: 'bg-primary', cancelled: 'bg-danger' }[s.id])} style={{ width: `${(s.n / orders.length) * 100}%` }} />)}
-          </div>
-          <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-            {dist.map((s) => <li key={s.id}><Link to={`/admin/orders?status=${s.id}`} className="flex items-center gap-2 text-sm hover:underline"><StatusPill status={s.id} /><span className="tabular font-bold text-primary">{s.n}</span></Link></li>)}
-          </ul>
-        </Panel>
-      )}
+      {dist.length > 0 && <OrderRoute orders={orders} />}
 
       <section className="mt-4">
         <div className="mb-3 flex items-center justify-between">
