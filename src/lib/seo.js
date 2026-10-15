@@ -1,5 +1,6 @@
 import { fromSlug, toSlug, productPath } from './slug.js'
 import { POSTS, BLOG_CATEGORIES, blogPath } from '../data/blog/index.js'
+import { SERVICE_RATINGS } from '../data/reviews.js'
 // One source of truth for titles, descriptions, canonical links, social cards and structured
 // data. Used at runtime (useSeo) and at build time (scripts/prerender.mjs) so crawlers that do
 // not run JavaScript still get the full head for every public page.
@@ -212,6 +213,11 @@ export function seoFor(path, data = {}) {
           image: [img],
           sku: toSlug(p.id),
           brand: { '@type': 'Brand', name: SITE.name },
+          // ratings imported from the Salla store, also shown on the page (src/data/reviews.js)
+          ...(SERVICE_RATINGS[p.id] && {
+            aggregateRating: { '@type': 'AggregateRating', ratingValue: '5', bestRating: '5', worstRating: '1', ratingCount: SERVICE_RATINGS[p.id].count },
+            ...(SERVICE_RATINGS[p.id].reviews.length && { review: SERVICE_RATINGS[p.id].reviews.map((r) => ({ '@type': 'Review', author: { '@type': 'Person', name: r.name }, datePublished: r.date, reviewBody: r.text, reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' } })) }),
+          }),
           offers: {
             '@type': 'Offer', url: abs(productPath(p.id)), priceCurrency: 'SAR', price: String(price(p)), availability: 'https://schema.org/InStock', itemCondition: 'https://schema.org/NewCondition', seller: { '@id': abs('/#org') },
             // services are delivered online: nothing is shipped, and nothing comes back once delivered (see /policies)

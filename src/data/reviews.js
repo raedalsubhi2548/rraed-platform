@@ -48,5 +48,29 @@ const byName = (n) => ALL_REVIEWS.find((r) => r.name === n)
 export const FEATURED_REVIEW = byName('Hussin Judeeba')
 export const HOME_REVIEWS = ['طريفة الشويعر', 'ياسر', 'محمد فواز', 'مشعل عبدالله'].map(byName)
 
+// Per-service ratings from the Salla store (products API, Oct 2026): every rating there is 5 stars.
+// `count` is Salla's own rating count for that product. `reviews` are written ratings whose order had only this
+// service, so they belong to it for sure. Text is verbatim. Shown on the service page and in its Product schema.
+export const SERVICE_RATINGS = {
+  'salla-store-design': { count: 25, reviews: [
+    { name: 'لجين الهجيني', date: '2026-07-28', text: 'خدمة رائعه خمسه نجوم من جد أنصحكم فيه' },
+    { name: 'طريفة الشويعر', date: '2025-11-09', text: 'دقة العمل والاسلوب يدرّسون ماشاءالله 👍🏼' },
+    { name: 'هديل الغامدي', date: '2025-11-08', text: 'كل شي حلو والتعامل احلى ورااااقي' },
+    { name: 'ياسر', date: '2025-11-01', text: 'جدا جميل التصميم' },
+    { name: 'Mohammed', date: '2025-11-01', text: 'تصميم جميل و تعامل رائع' },
+  ] },
+  'pixel-integration': { count: 6, reviews: [] },
+  'google-tools-integration': { count: 6, reviews: [] },
+  'logo-design': { count: 4, reviews: [] },
+  'tabby-registration': { count: 3, reviews: [] },
+  'tmara-registration': { count: 2, reviews: [] },
+  'freelance-certificate-family-platform': { count: 2, reviews: [
+    { name: 'هدى الحارثي', date: '2025-11-06', text: 'عسسسل وبسرعه انحزت' },
+  ] },
+  'tiktok-ads-creation': { count: 1, reviews: [] },
+  'banner-design': { count: 1, reviews: [] },
+  'add-products': { count: 1, reviews: [] },
+}
+
 // The three core services Raed wants up front (store design is also the #1 seller on Salla).
 export const CORE_SERVICES = ['salla-store-design', 'landing-page-design', 'google-tools-integration']

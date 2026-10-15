@@ -13,6 +13,8 @@ import { money, effectivePrice, parseDescription, waLink, optKey, unitPrice, mis
 import { fromSlug, toSlug, productPath } from '@/lib/slug.js'
 import { trackAddToCart } from '@/lib/analytics.js'
 import NotFound from './NotFound.jsx'
+import Stars from '@/components/brand/Stars.jsx'
+import { SERVICE_RATINGS } from '@/data/reviews.js'
 
 export default function Product({ slug: fromProps }) {
   const { id: fromUrl } = useParams()
@@ -34,6 +36,7 @@ export default function Product({ slug: fromProps }) {
   const wished = wishlist.includes(p.id)
   const onSale = p.salePrice && p.salePrice < p.price
   const total = unitPrice(p, sel) * qty
+  const rating = SERVICE_RATINGS[p.id]
   const pick = (o, v) => {
     const k = optKey(o, v)
     setOptErr('')
@@ -68,6 +71,11 @@ export default function Product({ slug: fromProps }) {
 
         <div>
           <h1 className="text-balance font-display text-display-sm font-semibold leading-tight text-primary sm:text-display-md">{p.name}</h1>
+          {rating && (
+            <a href={rating.reviews.length ? '#reviews' : undefined} className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground">
+              <Stars size={15} /><span className="tabular font-semibold text-foreground">5.0</span><span>({rating.count} تقييم)</span>
+            </a>
+          )}
           <p className="mt-3 text-[17px] leading-8 text-muted-foreground">{p.summary}</p>
 
           <Ticket className="mt-6" head={
@@ -140,6 +148,22 @@ export default function Product({ slug: fromProps }) {
           ))}
         </div>
       </section>
+
+      {rating?.reviews.length > 0 && (
+        <section id="reviews" className="mt-16 scroll-mt-28">
+          <h2 className="font-display text-2xl font-semibold text-primary">آراء العملاء عن الخدمة</h2>
+          <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><Stars size={14} />5.0 من {rating.count} تقييم في متجرنا على سلة</p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {rating.reviews.map((r) => (
+              <figure key={r.name + r.date} className="grid content-start gap-3 rounded-lg bg-surface p-5 shadow-hairline ring-1 ring-border">
+                <Stars size={13} />
+                <blockquote className="text-[15px] leading-7">{r.text}</blockquote>
+                <figcaption className="text-sm font-semibold text-primary">{r.name}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
 
       {related.length > 0 && (
         <section className="mt-16">
