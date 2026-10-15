@@ -17,7 +17,7 @@ export async function userFromRequest(req) {
 }
 
 // Asks Tap for the charge (never trusts the redirect) and marks the order paid if it matches.
-export async function confirmCharge(chargeId) {
+export async function confirmCharge(chargeId, browser = {}) {
   const r = await fetch(`${TAP}/charges/${encodeURIComponent(chargeId)}`, { headers: tapHeaders() })
   if (!r.ok) return { ok: false, reason: 'charge-not-found' }
   const charge = await r.json()
@@ -36,6 +36,8 @@ export async function confirmCharge(chargeId) {
     if (updated?.[0]) {
       const { sendOrderEmail } = await import('./_mail.js')
       await sendOrderEmail(updated[0], 'paid').catch(() => {})
+      const { snapPurchase } = await import('./_snap.js')
+      await snapPurchase(updated[0], browser)
     }
   }
   else if (order.status === 'cancelled') {

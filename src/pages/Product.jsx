@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Qty, Textarea, Skeleton } from '@/components/ui/kit.jsx'
 import { money, effectivePrice, parseDescription, waLink, optKey, unitPrice, missingOptions } from '@/lib/format.js'
 import { fromSlug, toSlug, productPath } from '@/lib/slug.js'
-import { trackAddToCart } from '@/lib/analytics.js'
+import { trackAddToCart, trackViewProduct } from '@/lib/analytics.js'
 import NotFound from './NotFound.jsx'
 import Stars from '@/components/brand/Stars.jsx'
 import { SERVICE_RATINGS } from '@/data/reviews.js'
@@ -26,6 +26,8 @@ export default function Product({ slug: fromProps }) {
   const [sel, setSel] = useState([]) // chosen options as "optionId:valueId"
   const [optErr, setOptErr] = useState('')
   useEffect(() => { setSel([]); setOptErr(''); setQty(1); setNote('') }, [id])
+  const seen = !!byId[id]
+  useEffect(() => { if (seen) trackViewProduct(byId[id], effectivePrice(byId[id])) }, [id, seen]) // eslint-disable-line react-hooks/exhaustive-deps
   const p = byId[id]
   if (toSlug(id) !== slug) return <Navigate to={productPath(id)} replace />
   if (!p) return catalogReady ? <NotFound /> : <div className="container-w py-14"><Skeleton className="h-[480px]" /></div>
