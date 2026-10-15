@@ -29,7 +29,7 @@ export default function Blog() {
   const list = POSTS.filter((p) => !cat || p.category === cat)
   return (
     <div className="container-w pb-16">
-      <PageIntro crumb="المدونة" title="المدونة" lead="أدلة عملية لتجار سلة: التصميم، ربط البكسل وأدوات قوقل، والأوراق الرسمية. خطوات واضحة من مصادرها." />
+      <PageIntro crumb="المدونة" title="المدونة" lead="مقالات لتجار سلة عن اللي يكبّر متجرك: تصميم يبيع، بكسل وأدوات قوقل تخلي إعلانك يربح، وتوثيق يرفع ثقة عملائك." />
       <nav className="mb-8 flex flex-wrap justify-center gap-2" aria-label="أقسام المدونة">
         {[['', 'الكل'], ...Object.entries(BLOG_CATEGORIES).map(([k, v]) => [k, v.name])].map(([k, label]) => (
           <button key={k} type="button" onClick={() => setCat(k)} aria-pressed={cat === k}

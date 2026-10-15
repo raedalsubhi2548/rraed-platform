@@ -132,8 +132,8 @@ export function seoFor(path, data = {}) {
   if (path === '/blog') {
     return {
       ...base,
-      title: t('المدونة: أدلة عملية لتجار سلة'),
-      description: clip('أدلة خطوة بخطوة لتجار سلة: تصميم المتجر وتخصيص الثيم، ربط بكسل سناب وتيك توك وGoogle Analytics، وثيقة العمل الحر والسجل التجاري، وتوثيق منصة الأعمال.'),
+      title: t('المدونة: مقالات تكبّر متجرك في سلة'),
+      description: clip('مقالات لتجار سلة عن مميزات تصميم المتجر الاحترافي، وفوائد بكسل سناب وتيك توك وGoogle Analytics، ووثيقة العمل الحر والسجل التجاري، وتوثيق منصة الأعمال.'),
       jsonLd: [crumbs([['الرئيسية', '/'], ['المدونة', '/blog']]), {
         '@context': 'https://schema.org', '@type': 'Blog', name: `مدونة ${SITE.name}`, url: abs('/blog'), inLanguage: 'ar',
         publisher: { '@id': abs('/#org') },
@@ -212,8 +212,12 @@ export function seoFor(path, data = {}) {
           image: [img],
           sku: toSlug(p.id),
           brand: { '@type': 'Brand', name: SITE.name },
-          category: c?.name,
-          offers: { '@type': 'Offer', url: abs(productPath(p.id)), priceCurrency: 'SAR', price: String(price(p)), availability: 'https://schema.org/InStock', seller: { '@id': abs('/#org') } },
+          offers: {
+            '@type': 'Offer', url: abs(productPath(p.id)), priceCurrency: 'SAR', price: String(price(p)), availability: 'https://schema.org/InStock', itemCondition: 'https://schema.org/NewCondition', seller: { '@id': abs('/#org') },
+            // services are delivered online: nothing is shipped, and nothing comes back once delivered (see /policies)
+            shippingDetails: { '@type': 'OfferShippingDetails', shippingRate: { '@type': 'MonetaryAmount', value: '0', currency: 'SAR' }, shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'SA' } },
+            hasMerchantReturnPolicy: { '@type': 'MerchantReturnPolicy', applicableCountry: 'SA', returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted', merchantReturnLink: abs('/policies') },
+          },
         },
       ],
     }

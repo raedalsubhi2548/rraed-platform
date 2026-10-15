@@ -18,6 +18,25 @@ export function PageFallback() {
 export default function Layout() {
   const { pathname } = useLocation()
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  // content protection on the public pages: no selecting, copying, right-click or dragging images.
+  // Forms and the customer's own pages (cart, checkout, order, account, login) stay copyable.
+  const guarded = !/^\/(cart|checkout|order|account|login)(\/|$)/.test(pathname)
+  useEffect(() => {
+    if (!guarded) return
+    const root = document.documentElement
+    root.classList.add('no-copy')
+    const editable = (t) => t instanceof Element && t.closest('input, textarea, select, [contenteditable="true"]')
+    const block = (e) => { if (!editable(e.target)) e.preventDefault() }
+    const keys = (e) => { if ((e.ctrlKey || e.metaKey) && ['c', 'x', 'a', 's', 'u'].includes(e.key.toLowerCase()) && !editable(e.target)) e.preventDefault() }
+    const events = ['copy', 'cut', 'contextmenu', 'dragstart', 'selectstart']
+    events.forEach((n) => document.addEventListener(n, block))
+    document.addEventListener('keydown', keys)
+    return () => {
+      root.classList.remove('no-copy')
+      events.forEach((n) => document.removeEventListener(n, block))
+      document.removeEventListener('keydown', keys)
+    }
+  }, [guarded])
   const { products, categories, catalogReady, settings } = useApp()
   // the store name/description (store designer) is part of every title, so a change re-applies the head
   const seoData = useMemo(() => ({ products, categories, faq: FAQ, reviews: ALL_REVIEWS, store: settings.store }), [products, categories, settings.store])

@@ -13,7 +13,7 @@ Project memory for Claude Code. Read this before any change.
 ## What this is
 Custom-coded store for Raed's services (Salla store design, landing pages, pixels/Google tools, government paperwork…).
 - Store: https://rraed.com — Admin: https://admin.rraed.com (same app, host-switched in `src/lib/host.js`).
-- Repo: `raedalsubhi2548/waarfe-store`. Work on branch `redesign`; deploy = merge into `main` and push (Vercel auto-deploys `main`).
+- Repo: `raedalsubhi2548/rraed-platform`. Work on branch `redesign`; deploy = merge into `main` and push (Vercel auto-deploys `main`).
 
 ## Stack
 - React 18 + Vite SPA, Tailwind v4, lucide icons, Radix.
@@ -31,6 +31,9 @@ Custom-coded store for Raed's services (Salla store design, landing pages, pixel
 - `src/lib/seo.js` — titles, descriptions, canonical, JSON-LD for every route (used at runtime and at prerender).
 - `src/lib/slug.js` — products/categories live at top level (`/salla-store-design`); `RESERVED` names; old `/p/` `/c/` paths 301 in `vercel.json`.
 - Blog: `src/data/blog/index.js` (meta + FAQ + sources), `src/data/blog/posts/<slug>.js` (custom markdown: `##`, `###`, `- `, `1. `, `> `, `| a | b |`, `**bold**`, `[text](url)`, `[[service:product-id]]`), rendered by `src/components/blog/Rich.jsx`. Articles must only use facts from Salla help center (help.salla.sa) or our own service pages, and cite them in `sources`.
+  Raed's direction (Oct 2026): articles sell benefits and features to attract clients and rank on keywords — no step-by-step setup tutorials. Each one ends with the matching `[[service:…]]` cards.
+- Copy protection: `Layout.jsx` adds `.no-copy` (no select/copy/right-click/image drag) on public pages; cart, checkout, order, account and login stay copyable. Admin is not affected.
+- Unknown addresses: `vercel.json` sends only app routes and single-segment slugs to `200.html`; anything else gets `404.html` with a real 404 status.
 - `vercel.json` — strict CSP (update it when adding any third-party script/frame), redirects, headers.
 - `public/llms.txt` — keep in sync when adding pages.
 
@@ -53,4 +56,4 @@ The owner's order copies go to ORDER_NOTIFY_TO, else every admin account's email
 ## Deploy checklist
 1. `npm run build` (must pass; prerender throws on bad slugs/addresses).
 2. Commit on `redesign`, push, merge into `main`, push, back to `redesign`.
-3. Wait for Vercel (`gh api repos/raedalsubhi2548/waarfe-store/commits/main/status`), then check the live page.
+3. Wait for Vercel (`gh api repos/raedalsubhi2548/rraed-platform/commits/main/status`), then check the live page.

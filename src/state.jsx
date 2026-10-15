@@ -43,28 +43,29 @@ export function AppProvider({ children, initialCatalog }) {
 
   const refreshCatalog = useCallback(async () => {
     const [c, p] = await Promise.all([api.getCategories(), api.getProducts()])
-    setCategories(c); setProducts(p.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))); setCatalogReady(true)
+    // a transition, like the settings: an update that lands while a lazy page is still hydrating would throw it away
+    startTransition(() => { setCategories(c); setProducts(p.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))); setCatalogReady(true) })
   }, [])
 
   const sameUser = (a, b) => a === b || (!!a && !!b && a.id === b.id && a.role === b.role && a.name === b.name && a.phone === b.phone && a.email === b.email)
-  const applyUser = useCallback((u) => { setUser((prev) => (sameUser(prev, u) ? prev : u)); setAuthReady(true) }, [])
+  const applyUser = useCallback((u) => startTransition(() => { setUser((prev) => (sameUser(prev, u) ? prev : u)); setAuthReady(true) }), [])
 
   useEffect(() => {
-    refreshCatalog().catch(() => setCatalogReady(true))
+    refreshCatalog().catch(() => startTransition(() => setCatalogReady(true)))
     refreshSettings()
     let alive = true, gotEvent = false
-    api.currentUser().then((u) => { if (alive && !gotEvent) applyUser(u) }, () => alive && setAuthReady(true))
+    api.currentUser().then((u) => { if (alive && !gotEvent) applyUser(u) }, () => alive && startTransition(() => setAuthReady(true)))
     const off = api.onAuth((u) => { gotEvent = true; if (alive) applyUser(u) })
     return () => { alive = false; off() }
   }, [refreshCatalog, refreshSettings, applyUser])
 
   useEffect(() => {
     let alive = true
-    api.getWishlist().then((w) => { if (alive) setWishlistState(Array.isArray(w) ? w : []) }).catch(() => {})
+    api.getWishlist().then((w) => { if (alive) startTransition(() => setWishlistState(Array.isArray(w) ? w : [])) }).catch(() => {})
     return () => { alive = false }
   }, [user?.id])
   useEffect(() => {
-    if (!cartLoaded.current) { cartLoaded.current = true; const saved = loadCart(); if (saved.length) setCart(saved); return }
+    if (!cartLoaded.current) { cartLoaded.current = true; const saved = loadCart(); if (saved.length) startTransition(() => setCart(saved)); return }
     try { localStorage.setItem(CART_KEY, JSON.stringify(cart)) } catch { /* ignore */ }
   }, [cart])
 

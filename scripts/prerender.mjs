@@ -3,6 +3,7 @@
 // robots.txt. The browser hydrates that HTML with the same catalog, so the first paint needs no JavaScript.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { FAQ } from '../src/data/content.js'
 import { ALL_REVIEWS } from '../src/data/reviews.js'
 import { SITE, seoFor, headHtml } from '../src/lib/seo.js'
@@ -12,7 +13,7 @@ import { mergeSettings } from '../src/lib/theme.js'
 import { POSTS, blogPath } from '../src/data/blog/index.js'
 import { applyStore } from '../src/lib/store.js'
 
-const DIST = new URL('../dist/', import.meta.url).pathname
+const DIST = fileURLToPath(new URL('../dist/', import.meta.url))
 // The stylesheet is inlined into every page: no render-blocking request before the first paint.
 const template = readFileSync(join(DIST, 'index.html'), 'utf8').replace(/<link rel="stylesheet"[^>]*href="(\/assets\/[^"]+\.css)"[^>]*>/, (_, href) => `<style>${readFileSync(join(DIST, href.slice(1)), 'utf8').replace(/<\/style/gi, '<\\/style')}</style>`)
 const catalog = await loadCatalog()
@@ -58,7 +59,7 @@ for (const path of routes) {
     .replace(/<meta name="description"[^>]*>\s*/, '')
     // title, description and Open Graph come first in <head>: link previews (WhatsApp, X…) read only the start of the
     // page, and the inlined stylesheet would otherwise push them past that point
-    .replace(/(<meta name="viewport"[^>]*>\n)/, `$1    ${headHtml(s)}\n    ${EARLY}\n`)
+    .replace(/(<meta name="viewport"[^>]*>\r?\n)/, `$1    ${headHtml(s)}\n    ${EARLY}\n`)
     .replace('</head>', `${path === '/' ? HERO_PRELOAD : ''}  </head>`)
     .replace('<div id="root"></div>', `<div id="root">${await render(path, catalog)}</div>${catalogJson}`)
   const file = path === '/' ? join(DIST, 'index.html') : join(DIST, path.slice(1) + '.html')
@@ -71,6 +72,16 @@ writeFileSync(join(DIST, '200.html'), SITE.name === 'منصة رائد' ? templa
   .replace(/<title>[\s\S]*?<\/title>/, `<title>${SITE.name.replace(/</g, '')}</title>`)
   .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${SITE.description.replace(/["<>]/g, '')}" />`)
   .replace(/<meta name="author"[^>]*>/, `<meta name="author" content="${SITE.name.replace(/["<>]/g, '')}" />`))
+
+// Addresses that match no page get this file with a real 404 status (vercel.json only sends app routes to 200.html),
+// so search engines drop dead links instead of reporting them as soft 404s.
+writeFileSync(join(DIST, '404.html'), template
+  .replace(/<title>[\s\S]*?<\/title>\s*/, '')
+  .replace(/<meta name="description"[^>]*>\s*/, '')
+  .replace(/<meta name="robots"[^>]*>\s*/, '')
+  .replace(/(<meta name="viewport"[^>]*>\r?\n)/, `$1    ${headHtml({ ...seoFor('/404'), title: `الصفحة غير موجودة | ${SITE.name}`, robots: 'noindex,follow' })}\n`)
+  // no embedded catalog: the browser renders this page fresh for whatever address it was served at, instead of hydrating
+  .replace('<div id="root"></div>', `<div id="root">${await render('/404/missing', catalog)}</div>`))
 
 const today = new Date().toISOString().slice(0, 10)
 const url = (p) => SITE.url.replace(/\/$/, '') + p

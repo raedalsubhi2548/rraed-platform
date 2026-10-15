@@ -1,6 +1,6 @@
-# متجر رائد — waarfe-store
+# منصة رائد — rraed-platform
 
-متجر رائد الإلكتروني ببرمجة مخصصة: واجهة متجر، حساب للعميل (طلباته وأمنياته وبياناته)، ولوحة تحكم كاملة للإدارة. المنتجات والتصنيفات منقولة من متجر رائد في سلة.
+منصة رائد (rraed.com) ببرمجة مخصصة: واجهة متجر، حساب للعميل (طلباته وأمنياته وبياناته)، ولوحة تحكم كاملة للإدارة. المنتجات والتصنيفات منقولة من متجر رائد في سلة.
 
 **التقنيات:** React + Vite للواجهة، Supabase لقاعدة البيانات والدخول وتخزين الصور، Tap Payments للدفع، والاستضافة على Vercel.
 
@@ -30,7 +30,7 @@
 5. لإرسال إيميلات التفعيل من بريدك (raed@rraed.com) اربط SMTP من **Authentication → Emails → SMTP** (مثل Resend).
 
 ### 2) Vercel
-1. **Add New → Project** واختر مستودع `waarfe-store`. الإعدادات تنكشف تلقائياً (Vite).
+1. **Add New → Project** واختر مستودع `rraed-platform`. الإعدادات تنكشف تلقائياً (Vite).
 2. في **Settings → Environment Variables** أضف:
 
 | المتغير | القيمة | ملاحظة |
@@ -39,7 +39,7 @@
 | `VITE_SUPABASE_ANON_KEY` | anon public key | من نفس الصفحة |
 | `SUPABASE_SERVICE_ROLE_KEY` | service_role key | **سري** — للسيرفر فقط |
 | `TAP_SECRET_KEY` | `sk_live_...` أو `sk_test_...` | من لوحة Tap → goSell → API Keys |
-| `SITE_URL` | `https://waarfe-store.vercel.app` | رابط موقعك بدون / في الآخر |
+| `SITE_URL` | `https://rraed.com` | رابط موقعك بدون / في الآخر |
 | `VITE_BANK_INFO` | اسم البنك والآيبان | اختياري — يظهر للعميل عند اختيار التحويل البنكي |
 
 3. **Redeploy** بعد إضافة المتغيرات.

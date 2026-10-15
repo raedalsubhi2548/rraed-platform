@@ -2,7 +2,15 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/((?!api/|assets/).*)",
+      "source": "/(cart|checkout|login|account|admin)",
+      "destination": "/200"
+    },
+    {
+      "source": "/(order|account|admin)/:path*",
+      "destination": "/200"
+    },
+    {
+      "source": "/([^/.]+)",
       "destination": "/200"
     }
   ],

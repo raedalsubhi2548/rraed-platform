@@ -12,14 +12,14 @@
 - [أعمالنا](https://rraed.com/work): متاجر وتصاميم نفذناها
 - [آراء العملاء](https://rraed.com/reviews)
 - [تواصل معنا](https://rraed.com/contact): واتساب 0536090915، info@rraed.com
-- [المدونة](https://rraed.com/blog): أدلة عملية لتجار سلة
+- [المدونة](https://rraed.com/blog): مقالات لتجار سلة عن مميزات التصميم والتسويق والتوثيق
 - [السياسات والشروط](https://rraed.com/policies)
 
 ## المدونة
 
-- [تصميم متجر سلة: تخصيص الثيم والصفحة الرئيسية](https://rraed.com/blog/salla-store-design-guide)
-- [ربط بكسل سناب شات بمتجر سلة](https://rraed.com/blog/snapchat-pixel-salla)
-- [ربط بكسل تيك توك بمتجر سلة](https://rraed.com/blog/tiktok-pixel-salla)
-- [ربط Google Analytics 4 بمتجر سلة](https://rraed.com/blog/google-analytics-salla)
-- [وثيقة العمل الحر أو السجل التجاري](https://rraed.com/blog/freelance-document-vs-commercial-registration)
-- [توثيق المتجر في منصة الأعمال](https://rraed.com/blog/business-platform-verification)
+- [تصميم متجر سلة احترافي: مميزات ترفع المبيعات](https://rraed.com/blog/salla-store-design-guide)
+- [فوائد بكسل سناب شات لمتجر سلة](https://rraed.com/blog/snapchat-pixel-salla)
+- [مميزات بكسل تيك توك لمتجر سلة](https://rraed.com/blog/tiktok-pixel-salla)
+- [فوائد Google Analytics لمتجر سلة](https://rraed.com/blog/google-analytics-salla)
+- [وثيقة العمل الحر أو السجل التجاري: مميزات كل واحد](https://rraed.com/blog/freelance-document-vs-commercial-registration)
+- [فوائد توثيق المتجر في منصة الأعمال](https://rraed.com/blog/business-platform-verification)
