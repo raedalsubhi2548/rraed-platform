@@ -6,7 +6,6 @@ export const PAY_METHODS = [
   { name: 'تمارا', src: 'https://cdn.tamara.co/assets/svg/tamara-logo-badge-ar.svg' },
   // Apple's file is a white mark: shown inverted (black) so it matches the other white badges
   { name: 'Apple Pay', src: 'https://cdn.salla.network/images/payment/applepay.png', invert: true },
-  { name: 'تابي', src: 'https://cdn.tabby.ai/assets/logo.svg' },
   { name: 'Visa', src: 'https://cdn.salla.network/images/payment/visa.png' },
   { name: 'Mastercard', src: 'https://cdn.salla.network/images/payment/mastercard.png' },
 ]

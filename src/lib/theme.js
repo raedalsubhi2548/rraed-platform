@@ -87,7 +87,7 @@ export const defaultHome = (hero = {}) => [
   { id: 'categories', type: 'categories', on: true, ...BLOCK_DEFAULTS.categories },
   { id: 'design', type: 'products', on: true, eyebrow: 'نصمم لعلامتك', title: 'خدمات التصميم', source: 'category', category: 'design-services', ids: [], limit: 4, viewAll: true },
   { id: 'marketing', type: 'products', on: true, eyebrow: 'نوصّلك لعملائك', title: 'خدمات التسويق', source: 'category', category: 'marketing-services', ids: [], limit: 4, viewAll: true },
-  { id: 'payments', type: 'imageText', on: true, kicker: 'ادفع بالطريقة اللي تريحك', title: 'قسّم قيمة متجرك', accent: 'على دفعات مريحة', text: 'ادفع بـ Apple Pay أو فيزا أو ماستركارد، أو قسّطها مع تمارا وتابي.', cta: 'اسألنا عن التقسيط', link: waLink('السلام عليكم، أبي أعرف عن تقسيط قيمة الخدمة'), image: '/brand/ai/raed-installments.webp', priceOf: '', payIcons: true },
+  { id: 'payments', type: 'imageText', on: true, kicker: 'ادفع بالطريقة اللي تريحك', title: 'قسّم قيمة متجرك', accent: 'على دفعات مريحة', text: 'ادفع بـ Apple Pay أو فيزا أو ماستركارد، أو قسّطها مع تمارا.', cta: 'اسألنا عن التقسيط', link: waLink('السلام عليكم، أبي أعرف عن تقسيط قيمة الخدمة'), image: '/brand/ai/raed-installments.webp', priceOf: '', payIcons: true },
   { id: 'government', type: 'products', on: true, eyebrow: 'أوراقك الرسمية', title: 'الخدمات الحكومية', source: 'category', category: 'government-services', ids: [], limit: 4, viewAll: true },
   { id: 'gallery', type: 'gallery', on: true, ...BLOCK_DEFAULTS.gallery },
   { id: 'reviews', type: 'reviews', on: true, ...BLOCK_DEFAULTS.reviews },
@@ -101,7 +101,8 @@ function cleanBlock(b) {
   const out = { id: typeof b.id === 'string' && /^[\w-]{1,40}$/.test(b.id) ? b.id : 'b' + Math.random().toString(36).slice(2, 8), type: b.type, on: b.on !== false }
   for (const [key, , kind, opt] of BLOCKS[b.type].fields) {
     const v = b[key], d = def[key]
-    if (kind === 'text' || kind === 'textarea') out[key] = text(v, d, opt)
+    // Tabby is no longer offered at checkout (Oct 2026): the old default wording becomes Tamara only
+    if (kind === 'text' || kind === 'textarea') out[key] = text(typeof v === 'string' ? v.replace('قسّطها مع تمارا وتابي', 'قسّطها مع تمارا') : v, d, opt)
     else if (kind === 'link') out[key] = safeLink(v, typeof v === 'string' && !v.trim() ? '' : d)
     else if (kind === 'image') out[key] = safeUrl(v, '')
     else if (kind === 'switch') out[key] = typeof v === 'boolean' ? v : !!d

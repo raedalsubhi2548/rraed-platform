@@ -221,7 +221,15 @@ export function seoFor(path, data = {}) {
           offers: {
             '@type': 'Offer', url: abs(productPath(p.id)), priceCurrency: 'SAR', price: String(price(p)), availability: 'https://schema.org/InStock', itemCondition: 'https://schema.org/NewCondition', seller: { '@id': abs('/#org') },
             // services are delivered online: nothing is shipped, and nothing comes back once delivered (see /policies)
-            shippingDetails: { '@type': 'OfferShippingDetails', shippingRate: { '@type': 'MonetaryAmount', value: '0', currency: 'SAR' }, shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'SA' } },
+            shippingDetails: {
+              '@type': 'OfferShippingDetails', shippingRate: { '@type': 'MonetaryAmount', value: '0', currency: 'SAR' }, shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'SA' },
+              // working days to deliver the service (handled online, so no transit time); only services with a stated duration
+              ...(DELIVERY_DAYS[p.id] && { deliveryTime: {
+                '@type': 'ShippingDeliveryTime',
+                handlingTime: { '@type': 'QuantitativeValue', minValue: DELIVERY_DAYS[p.id][0], maxValue: DELIVERY_DAYS[p.id][1], unitCode: 'DAY' },
+                transitTime: { '@type': 'QuantitativeValue', minValue: 0, maxValue: 0, unitCode: 'DAY' },
+              } }),
+            },
             hasMerchantReturnPolicy: { '@type': 'MerchantReturnPolicy', applicableCountry: 'SA', returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted', merchantReturnLink: abs('/policies') },
           },
         },
@@ -234,6 +242,11 @@ export function seoFor(path, data = {}) {
   if (path === '/policies') return { ...base, title: t('السياسات والشروط'), description: clip(`سياسة الاستخدام والإلغاء والاسترجاع والخصوصية في ${SITE.name}.`) }
   // private or transactional pages
   return { ...base, title: SITE.name, description: SITE.description, robots: 'noindex,nofollow' }
+}
+
+// How long each service takes, in days [min, max] — only durations the store states on the service page.
+export const DELIVERY_DAYS = {
+  'salla-store-design': [2, 6],
 }
 
 function itemList(list) {
