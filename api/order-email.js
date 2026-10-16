@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   const { orderId, event, test } = req.body || {}
   if (test) {
     // the admin checks the store's notification email from the dashboard
-    if (!(await adminFromRequest(req))) return res.status(403).json({ error: 'غير مسموح' })
+    if (!(await adminFromRequest(req, 'orders'))) return res.status(403).json({ error: 'غير مسموح' })
     try {
       const out = await sendAdminAlert('تجربة إشعار الطلبات', 'هذي رسالة تجربة من لوحة التحكم. إذا وصلتك، إشعارات الطلبات الجديدة المدفوعة توصل على هذا الإيميل.')
       return res.status(200).json(out)
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
   const { data: order } = await admin.from('orders').select('*').eq('id', orderId).single()
   if (!order) return res.status(404).json({ error: 'الطلب غير موجود' })
-  const isAdmin = !!(await adminFromRequest(req))
+  const isAdmin = !!(await adminFromRequest(req, 'orders'))
 
   const allowed = isAdmin ? event === order.status : order.user_id === user.id && event === 'created' && order.payment_method === 'bank' && order.status === 'pending'
   if (!allowed) return res.status(403).json({ error: 'غير مسموح' })

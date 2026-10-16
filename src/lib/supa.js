@@ -53,6 +53,7 @@ const REMOVED = { products: ['waarfe-ai-ad-campaigns-guide'], categories: ['digi
 function check({ data, error }) { if (error) throw new Error(error.message); return data }
 
 let cachedUser = null
+let cachedAccess = null // what the dashboard may open (my_access), set by myAccess()
 async function loadProfile(authUser) {
   if (!authUser) return (cachedUser = null)
   const { data, error } = await sb.from('profiles').select('*').eq('id', authUser.id).maybeSingle()
@@ -74,6 +75,14 @@ function translateAuthError(msg) {
   if (/Error sending|sending (confirmation|recovery|magic)/i.test(msg)) return 'تعذّر إرسال رمز التحقق الحين، حاول بعد شوي أو تواصل معنا على واتساب'
   if (/rate limit|too many|security purposes/i.test(msg)) return 'طلبت رموز كثير، انتظر دقيقة وحاول مرة ثانية'
   return msg
+}
+
+async function staffCall(method, query = '', body) {
+  const { data } = await sb.auth.getSession()
+  const r = await fetch('/api/staff' + query, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + data.session?.access_token }, body: body ? JSON.stringify(body) : undefined })
+  const out = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(out.error || 'تعذّر الاتصال، حاول مرة ثانية')
+  return out
 }
 
 export const supa = {
@@ -156,7 +165,7 @@ export const supa = {
   },
   async getProduct(id) {
     const p = product(check(await sb.from('products').select('*').eq('id', id).maybeSingle()))
-    if (p && cachedUser?.role === 'admin') {
+    if (p && (cachedUser?.role === 'admin' || cachedAccess?.perms?.includes('products'))) {
       const { data } = await sb.from('product_files').select('path').eq('product_id', id).maybeSingle()
       p.fileUrl = data?.path || ''
     }
@@ -268,6 +277,16 @@ export const supa = {
     if (!res.ok) throw new Error(body.error || 'تعذّر التحميل')
     return body.url
   },
+  // ---- the team (staff and permissions) ----
+  async myAccess() {
+    const { data, error } = await sb.rpc('my_access')
+    // before supabase/staff-2026-10.sql runs, the owner still gets everything
+    cachedAccess = !error && data ? data : cachedUser?.role === 'admin' ? { owner: true, role: 'المالك', perms: ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'team'], strong: true } : { owner: false, role: '', perms: [], strong: true }
+    return cachedAccess
+  },
+  async listStaff() { return (await staffCall('GET')).staff },
+  async saveStaff(member) { return staffCall('POST', '', member) },
+  async removeStaff(email) { return staffCall('DELETE', '?email=' + encodeURIComponent(email)) },
   // emails for an order moment (server checks who may send what, and sends each one once)
   async notifyOrder(orderId, event) {
     const { data } = await sb.auth.getSession()

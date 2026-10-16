@@ -40,7 +40,7 @@ Custom-coded store for Raed's services (Salla store design, landing pages, pixel
 - `public/llms.txt` — keep in sync when adding pages.
 
 ## Database (Supabase) — SQL files, run by Raed in the SQL Editor (never by us)
-Order: `schema.sql` → `seed.sql` → `options.sql` → `hardening.sql` → `designer.sql` → `security-2026-10.sql` → `reports.sql` → `login-code-2026-10.sql` → `login-2fa-2026-10.sql`.
+Order: `schema.sql` → `seed.sql` → `options.sql` → `hardening.sql` → `designer.sql` → `security-2026-10.sql` → `reports.sql` → `login-code-2026-10.sql` → `login-2fa-2026-10.sql` → `staff-2026-10.sql`.
 `reports.sql` is confirmed run on production; `security-2026-10.sql` was handed over but not confirmed — ask Raed before relying on it. Re-running `schema.sql` reopens weaker grants — if it is ever re-run, re-run `security-2026-10.sql` after it.
 New DB changes = a new SQL file in `supabase/` that Raed runs; test it first on a local Postgres 16 (`/usr/lib/postgresql/16/bin`) with stubbed `auth.uid()`.
 
@@ -65,3 +65,4 @@ The owner's order copies go to ORDER_NOTIFY_TO, else every admin account's email
 - A full "night route" luxury redesign was built and rejected by Raed on 16 Oct 2026; it lives on branch `luxury` only. The live design is the earlier one (backup tag `backup-2026-10-16-before-luxury`).
 - Security audit 16 Oct 2026: no secrets in git history or client bundles; anon role denied on orders/profiles/coupons/visits/wishlists/product_files and on the RPCs (security-2026-10.sql confirmed applied); headers strict. Open item: react-router 6.x has moderate advisories fixed only in v7 (breaking); the login `next` redirect is validated as a defence.
 - Sign-in is two steps (16 Oct 2026, Raed's request): email + password are checked on the server (`api/login-start.js`), which records the check in `login_checks` and emails a code (generateLink + our SMTP); the browser signs in only with that code (`verifyLoginCode`). The dashboard (`is_admin()`, `adminFromRequest`) accepts only a code session that follows a recorded password within 15 minutes. SQL: `login-code-2026-10.sql` (wiped old passwords) then `login-2fa-2026-10.sql`.
+- Staff & permissions (16 Oct 2026, Raed's request): the owner adds staff by email in لوحة التحكم ← الفريق والصلاحيات (`src/pages/admin/Team.jsx`, `api/staff.js`, table `public.staff`), with ready roles (مدير عام، مصمم، مسؤول الطلبات، مسوّق) or hand-picked areas (`src/lib/perms.js`). Every area is enforced in the database (`has_perm(area)` in RLS and the admin RPCs) and on the server (`adminFromRequest(req, area)`); `is_admin()` stays owner-only (two-step session + role admin). Staff sign in the same two steps. The team page itself is owner-only. SQL: `staff-2026-10.sql`.

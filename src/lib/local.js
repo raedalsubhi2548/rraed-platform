@@ -51,7 +51,19 @@ function sessionUser() {
 }
 const uid = (p) => p + Math.random().toString(36).slice(2, 10)
 function requireUser() { const u = sessionUser(); if (!u) throw new Error('سجّل دخولك أولاً'); return u }
-function requireAdmin() { const u = requireUser(); if (u.role !== 'admin') throw new Error('هذه الصفحة للإدارة فقط'); return u }
+const ALL = ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design']
+function accessOf(u) {
+  if (!u) return { owner: false, role: '', perms: [], strong: true }
+  if (u.role === 'admin') return { owner: true, role: 'المالك', perms: [...ALL, 'team'], strong: true }
+  const st = read('staff', []).find((x) => x.email === u.email.toLowerCase())
+  return { owner: false, role: st?.role || '', perms: st?.perms || [], strong: true }
+}
+// the owner, or a staff member with that area (no area: the owner only)
+function requireAdmin(area) {
+  const u = requireUser(), a = accessOf(u)
+  if (!a.owner && !(area && a.perms.includes(area))) throw new Error('ما عندك صلاحية لهذا القسم')
+  return u
+}
 
 export const local = {
   mode: 'demo',
@@ -72,6 +84,23 @@ export const local = {
     if (!u || read('pending') !== u.id || code.trim() !== DEMO_CODE) throw new Error('الرمز غير صحيح أو انتهت صلاحيته')
     localStorage.removeItem(K('pending')); write('session', u.id); emit(); return publicUser(u)
   },
+  // ---------- the team ----------
+  async myAccess() { await this.ready; return accessOf(sessionUser()) },
+  async listStaff() { requireAdmin(); return read('staff', []) },
+  async saveStaff({ email, name, role, perms }) {
+    const me = requireAdmin()
+    const e = String(email || '').trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(e)) throw new Error('اكتب بريد صحيح')
+    if (e === me.email.toLowerCase()) throw new Error('هذا بريد المالك، عنده كل الصلاحيات')
+    const p = (perms || []).filter((x) => ALL.includes(x))
+    if (!p.length) throw new Error('اختر قسم واحد على الأقل')
+    const list = read('staff', []), i = list.findIndex((x) => x.email === e)
+    const row = { email: e, name: String(name || '').trim(), role: String(role || '').trim(), perms: p, addedAt: list[i]?.addedAt || new Date().toISOString() }
+    if (i >= 0) list[i] = row; else list.push(row)
+    write('staff', list)
+    return { ok: true, invited: false, added: i < 0 }
+  },
+  async removeStaff(email) { requireAdmin(); write('staff', read('staff', []).filter((x) => x.email !== email)) },
   async signUp({ name, email, phone, password }) {
     await this.ready
     const users = read('users', [])
@@ -94,28 +123,28 @@ export const local = {
   },
   async getProduct(id) { await this.ready; return read('products', []).find((p) => p.id === id) || null },
   async saveProduct(p) {
-    requireAdmin()
+    requireAdmin('products')
     const list = read('products', [])
     const i = list.findIndex((x) => x.id === p.id)
     if (i >= 0) list[i] = { ...list[i], ...p }
     else list.push({ createdAt: new Date().toISOString(), active: true, ...p, id: p.id || uid('p_') })
     write('products', list); return p
   },
-  async deleteProduct(id) { requireAdmin(); write('products', read('products', []).filter((p) => p.id !== id)) },
+  async deleteProduct(id) { requireAdmin('products'); write('products', read('products', []).filter((p) => p.id !== id)) },
   async saveCategory(c) {
-    requireAdmin()
+    requireAdmin('categories')
     const list = read('categories', [])
     const i = list.findIndex((x) => x.id === c.id)
     if (i >= 0) list[i] = { ...list[i], ...c }; else list.push({ sort: list.length + 1, icon: 'spark', ...c, id: c.id || uid('c_') })
     write('categories', list)
   },
   async deleteCategory(id) {
-    requireAdmin()
+    requireAdmin('categories')
     if (read('products', []).some((p) => p.categoryId === id)) throw new Error('انقل منتجات هذا التصنيف أولاً ثم احذفه')
     write('categories', read('categories', []).filter((c) => c.id !== id))
   },
   async getSettings() { return read('settings', null) },
-  async saveSettings(settings) { requireAdmin(); write('settings', settings) },
+  async saveSettings(settings) { requireAdmin('design'); write('settings', settings) },
   async rebuildSite() { return { ok: false, reason: 'demo' } },
   async uploadImage(file) {
     return new Promise((res, rej) => {
@@ -156,7 +185,7 @@ export const local = {
     write('visits', all.slice(-5000))
   },
   async adminReport(from, to) {
-    requireAdmin()
+    requireAdmin('reports')
     const F = new Date(from).getTime(), T = new Date(to).getTime(), L = T - F
     const visits = read('visits', []), orders = read('orders', []), users = read('users', [])
     const inR = (t, a, b) => { const x = new Date(t).getTime(); return x >= a && x < b }
@@ -194,9 +223,9 @@ export const local = {
       products: prods, coupons: coup,
     }
   },
-  async allOrders() { requireAdmin(); return read('orders', []) },
+  async allOrders() { requireAdmin('orders'); return read('orders', []) },
   async updateOrderStatus(id, status, note) {
-    requireAdmin()
+    requireAdmin('orders')
     const orders = read('orders', []).map((o) => (o.id === id
       ? { ...o, status, history: [...(o.history || []), { status, at: new Date().toISOString(), note: note || '' }] }
       : o))
@@ -209,20 +238,20 @@ export const local = {
 
   // ---------- customers & coupons ----------
   async listCustomers() {
-    requireAdmin()
+    requireAdmin('customers')
     const orders = read('orders', [])
     return read('users', []).filter((u) => u.role !== 'admin').map((u) => {
       const mine = orders.filter((o) => o.userId === u.id)
       return { ...publicUser(u), orders: mine.length, spent: mine.filter((o) => o.status !== 'cancelled').reduce((s, o) => s + o.total, 0) }
     })
   },
-  async listCoupons() { requireAdmin(); return read('coupons', []) },
+  async listCoupons() { requireAdmin('coupons'); return read('coupons', []) },
   async saveCoupon(c) {
-    requireAdmin()
+    requireAdmin('coupons')
     const list = read('coupons', []).filter((x) => x.code !== c.code)
     list.push({ ...c, code: c.code.toUpperCase() }); write('coupons', list)
   },
-  async deleteCoupon(code) { requireAdmin(); write('coupons', read('coupons', []).filter((c) => c.code !== code)) },
+  async deleteCoupon(code) { requireAdmin('coupons'); write('coupons', read('coupons', []).filter((c) => c.code !== code)) },
   async validateCoupon(code) {
     await this.ready
     const c = read('coupons', []).find((x) => x.code === code.trim().toUpperCase() && x.active)

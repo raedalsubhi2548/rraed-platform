@@ -51,6 +51,7 @@ const Coupons = lazy(() => import('./pages/admin/Coupons.jsx'))
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin.jsx'))
 const Reports = lazy(() => import('./pages/admin/Reports.jsx'))
 const Designer = lazy(() => import('./pages/admin/Designer.jsx'))
+const Team = lazy(() => import('./pages/admin/Team.jsx'))
 const DesignPreview = lazy(() => import('./pages/admin/DesignPreview.jsx'))
 
 function PageViews() { usePageViews(); return null }
@@ -126,6 +127,7 @@ export default function App({ Router, routerProps = {}, initialCatalog }) {
             <Route path="customers" element={<Customers />} />
             <Route path="coupons" element={<Coupons />} />
             <Route path="design" element={<Designer />} />
+            <Route path="team" element={<Team />} />
           </Route>
         </Routes>
         <Toast />

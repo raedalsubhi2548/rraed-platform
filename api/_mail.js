@@ -163,3 +163,28 @@ export async function sendLoginCodeEmail(to, code) {
 </table></td></tr></table></body></html>`
   await t.sendMail({ from: sender(s.name), to, subject: `${code} رمز التحقق لدخول ${s.name}`, html })
 }
+
+// A new team member: what they were given and how to get in (sign-in is the usual password + emailed code).
+const AREA_NAMES = { orders: 'الطلبات', reports: 'التقارير', products: 'المنتجات', categories: 'التصنيفات', customers: 'العملاء', coupons: 'كوبونات الخصم', design: 'مصمم المتجر' }
+export async function sendStaffInviteEmail(to, { name, role, perms, isNew }) {
+  const t = mailer(); if (!t) throw new Error('smtp-not-configured')
+  const s = await loadSeller()
+  const site = siteUrl()
+  const dash = site.replace('://', '://admin.').replace('://admin.www.', '://admin.') + '/admin/login'
+  const areas = perms.map((p) => AREA_NAMES[p]).filter(Boolean).join('، ')
+  const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;background:#f3f6fa;font-family:Tahoma,'Segoe UI',Arial,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f6fa;padding:24px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:18px;overflow:hidden;direction:rtl;text-align:right">
+<tr><td style="background:#1b2b44;padding:26px 28px" align="center"><img src="${s.logo || site + '/logo-white.png'}" width="150" alt="${esc(s.name)}" style="display:block;border:0;height:auto"></td></tr>
+<tr><td style="padding:32px 28px 8px"><h1 style="margin:0 0 10px;font-size:23px;color:#1b2b44">أهلاً ${esc(name || '')} في فريق ${esc(s.name)}</h1>
+<p style="margin:0;font-size:15px;line-height:1.9;color:#3a4352">انضافت لك صلاحية دخول لوحة التحكم${role ? ` بدور <strong>${esc(role)}</strong>` : ''}.</p>
+<p style="margin:12px 0 0;font-size:14px;line-height:1.9;color:#3a4352"><strong>الأقسام المتاحة لك:</strong> ${esc(areas)}</p></td></tr>
+<tr><td style="padding:16px 28px"><ol style="margin:0;padding:0 18px 0 0;font-size:14px;line-height:2;color:#3a4352">
+${isNew ? `<li>أول مرة؟ عيّن كلمة مرورك من <a href="${site}/login?mode=forgot" style="color:#1b2b44">«نسيت كلمة المرور؟»</a> بنفس هذا البريد.</li>` : ''}
+<li>افتح لوحة التحكم واكتب بريدك وكلمة المرور.</li><li>يوصلك رمز تحقق على هذا البريد، اكتبه وتدخل.</li></ol></td></tr>
+<tr><td style="padding:8px 28px 28px" align="center"><a href="${dash}" style="display:inline-block;background:#1b2b44;color:#ffffff;text-decoration:none;font-weight:bold;font-size:15px;padding:13px 30px;border-radius:999px">دخول لوحة التحكم</a></td></tr>
+<tr><td style="padding:18px 28px;background:#f8fafc;border-top:1px solid #e9edf3;font-size:12px;line-height:1.8;color:#6b7686" align="center">إذا ما تعرف عن هذا، تجاهل الرسالة.<br>${esc(s.name)} · ${esc(s.email)}</td></tr>
+</table></td></tr></table></body></html>`
+  await t.sendMail({ from: sender(s.name), to, subject: `انضافت لك صلاحية لوحة تحكم ${s.name}`, html })
+}
