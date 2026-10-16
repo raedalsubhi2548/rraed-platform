@@ -244,10 +244,8 @@ export function seoFor(path, data = {}) {
   return { ...base, title: SITE.name, description: SITE.description, robots: 'noindex,nofollow' }
 }
 
-// How long each service takes, in days [min, max] — only durations the store states on the service page.
-export const DELIVERY_DAYS = {
-  'salla-store-design': [2, 6],
-}
+// How long a service takes, in days [min, max]: every service is delivered in 2 to 6 days (Raed, 16 Oct 2026).
+export const DELIVERY_DAYS = new Proxy({}, { get: () => [2, 6] })
 
 function itemList(list) {
   return {
