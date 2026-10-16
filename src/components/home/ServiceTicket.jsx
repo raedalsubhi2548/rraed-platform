@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Heart, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -5,6 +6,8 @@ import { useApp } from '@/state.jsx'
 import { money, effectivePrice } from '@/lib/format.js'
 import { coverFor } from '@/lib/cover.js'
 import { productPath } from '@/lib/slug.js'
+import { trackAddToCart } from '@/lib/analytics.js'
+import OptionsDialog from '@/components/OptionsDialog.jsx'
 
 /** A white card pinned with a navy pin: straight, equal height, everything on the same lines across a row. */
 export default function ServiceTicket({ p, className }) {
@@ -12,6 +15,9 @@ export default function ServiceTicket({ p, className }) {
   const cat = categories?.find((c) => c.id === p.categoryId)
   const wished = wishlist.includes(p.id)
   const sale = p.salePrice && p.salePrice < p.price
+  // a service with options opens its choices first; one without goes straight to the cart
+  const [choose, setChoose] = useState(false)
+  const add = () => { if (p.options?.length) setChoose(true); else { addToCart(p.id); trackAddToCart(p, 1, effectivePrice(p)) } }
   return (
     <div className={cn('group relative h-full pt-2.5', className)}>
       {/* the pin */}
@@ -42,13 +48,14 @@ export default function ServiceTicket({ p, className }) {
               {sale && <s className="ms-1.5 text-xs text-muted-foreground">{money(p.price)}</s>}
               {p.perUnit && <span className="block text-[11px] text-muted-foreground">{p.perUnit}</span>}
             </p>
-            <button type="button" onClick={() => addToCart(p.id)} aria-label={`أضف ${p.name} للسلة`}
+            <button type="button" onClick={add} aria-haspopup={p.options?.length ? 'dialog' : undefined} aria-label={p.options?.length ? `اختر خيارات ${p.name}` : `أضف ${p.name} للسلة`}
               className="relative z-10 grid size-11 shrink-0 place-items-center rounded-full bg-primary text-on-inverse shadow-[0_8px_16px_-8px_color-mix(in_srgb,var(--p-green-900)_70%,transparent)] transition-[background-color,scale] duration-300 hover:scale-105 hover:bg-primary-hover active:scale-95">
               <Plus className="size-[18px]" />
             </button>
           </div>
         </div>
       </article>
+      {p.options?.length > 0 && <OptionsDialog p={p} open={choose} onOpenChange={setChoose} />}
     </div>
   )
 }

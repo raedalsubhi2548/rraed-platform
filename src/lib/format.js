@@ -40,3 +40,12 @@ export const unitPrice = (p, sel) => effectivePrice(p) + chosenOptions(p, sel).r
 export const missingOptions = (p, sel = []) => (p?.options || []).filter((o) => o.required && !o.values.some((v) => sel.includes(optKey(o, v)))).map((o) => o.name)
 // keeps only keys that still exist on the product (an option may have been removed since it was added to the cart)
 export const cleanSelection = (p, sel = []) => { const ok = new Set((p?.options || []).flatMap((o) => o.values.map((v) => optKey(o, v)))); return [...new Set(sel)].filter((k) => ok.has(k)).sort() }
+
+/** An email shown back on screen without giving it away: r•••d@r•••.com */
+export const maskEmail = (e) => {
+  const [u = '', d = ''] = String(e || '').trim().split('@')
+  if (!d) return '•••'
+  const part = (s) => (s.length <= 2 ? s[0] + '•••' : s[0] + '•••' + s.slice(-1))
+  const dot = d.lastIndexOf('.')
+  return `${part(u)}@${dot > 0 ? d[0] + '•••' + d.slice(dot) : '•••'}`
+}

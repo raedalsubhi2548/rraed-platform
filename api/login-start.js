@@ -34,7 +34,12 @@ export default async function handler(req, res) {
   }
   await anon.auth.signOut().catch(() => {}) // the password session is never handed out
 
-  // 2) remember the correct password for the dashboard gate, then send the code
+  // 2) one code a minute per account (the page waits the same minute before offering «أرسل رمز جديد»)
+  const { count: recentCodes } = await admin.from('login_checks').select('*', { count: 'exact', head: true })
+    .eq('user_id', data.user.id).gte('at', new Date(Date.now() - 55_000).toISOString())
+  if (recentCodes) return res.status(429).json({ error: 'أرسلنا لك رمز قبل أقل من دقيقة، شيّك بريدك أو انتظر شوي' })
+
+  // 3) remember the correct password for the dashboard gate, then send the code
   await admin.from('login_checks').insert({ user_id: data.user.id })
   const { data: link, error: e2 } = await admin.auth.admin.generateLink({ type: 'magiclink', email: mail })
   const code = link?.properties?.email_otp

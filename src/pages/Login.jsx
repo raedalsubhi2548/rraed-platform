@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/kit.jsx'
 import HumanCheck, { TURNSTILE_KEY } from '@/components/HumanCheck.jsx'
 import { ADMIN_HOST } from '@/lib/host.js'
+import { maskEmail } from '@/lib/format.js'
+import { useCountdown, mmss } from '@/lib/useCountdown.js'
 
 const PERKS = [
   { icon: Receipt, t: 'تتبّع كل طلب لحظة بلحظة' },
@@ -29,6 +31,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
   const [captcha, setCaptcha] = useState('') // Turnstile token; each one works once
   const human = useRef(null)
+  const [wait, startWait] = useCountdown() // a new code once a minute
 
   if (authReady && user) return <Navigate to={ADMIN_HOST ? '/admin' : next && !next.startsWith('/admin') ? next : '/account'} replace />
 
@@ -39,21 +42,22 @@ export default function Login() {
     if (needsHuman && !captcha) { setErr('انتظر لين يكتمل «تأكيد إنك إنسان»'); return }
     setBusy(true)
     try {
-      if (mode === 'in') { await api.loginStart(form.email, form.password, captcha); setMode('otp'); setForm((x) => ({ ...x, code: '' })); setInfo(`كلمة المرور صحيحة. أرسلنا رمز التحقق إلى ${form.email.trim()}`) }
+      if (mode === 'in') { await api.loginStart(form.email, form.password, captcha); setMode('otp'); setForm((x) => ({ ...x, code: '' })); setInfo(`كلمة المرور صحيحة. أرسلنا رمز التحقق إلى ${maskEmail(form.email)}`); startWait() }
       else if (mode === 'otp') { const u = await api.verifyLoginCode(form.email, form.code); done(u, `أهلاً ${u.name || ''}`) }
       else if (mode === 'up') {
         const r = await api.signUp(form, captcha)
-        if (r?.needsCode) { setMode('code'); setInfo(`أرسلنا رمز تحقق إلى ${r.email}`) } else done(r, 'تم إنشاء حسابك')
+        if (r?.needsCode) { setMode('code'); setInfo(`أرسلنا رمز تحقق إلى ${maskEmail(r.email)}`); startWait() } else done(r, 'تم إنشاء حسابك')
       }
       else if (mode === 'code') { const u = await api.verifySignup(form.email, form.code); done(u, 'تم تفعيل حسابك') }
-      else if (mode === 'forgot') { await api.sendResetCode(form.email, captcha); setMode('reset'); setInfo(`أرسلنا رمز التحقق إلى ${form.email.trim()}`) }
+      else if (mode === 'forgot') { await api.sendResetCode(form.email, captcha); setMode('reset'); setInfo(`أرسلنا رمز التحقق إلى ${maskEmail(form.email)}`); startWait() }
       else if (mode === 'reset') { const u = await api.resetWithCode(form.email, form.code, form.password); done(u, 'تم تغيير كلمة المرور') }
     } catch (e2) { setErr(e2.message) } finally { setBusy(false); if (needsHuman) human.current?.reset() }
   }
   const resend = async () => {
     setErr('')
+    if (wait > 0) return
     if (TURNSTILE_KEY && !captcha) { setErr('انتظر لين يكتمل «تأكيد إنك إنسان» تحت'); return }
-    try { mode === 'otp' ? await api.loginStart(form.email, form.password, captcha) : mode === 'code' ? await api.resendSignup(form.email, captcha) : await api.sendResetCode(form.email, captcha); setInfo('أرسلنا رمز جديد، شيّك بريدك (والرسائل غير المهمة)') } catch (e2) { setErr(e2.message) } finally { if (TURNSTILE_KEY) human.current?.reset() }
+    try { mode === 'otp' ? await api.loginStart(form.email, form.password, captcha) : mode === 'code' ? await api.resendSignup(form.email, captcha) : await api.sendResetCode(form.email, captcha); setInfo('أرسلنا رمز جديد، شيّك بريدك (والرسائل غير المهمة)'); startWait() } catch (e2) { setErr(e2.message) } finally { if (TURNSTILE_KEY) human.current?.reset() }
   }
   const f = (k) => ({ value: form[k], onChange: (e) => setForm({ ...form, [k]: e.target.value }) })
   const swap = (m) => { setMode(m); setErr(''); setInfo(''); setForm((x) => ({ ...x, code: '' })) }
@@ -105,7 +109,7 @@ export default function Login() {
           <HumanCheck key={mode} ref={human} onToken={setCaptcha} />
           {err && <p className="rounded-md bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">{err}</p>}
           <Button size="lg" disabled={busy} className="mt-2 w-full">{busy ? 'لحظة…' : CTA[mode]}</Button>
-          {codeStep && <p className="text-center text-sm text-muted-foreground">ما وصلك؟ <button type="button" onClick={resend} className="font-semibold text-primary underline underline-offset-4">أرسل رمز جديد</button></p>}
+          {codeStep && <p className="text-center text-sm text-muted-foreground">ما وصلك؟ {wait > 0 ? <span className="tabular">تقدر تطلب رمز جديد بعد {mmss(wait)}</span> : <button type="button" onClick={resend} className="font-semibold text-primary underline underline-offset-4">أرسل رمز جديد</button>}</p>}
           {(mode === 'forgot' || codeStep) && <button type="button" onClick={() => swap('in')} className="text-center text-sm text-muted-foreground hover:text-primary">رجوع لتسجيل الدخول</button>}
         </form>
 

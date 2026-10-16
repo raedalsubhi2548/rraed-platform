@@ -5,6 +5,8 @@ import { api } from '@/lib/api.js'
 import { useApp } from '@/state.jsx'
 import HumanCheck, { TURNSTILE_KEY } from '@/components/HumanCheck.jsx'
 import { STORE_ORIGIN } from '@/lib/host.js'
+import { maskEmail } from '@/lib/format.js'
+import { useCountdown, mmss } from '@/lib/useCountdown.js'
 
 /** The owner's own sign-in for the dashboard — no store header, no store look. */
 export default function AdminLogin() {
@@ -15,6 +17,7 @@ export default function AdminLogin() {
   const [busy, setBusy] = useState(false)
   const [captcha, setCaptcha] = useState('')
   const human = useRef(null)
+  const [wait, startWait] = useCountdown() // a new code once a minute
 
   useEffect(() => {
     document.title = 'تسجيل الدخول | لوحة تحكم منصة رائد'
@@ -28,7 +31,7 @@ export default function AdminLogin() {
   const start = async () => {
     if (TURNSTILE_KEY && !captcha) { setErr('انتظر لين يكتمل التحقق'); return }
     setBusy(true)
-    try { await api.loginStart(form.email, form.password, captcha); setSent(true); setForm((x) => ({ ...x, code: '' })) } catch (e2) { setErr(e2.message) } finally { setBusy(false); human.current?.reset() }
+    try { await api.loginStart(form.email, form.password, captcha); setSent(true); setForm((x) => ({ ...x, code: '' })); startWait() } catch (e2) { setErr(e2.message) } finally { setBusy(false); human.current?.reset() }
   }
   const submit = async (e) => {
     e.preventDefault(); setErr('')
@@ -52,7 +55,7 @@ export default function AdminLogin() {
         <form onSubmit={submit} className="grid gap-4 rounded-[22px] bg-white/[0.04] p-6 shadow-[0_40px_80px_-40px_rgb(0_0_0/0.8)] ring-1 ring-white/10 backdrop-blur-xl sm:p-8">
           <div>
             <h1 className="text-2xl font-bold">دخول المالك</h1>
-            <p className="mt-1 text-sm text-white/55">{sent ? <>كلمة المرور صحيحة. أرسلنا رمز التحقق إلى <span dir="ltr">{form.email.trim()}</span></> : 'أدر متجرك وطلباتك ومنتجاتك من مكان واحد.'}</p>
+            <p className="mt-1 text-sm text-white/55">{sent ? <>كلمة المرور صحيحة. أرسلنا رمز التحقق إلى <span dir="ltr">{maskEmail(form.email)}</span></> : 'أدر متجرك وطلباتك ومنتجاتك من مكان واحد.'}</p>
           </div>
 
           {!sent && <>
@@ -80,7 +83,7 @@ export default function AdminLogin() {
           </button>
           {sent ? <div className="flex justify-between text-sm text-white/55">
             <button type="button" onClick={() => { setSent(false); setErr('') }} className="underline-offset-4 hover:text-white hover:underline">رجوع</button>
-            <button type="button" disabled={busy} onClick={() => { setErr(''); start() }} className="underline-offset-4 hover:text-white hover:underline">أرسل رمز جديد</button>
+            {wait > 0 ? <span className="tabular">رمز جديد بعد {mmss(wait)}</span> : <button type="button" disabled={busy} onClick={() => { setErr(''); start() }} className="underline-offset-4 hover:text-white hover:underline">أرسل رمز جديد</button>}
           </div>
           : <a href={`${STORE_ORIGIN}/login?mode=forgot`} className="justify-self-center text-sm text-white/55 underline-offset-4 hover:text-white hover:underline">نسيت كلمة المرور؟</a>}
         </form>
