@@ -298,9 +298,11 @@ export const local = {
   async listCustomers() {
     requireAdmin('customers')
     const orders = read('orders', [])
-    return read('users', []).filter((u) => u.role !== 'admin').map((u) => {
-      const mine = orders.filter((o) => o.userId === u.id)
-      return { ...publicUser(u), orders: mine.length, spent: mine.filter((o) => o.status !== 'cancelled').reduce((s, o) => s + o.total, 0) }
+    const staff = read('staff', [])
+    return read('users', []).map((u) => {
+      const mine = orders.filter((o) => o.userId === u.id), st = staff.find((x) => x.email === u.email.toLowerCase())
+      return { ...publicUser(u), orders: mine.length, spent: mine.filter((o) => o.status !== 'cancelled').reduce((s, o) => s + o.total, 0),
+        kind: u.role === 'admin' ? 'owner' : st ? 'staff' : 'customer', staffRole: st?.role || '' }
     })
   },
   async addCustomer({ name, email, phone }) {

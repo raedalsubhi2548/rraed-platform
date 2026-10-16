@@ -12,6 +12,8 @@ import { AdminHead, IconBtn, SearchBox, TableCard, Table, Th, Td, useConfirm } f
 import NewCustomer from '@/components/admin/NewCustomer.jsx'
 
 const SORTS = [['recent', 'الأحدث'], ['spent', 'الأعلى شراءً'], ['orders', 'الأكثر طلبات']]
+const kindLabel = (c) => (c.kind === 'owner' ? 'المالك' : c.kind === 'staff' ? c.staffRole || 'الفريق' : '')
+const Tag = ({ c }) => (kindLabel(c) ? <span className="ms-2 inline-flex rounded-full bg-sunken px-2 py-0.5 align-middle text-[11px] font-bold text-primary ring-1 ring-border">{kindLabel(c)}</span> : null)
 const wa = (p) => `https://wa.me/${p.replace(/\D/g, '').replace(/^0/, '966')}`
 
 export default function Customers() {
@@ -35,10 +37,11 @@ export default function Customers() {
     return [...l].sort((a, b) => sort === 'spent' ? b.spent - a.spent : sort === 'orders' ? b.orders - a.orders : new Date(b.createdAt) - new Date(a.createdAt))
   }, [list, q, sort])
   const buyers = (list || []).filter((c) => c.orders > 0).length
+  const canDelete = (c) => owner && (!c.kind || c.kind === 'customer')
 
   return (
     <>
-      <AdminHead title="العملاء" lead={list ? `${list.length} عميل مسجّل · ${buyers} اشتروا` : undefined} action={<Button size="sm" onClick={() => setAdding(true)}><UserPlus className="size-4" />عميل جديد</Button>} />
+      <AdminHead title="العملاء" lead={list ? `${list.length} حساب · ${buyers} اشتروا` : undefined} action={<Button size="sm" onClick={() => setAdding(true)}><UserPlus className="size-4" />عميل جديد</Button>} />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <SearchBox value={q} onChange={setQ} placeholder="الاسم، البريد، أو الجوال" className="w-full max-w-md" />
         <div className="flex rounded-full bg-sunken p-1" role="tablist" aria-label="الترتيب">
@@ -53,9 +56,9 @@ export default function Customers() {
             {shown.map((c) => (
               <li key={c.id} className="flex items-center gap-3 rounded-lg bg-surface p-4 shadow-hairline ring-1 ring-border">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-sunken font-display font-semibold text-primary">{(c.name || c.email || '؟').charAt(0)}</span>
-                <div className="min-w-0 flex-1"><p className="truncate font-semibold">{c.name}</p><p className="tabular text-xs text-muted-foreground">{c.orders} طلب · {money(c.spent)}</p></div>
+                <div className="min-w-0 flex-1"><p className="truncate font-semibold">{c.name || c.email}<Tag c={c} /></p><p className="tabular text-xs text-muted-foreground">{c.orders} طلب · {money(c.spent)}</p></div>
                 {c.phone && <a href={wa(c.phone)} target="_blank" rel="noreferrer" className="grid size-10 place-items-center rounded-full bg-primary text-accent" aria-label={`واتساب ${c.name}`}><MessageCircle className="size-4" /></a>}
-                {owner && <IconBtn tone="danger" onClick={() => remove(c)} aria-label={`حذف ${c.name}`}><Trash2 className="size-4" /></IconBtn>}
+                {canDelete(c) && <IconBtn tone="danger" onClick={() => remove(c)} aria-label={`حذف ${c.name}`}><Trash2 className="size-4" /></IconBtn>}
               </li>
             ))}
           </ul>
@@ -67,14 +70,14 @@ export default function Customers() {
                   <Td>
                     <div className="flex items-center gap-3">
                       <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sunken font-display text-sm font-semibold text-primary">{(c.name || c.email || '؟').charAt(0)}</span>
-                      <div className="min-w-0"><p className="font-semibold">{c.name}</p><p className="text-xs text-muted-foreground" dir="ltr">{c.email}</p></div>
+                      <div className="min-w-0"><p className="font-semibold">{c.name || c.email}<Tag c={c} /></p><p className="text-xs text-muted-foreground" dir="ltr">{c.email}</p></div>
                     </div>
                   </Td>
                   <Td>{c.phone ? <a className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline" href={wa(c.phone)} target="_blank" rel="noreferrer"><MessageCircle className="size-4" /><span dir="ltr">{c.phone}</span></a> : <span className="text-muted-foreground">—</span>}</Td>
                   <Td className="tabular">{c.orders}</Td>
                   <Td className="tabular font-semibold text-primary">{money(c.spent)}</Td>
                   <Td className="whitespace-nowrap text-muted-foreground">{date(c.createdAt)}</Td>
-                  {owner && <Td><IconBtn tone="danger" onClick={() => remove(c)} aria-label={`حذف ${c.name}`}><Trash2 className="size-4" /></IconBtn></Td>}
+                  {owner && <Td>{canDelete(c) && <IconBtn tone="danger" onClick={() => remove(c)} aria-label={`حذف ${c.name}`}><Trash2 className="size-4" /></IconBtn>}</Td>}
                 </tr>
               ))}</tbody>
             </Table>

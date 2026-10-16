@@ -117,7 +117,7 @@ export default function Overview() {
         <Kpi icon={Wallet} label="إجمالي المبيعات" value={money(revenue)} delta={delta} tone="bg-primary text-accent" />
         <Kpi icon={Hourglass} label="تحتاج تنفيذ" value={num(open.length)} to="/admin/orders?status=paid" tone="bg-accent/30 text-accent-text" />
         <Kpi icon={CreditCard} label="بانتظار الدفع" value={num(awaiting.length)} to="/admin/orders?status=pending" />
-        <Kpi icon={Users} label="العملاء" value={num(customers.length)} to="/admin/customers" />
+        <Kpi icon={Users} label="العملاء" value={num(customers.filter((c) => !c.kind || c.kind === 'customer').length)} to="/admin/customers" />
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
