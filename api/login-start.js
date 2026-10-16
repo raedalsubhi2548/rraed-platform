@@ -40,7 +40,8 @@ export default async function handler(req, res) {
   if (recentCodes) return res.status(429).json({ error: 'أرسلنا لك رمز قبل أقل من دقيقة، شيّك بريدك أو انتظر شوي' })
 
   // 3) remember the correct password for the dashboard gate, then send the code
-  await admin.from('login_checks').insert({ user_id: data.user.id })
+  const { error: e1 } = await admin.from('login_checks').insert({ user_id: data.user.id })
+  if (e1) { console.error('login_checks insert', e1.message); return res.status(500).json({ error: 'تعذّر تسجيل الدخول الحين، حاول بعد شوي' }) }
   const { data: link, error: e2 } = await admin.auth.admin.generateLink({ type: 'magiclink', email: mail })
   const code = link?.properties?.email_otp
   if (e2 || !code) return res.status(500).json({ error: 'تعذّر تجهيز رمز التحقق، حاول بعد شوي' })
