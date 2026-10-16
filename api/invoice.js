@@ -1,5 +1,5 @@
 // GET ?order=<id>  →  the order's PDF invoice (owner or admin, paid orders only).
-import { admin, userFromRequest } from './_shared.js'
+import { admin, userFromRequest, adminFromRequest } from './_shared.js'
 import { invoicePdf } from './_invoice.js'
 import { loadSeller } from './_mail.js'
 
@@ -8,10 +8,7 @@ export default async function handler(req, res) {
   if (!user) return res.status(401).json({ error: 'سجّل دخولك أولاً' })
   const { data: order } = await admin.from('orders').select('*').eq('id', String(req.query.order || '')).single()
   if (!order) return res.status(404).json({ error: 'الطلب غير موجود' })
-  if (order.user_id !== user.id) {
-    const { data: me } = await admin.from('profiles').select('role').eq('id', user.id).single()
-    if (me?.role !== 'admin') return res.status(404).json({ error: 'الطلب غير موجود' })
-  }
+  if (order.user_id !== user.id && !(await adminFromRequest(req))) return res.status(404).json({ error: 'الطلب غير موجود' })
   if (['pending', 'cancelled'].includes(order.status)) return res.status(402).json({ error: 'الفاتورة تصدر بعد تأكيد الدفع' })
   const pdf = await invoicePdf(order, await loadSeller())
   res.setHeader('Content-Type', 'application/pdf')

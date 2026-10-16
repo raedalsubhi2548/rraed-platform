@@ -16,6 +16,18 @@ export async function userFromRequest(req) {
   return data?.user || null
 }
 
+// How the session signed in (the JWT's amr claim; the token itself was just verified by getUser).
+const signInMethods = (req) => {
+  try { return (JSON.parse(Buffer.from((req.headers.authorization || '').split('.')[1] || '', 'base64url').toString()).amr || []).map((a) => a.method) } catch { return [] }
+}
+/** The signed-in owner, only when the session came from an email code (never from a password). */
+export async function adminFromRequest(req) {
+  const user = await userFromRequest(req)
+  if (!user || signInMethods(req).includes('password')) return null
+  const { data: me } = await admin.from('profiles').select('role').eq('id', user.id).single()
+  return me?.role === 'admin' ? user : null
+}
+
 // Asks Tap for the charge (never trusts the redirect) and marks the order paid if it matches.
 export async function confirmCharge(chargeId, browser = {}) {
   const r = await fetch(`${TAP}/charges/${encodeURIComponent(chargeId)}`, { headers: tapHeaders() })

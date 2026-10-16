@@ -15,13 +15,9 @@ function write(key, value) {
   try { localStorage.setItem(K(key), JSON.stringify(value)) } catch { /* storage full or blocked */ }
 }
 
-async function hash(text) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('raed::' + text))
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
 // demo-only login, compiled out of the production bundle
-export const DEMO_ADMIN = import.meta.env.DEV ? { email: 'admin@rraed.com', password: 'raed2026' } : null
+export const DEMO_ADMIN = import.meta.env.DEV ? { email: 'admin@rraed.com' } : null
+export const DEMO_CODE = '000000'
 
 async function ensureSeed() {
   if (read('seed') === SEED_VERSION) return
@@ -33,8 +29,7 @@ async function ensureSeed() {
   const users = read('users', [])
   if (DEMO_ADMIN && !users.some((u) => u.email === DEMO_ADMIN.email)) {
     users.push({
-      id: 'u_admin', name: 'رائد', email: DEMO_ADMIN.email, phone: '', role: 'admin',
-      pass: await hash(DEMO_ADMIN.password), createdAt: now,
+      id: 'u_admin', name: 'رائد', email: DEMO_ADMIN.email, phone: '', role: 'admin', createdAt: now,
     })
   }
   write('users', users)
@@ -59,18 +54,19 @@ export const local = {
   // ---------- auth ----------
   async currentUser() { await this.ready; return sessionUser() },
   onAuth(fn) { listeners.add(fn); return () => listeners.delete(fn) },
-  async signIn(email, password) {
-    await this.ready
-    const u = read('users', []).find((x) => x.email.toLowerCase() === email.trim().toLowerCase())
-    if (!u || u.pass !== (await hash(password))) throw new Error('البريد أو كلمة المرور غير صحيحة')
-    write('session', u.id); emit(); return publicUser(u)
-  },
-  async signUp({ name, email, phone, password }) {
+  // demo mode: no email is sent; the code is always DEMO_CODE (shown on the login page in development only)
+  async sendLoginCode(email, { create = false, name, phone } = {}) {
     await this.ready
     const users = read('users', [])
-    if (users.some((x) => x.email.toLowerCase() === email.trim().toLowerCase())) throw new Error('هذا البريد مسجّل مسبقاً، سجّل دخولك بدلاً من ذلك')
-    const u = { id: uid('u_'), name, email: email.trim(), phone, role: 'customer', pass: await hash(password), createdAt: new Date().toISOString() }
-    users.push(u); write('users', users); write('session', u.id); emit(); return publicUser(u)
+    const found = users.find((x) => x.email.toLowerCase() === email.trim().toLowerCase())
+    if (!found && !create) throw new Error('ما عندنا حساب بهذا البريد، اختر «حساب جديد» وسجّل')
+    if (!found) { users.push({ id: uid('u_'), name, email: email.trim(), phone, role: 'customer', createdAt: new Date().toISOString() }); write('users', users) }
+  },
+  async verifyLoginCode(email, code) {
+    await this.ready
+    const u = read('users', []).find((x) => x.email.toLowerCase() === email.trim().toLowerCase())
+    if (!u || code.trim() !== DEMO_CODE) throw new Error('الرمز غير صحيح أو انتهت صلاحيته')
+    write('session', u.id); emit(); return publicUser(u)
   },
   async signOut() { localStorage.removeItem(K('session')); emit() },
   async updateProfile(patch) {
@@ -229,10 +225,6 @@ export const local = {
   async notifyOrder() {},
   async testOrderNotice() { return { sent: false, reason: 'demo' } },
   async downloadInvoice() { throw new Error('الفاتورة متاحة في المتجر الحقيقي فقط') },
-  async verifySignup() { throw new Error('غير متاح في وضع العرض') },
-  async resendSignup() {},
-  async sendResetCode() { throw new Error('غير متاح في وضع العرض') },
-  async resetWithCode() { throw new Error('غير متاح في وضع العرض') },
   async downloadUrl(orderId, productId) {
     const o = await this.getOrder(orderId)
     if (!o || ['pending', 'cancelled'].includes(o.status)) throw new Error('يتاح التحميل بعد تأكيد الدفع')

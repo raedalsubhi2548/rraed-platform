@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { ShieldCheck, Receipt, Heart } from 'lucide-react'
 import { api, isDemo } from '@/lib/api.js'
-import { DEMO_ADMIN } from '@/lib/local.js'
+import { DEMO_ADMIN, DEMO_CODE } from '@/lib/local.js'
 import { useApp } from '@/state.jsx'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -22,8 +22,10 @@ export default function Login() {
   // only same-site paths (blocks //evil.com and /\\evil.com open redirects)
   const rawNext = params.get('next') || ''
   const next = /^\/(?![\/\\])[^\\\s]*$/.test(rawNext) ? rawNext : '' // a same-site path only: no //, no backslash or space anywhere
-  const [mode, setMode] = useState(['up', 'forgot'].includes(params.get('mode')) ? params.get('mode') : 'in') // in · up · code (confirm sign-up) · forgot · reset
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', code: '' })
+  // every sign-in is an email code: in (existing account) · up (new account) · code (type the code)
+  const [mode, setMode] = useState(params.get('mode') === 'up' ? 'up' : 'in')
+  const [from, setFrom] = useState('in') // which tab asked for the code (a resend repeats it)
+  const [form, setForm] = useState({ name: '', email: '', phone: '', code: '' })
   const [info, setInfo] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
@@ -35,31 +37,28 @@ export default function Login() {
   const done = (u, msg) => { notify(msg); applyUser(u) } // the <Navigate> above takes over once the user is set
   const submit = async (e) => {
     e.preventDefault(); setErr('')
-    const needsHuman = TURNSTILE_KEY && (mode === 'in' || mode === 'up' || mode === 'forgot')
+    const needsHuman = TURNSTILE_KEY && (mode === 'in' || mode === 'up')
     if (needsHuman && !captcha) { setErr('انتظر لين يكتمل «تأكيد إنك إنسان»'); return }
     setBusy(true)
     try {
-      if (mode === 'in') { const u = await api.signIn(form.email, form.password, captcha); done(u, `أهلاً ${u.name || ''}`) }
-      else if (mode === 'up') {
-        const r = await api.signUp(form, captcha)
-        if (r?.needsCode) { setMode('code'); setInfo(`أرسلنا رمز تحقق إلى ${r.email}`) } else done(r, 'تم إنشاء حسابك')
+      if (mode === 'in' || mode === 'up') {
+        await api.sendLoginCode(form.email, mode === 'up' ? { create: true, name: form.name, phone: form.phone } : {}, captcha)
+        setFrom(mode); setMode('code'); setForm((x) => ({ ...x, code: '' })); setInfo(`أرسلنا رمز الدخول إلى ${form.email.trim()}، شيّك بريدك (والرسائل غير المهمة)`)
       }
-      else if (mode === 'code') { const u = await api.verifySignup(form.email, form.code); done(u, 'تم تفعيل حسابك') }
-      else if (mode === 'forgot') { await api.sendResetCode(form.email, captcha); setMode('reset'); setInfo(`أرسلنا رمز التحقق إلى ${form.email.trim()}`) }
-      else if (mode === 'reset') { const u = await api.resetWithCode(form.email, form.code, form.password); done(u, 'تم تغيير كلمة المرور') }
+      else if (mode === 'code') { const u = await api.verifyLoginCode(form.email, form.code); done(u, from === 'up' ? 'تم إنشاء حسابك' : `أهلاً ${u.name || ''}`) }
     } catch (e2) { setErr(e2.message) } finally { setBusy(false); if (needsHuman) human.current?.reset() }
   }
   const resend = async () => {
     setErr('')
     if (TURNSTILE_KEY && !captcha) { setErr('انتظر لين يكتمل «تأكيد إنك إنسان» تحت'); return }
-    try { mode === 'code' ? await api.resendSignup(form.email, captcha) : await api.sendResetCode(form.email, captcha); setInfo('أرسلنا رمز جديد، شيّك بريدك (والرسائل غير المهمة)') } catch (e2) { setErr(e2.message) } finally { if (TURNSTILE_KEY) human.current?.reset() }
+    try { await api.sendLoginCode(form.email, from === 'up' ? { create: true, name: form.name, phone: form.phone } : {}, captcha); setInfo('أرسلنا رمز جديد، شيّك بريدك (والرسائل غير المهمة)') } catch (e2) { setErr(e2.message) } finally { if (TURNSTILE_KEY) human.current?.reset() }
   }
   const f = (k) => ({ value: form[k], onChange: (e) => setForm({ ...form, [k]: e.target.value }) })
   const swap = (m) => { setMode(m); setErr(''); setInfo(''); setForm((x) => ({ ...x, code: '' })) }
-  const codeStep = mode === 'code' || mode === 'reset'
-  const TITLE = { in: 'تسجيل الدخول', up: 'حساب جديد', code: 'فعّل حسابك', forgot: 'نسيت كلمة المرور', reset: 'كلمة مرور جديدة' }
-  const LEAD = { in: 'تابع طلباتك وأمنياتك من مكان واحد.', up: 'سجّل مرة وحدة، وتابع كل طلباتك من حسابك.', code: 'اكتب الرمز اللي وصلك على بريدك.', forgot: 'اكتب بريدك ونرسل لك رمز تحقق.', reset: 'اكتب الرمز وكلمة المرور الجديدة.' }
-  const CTA = { in: 'دخول', up: 'أنشئ حسابي', code: 'فعّل الحساب', forgot: 'أرسل الرمز', reset: 'احفظ كلمة المرور' }
+  const codeStep = mode === 'code'
+  const TITLE = { in: 'تسجيل الدخول', up: 'حساب جديد', code: 'رمز الدخول' }
+  const LEAD = { in: 'اكتب بريدك ونرسل لك رمز دخول، بدون كلمة مرور.', up: 'سجّل مرة وحدة، وتابع كل طلباتك من حسابك.', code: 'اكتب الرمز اللي وصلك على بريدك.' }
+  const CTA = { in: 'أرسل رمز الدخول', up: 'أرسل رمز التفعيل', code: 'دخول' }
 
   return (
     <div className="container-w grid items-stretch gap-8 py-10 sm:py-16 lg:grid-cols-[1fr_480px]">
@@ -90,22 +89,18 @@ export default function Login() {
         <form onSubmit={submit} className="mt-6 grid gap-4">
           {info && <p className="rounded-md bg-sunken px-4 py-3 text-sm text-primary" role="status">{info}</p>}
           {mode === 'up' && <Field label="الاسم"><Input required {...f('name')} autoComplete="name" /></Field>}
-          {mode !== 'code' && mode !== 'reset' && <Field label="البريد الإلكتروني"><Input type="email" required {...f('email')} dir="ltr" autoComplete="email" /></Field>}
+          {!codeStep && <Field label="البريد الإلكتروني"><Input type="email" required {...f('email')} dir="ltr" autoComplete="email" /></Field>}
           {mode === 'up' && <Field label="رقم الجوال"><Input required {...f('phone')} dir="ltr" inputMode="tel" placeholder="05xxxxxxxx" autoComplete="tel" /></Field>}
           {codeStep && (
             <Field label="رمز التحقق">
               <Input required {...f('code')} onChange={(e) => setForm({ ...form, code: e.target.value.replace(/\D/g, '').slice(0, 8) })} dir="ltr" inputMode="numeric" autoComplete="one-time-code" placeholder="••••••" className="text-center text-2xl tracking-[0.5em]" minLength={6} maxLength={8} autoFocus />
             </Field>
           )}
-          {(mode === 'in' || mode === 'up' || mode === 'reset') && (
-            <Field label={mode === 'reset' ? 'كلمة المرور الجديدة' : 'كلمة المرور'} hint={mode !== 'in' ? '6 أحرف على الأقل' : undefined}><Input type="password" required minLength={6} {...f('password')} dir="ltr" autoComplete={mode === 'in' ? 'current-password' : 'new-password'} /></Field>
-          )}
-          {mode === 'in' && <button type="button" onClick={() => swap('forgot')} className="-mt-2 justify-self-start text-sm font-semibold text-primary underline-offset-4 hover:underline">نسيت كلمة المرور؟</button>}
           <HumanCheck key={mode} ref={human} onToken={setCaptcha} />
           {err && <p className="rounded-md bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">{err}</p>}
           <Button size="lg" disabled={busy} className="mt-2 w-full">{busy ? 'لحظة…' : CTA[mode]}</Button>
           {codeStep && <p className="text-center text-sm text-muted-foreground">ما وصلك؟ <button type="button" onClick={resend} className="font-semibold text-primary underline underline-offset-4">أرسل رمز جديد</button></p>}
-          {(mode === 'forgot' || codeStep) && <button type="button" onClick={() => swap('in')} className="text-center text-sm text-muted-foreground hover:text-primary">رجوع لتسجيل الدخول</button>}
+          {codeStep && <button type="button" onClick={() => swap(from)} className="text-center text-sm text-muted-foreground hover:text-primary">غيّر البريد</button>}
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
@@ -115,9 +110,9 @@ export default function Login() {
         {isDemo && import.meta.env.DEV && DEMO_ADMIN && (
           <div className="mt-6 rounded-md border-2 border-dashed border-accent bg-accent/10 p-4 text-sm leading-7">
             <strong>وضع العرض</strong> — البيانات محفوظة في متصفحك فقط. دخول الإدارة:{' '}
-            <button type="button" className="font-bold text-primary underline underline-offset-4" onClick={() => { setMode('in'); setForm({ ...form, email: DEMO_ADMIN.email, password: DEMO_ADMIN.password }) }}>
+            <button type="button" className="font-bold text-primary underline underline-offset-4" onClick={() => { setMode('in'); setForm({ ...form, email: DEMO_ADMIN.email }) }}>
               <span dir="ltr">{DEMO_ADMIN.email}</span>
-            </button>
+            </button> · الرمز في وضع العرض: <b dir="ltr">{DEMO_CODE}</b>
           </div>
         )}
       </div>

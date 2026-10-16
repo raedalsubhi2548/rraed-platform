@@ -67,6 +67,7 @@ async function loadProfile(authUser) {
 }
 
 function translateAuthError(msg) {
+  if (/Signups not allowed|otp_disabled|User not found/i.test(msg)) return 'ما عندنا حساب بهذا البريد، اختر «حساب جديد» وسجّل'
   if (/Invalid login/i.test(msg)) return 'البريد أو كلمة المرور غير صحيحة'
   if (/already registered/i.test(msg)) return 'هذا البريد مسجّل مسبقاً، سجّل دخولك بدلاً من ذلك'
   if (/Email not confirmed/i.test(msg)) return 'فعّل بريدك من الرسالة اللي وصلتك ثم سجّل دخولك'
@@ -98,41 +99,21 @@ export const supa = {
     })
     return () => { alive = false; data.subscription.unsubscribe() }
   },
-  async signIn(email, password, captchaToken) {
-    const { data, error } = await sb.auth.signInWithPassword({ email: email.trim(), password, options: captchaToken ? { captchaToken } : undefined })
-    if (error) throw new Error(translateAuthError(error.message))
-    return loadProfile(data.user)
-  },
-  async signUp({ name, email, phone, password }, captchaToken) {
-    const { data, error } = await sb.auth.signUp({
-      email: email.trim(), password, options: { data: { name, phone }, emailRedirectTo: location.origin + '/account', ...(captchaToken ? { captchaToken } : {}) },
+  // Every sign-in is an email code: no passwords anywhere (supabase/login-code-2026-10.sql removes the old ones).
+  // create: a new account (name and phone ride along to the profile); otherwise only an existing account gets a code.
+  async sendLoginCode(email, { create = false, name, phone } = {}, captchaToken) {
+    const { error } = await sb.auth.signInWithOtp({
+      email: email.trim(),
+      options: { shouldCreateUser: create, ...(create ? { data: { name, phone } } : {}), ...(captchaToken ? { captchaToken } : {}) },
     })
     if (error) throw new Error(translateAuthError(error.message))
-    // an already-registered email comes back with no identities and no email is sent (Supabase hides it on purpose)
-    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) throw new Error('هذا البريد مسجّل مسبقاً، سجّل دخولك أو استخدم «نسيت كلمة المرور؟»')
-    // email confirmation on: a code was emailed; the page asks for it
-    if (!data.session) return { needsCode: true, email: email.trim() }
-    return loadProfile(data.user)
   },
-  async verifySignup(email, code) {
-    const { data, error } = await sb.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'signup' })
-    if (error) throw new Error('الرمز غير صحيح أو انتهت صلاحيته')
-    return loadProfile(data.user)
-  },
-  async resendSignup(email, captchaToken) {
-    const { error } = await sb.auth.resend({ type: 'signup', email: email.trim(), options: captchaToken ? { captchaToken } : undefined })
-    if (error) throw new Error(translateAuthError(error.message))
-  },
-  async sendResetCode(email, captchaToken) {
-    const { error } = await sb.auth.resetPasswordForEmail(email.trim(), captchaToken ? { captchaToken } : undefined)
-    if (error) throw new Error(translateAuthError(error.message))
-  },
-  async resetWithCode(email, code, password) {
-    const { error } = await sb.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'recovery' })
-    if (error) throw new Error('الرمز غير صحيح أو انتهت صلاحيته')
-    const { data, error: e2 } = await sb.auth.updateUser({ password })
-    if (e2) throw new Error(translateAuthError(e2.message))
-    return loadProfile(data.user)
+  async verifyLoginCode(email, code) {
+    // a brand-new account's first code is a sign-up confirmation; every later one is an email login code
+    let r = await sb.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'email' })
+    if (r.error) r = await sb.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'signup' })
+    if (r.error) throw new Error('الرمز غير صحيح أو انتهت صلاحيته')
+    return loadProfile(r.data.user)
   },
   async signOut() { await sb.auth.signOut() },
   async updateProfile(patch) {

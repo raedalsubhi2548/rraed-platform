@@ -1,15 +1,12 @@
 // POST (owner only) → rebuilds the site through the Vercel deploy hook, so the pre-rendered pages, link previews and
 // search engines pick up a new design from the store designer. The hook URL is a secret: VERCEL_DEPLOY_HOOK.
-import { admin, userFromRequest } from './_shared.js'
+import { adminFromRequest } from './_shared.js'
 
 let last = 0
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false })
-  const user = await userFromRequest(req)
-  if (!user) return res.status(401).json({ ok: false })
-  const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return res.status(403).json({ ok: false })
+  if (!(await adminFromRequest(req))) return res.status(403).json({ ok: false })
   const hook = process.env.VERCEL_DEPLOY_HOOK
   if (!hook || !/^https:\/\/api\.vercel\.com\//.test(hook)) return res.status(200).json({ ok: false, reason: 'no-hook' })
   // several quick publishes need one rebuild, not five
