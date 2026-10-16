@@ -24,6 +24,7 @@ export default function Checkout() {
   const [err, setErr] = useState('')
   const [agreed, setAgreed] = useState(false) // the declaration must be accepted for every order
   const [leaving, setLeaving] = useState(false) // on the way to Tap: keep this screen, don't bounce to the empty cart
+  const [phoneErr, setPhoneErr] = useState('') // every hook sits above the early returns below, so each render runs the same hooks
   // a card order whose payment didn't finish (failed to start, or the customer came back from Tap) is reused, not duplicated
   const pending = useRef(null)
   if (pending.current === null) { try { pending.current = JSON.parse(sessionStorage.getItem('raed:pending-order') || 'false') || undefined } catch { pending.current = undefined } }
@@ -52,7 +53,6 @@ export default function Checkout() {
     try { setCoupon(await api.validateCoupon(code)); notify('تم تطبيق الخصم') } catch (e) { setCoupon(null); setCouponErr(e.message) }
   }
 
-  const [phoneErr, setPhoneErr] = useState('')
   const submit = async (e) => {
     e.preventDefault()
     setErr('')
