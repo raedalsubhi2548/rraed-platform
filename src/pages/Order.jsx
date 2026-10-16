@@ -103,7 +103,7 @@ export default function Order() {
           <ul className="grid gap-4">
             {order.items.map((it, i) => (
               <li key={i} className="flex gap-3 text-sm">
-                <img src={it.image} alt="" className="size-12 rounded-sm object-cover" />
+                {it.image ? <img src={it.image} alt="" className="size-12 rounded-sm object-cover" /> : <span className="size-12 rounded-sm bg-sunken" />}
                 <div className="flex-1">
                   <p className="leading-6">{it.name}{it.qty > 1 && <span className="text-muted-foreground"> × {it.qty}</span>}</p>
                   <OptionList items={it.options} />

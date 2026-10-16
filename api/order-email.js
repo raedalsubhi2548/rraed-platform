@@ -1,6 +1,7 @@
 // POST { orderId, event }  — sends the email for an order moment, once.
 //  · the customer may only trigger "created" for their own bank-transfer order (card orders get "paid" from Tap)
-//  · an admin may trigger the email for the order's current status (after changing it in the dashboard)
+//  · an admin may trigger the email for the order's current status (after changing it in the dashboard),
+//    or «created» for an order still awaiting payment (a new order made from the dashboard)
 import { admin, userFromRequest, adminFromRequest } from './_shared.js'
 import { sendOrderEmail, sendAdminAlert, EVENT_IDS } from './_mail.js'
 
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
   if (!order) return res.status(404).json({ error: 'الطلب غير موجود' })
   const isAdmin = !!(await adminFromRequest(req, 'orders'))
 
-  const allowed = isAdmin ? event === order.status : order.user_id === user.id && event === 'created' && order.payment_method === 'bank' && order.status === 'pending'
+  const allowed = isAdmin ? event === order.status || (event === 'created' && order.status === 'pending') : order.user_id === user.id && event === 'created' && order.payment_method === 'bank' && order.status === 'pending'
   if (!allowed) return res.status(403).json({ error: 'غير مسموح' })
 
   const out = await sendOrderEmail(order, event)

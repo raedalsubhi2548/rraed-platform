@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { MessageCircle, Mail, Phone, CreditCard, Landmark, Inbox, ChevronLeft, Copy, FileText } from 'lucide-react'
+import { useOutletContext, useSearchParams } from 'react-router-dom'
+import { MessageCircle, Mail, Phone, CreditCard, Landmark, Inbox, ChevronLeft, Copy, FileText, Link2, Plus, Trash2 } from 'lucide-react'
 import { api } from '@/lib/api.js'
 import { useApp } from '@/state.jsx'
 import { ORDER_STATUSES } from '@/data/seed.js'
@@ -9,13 +9,17 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Field, Select, Textarea, Skeleton, StatusPill, OrderTracker, statusLabel } from '@/components/ui/kit.jsx'
-import { AdminHead, SearchBox, Segments, TableCard, Table, Th, Td } from '@/components/admin/ui.jsx'
+import { AdminHead, SearchBox, Segments, TableCard, Table, Th, Td, useConfirm } from '@/components/admin/ui.jsx'
+import NewOrder from '@/components/admin/NewOrder.jsx'
+import { can } from '@/lib/perms.js'
+import { STORE_ORIGIN } from '@/lib/host.js'
 import OptionList from '@/components/OptionList.jsx'
 
 const waPhone = (p) => (p || '').replace(/\D/g, '').replace(/^0/, '966')
 
-function OrderDetail({ order, onSaved }) {
+function OrderDetail({ order, onSaved, owner, onDeleted }) {
   const { notify } = useApp()
+  const confirm = useConfirm()
   const [status, setStatus] = useState(order.status)
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
@@ -25,6 +29,12 @@ function OrderDetail({ order, onSaved }) {
     try { await api.updateOrderStatus(order.id, status, note); api.notifyOrder?.(order.id, status); notify('تم تحديث حالة الطلب وإشعار العميل'); setNote(''); onSaved() } catch (e) { notify(e.message, 'err') } finally { setBusy(false) }
   }
   const sub = order.items.reduce((s, it) => s + it.price * it.qty, 0)
+  const payLink = `${STORE_ORIGIN}/order/${order.id}`
+  const copyLink = async () => { try { await navigator.clipboard.writeText(payLink); notify('نُسخ رابط الدفع') } catch { notify('ما قدرنا ننسخ', 'err') } }
+  const remove = async () => {
+    if (!(await confirm({ title: `حذف الطلب #${order.number}؟` }))) return
+    try { await api.deleteOrder(order.id); notify('حُذف الطلب'); onDeleted() } catch (e) { notify(e.message, 'err') }
+  }
   return (
     <div className="grid gap-5">
       <div className="rounded-lg bg-surface p-4 ring-1 ring-border"><OrderTracker status={order.status} /></div>
@@ -48,7 +58,7 @@ function OrderDetail({ order, onSaved }) {
         <ul className="grid gap-3">
           {order.items.map((it, idx) => (
             <li key={idx} className="grid grid-cols-[48px_1fr_auto] items-start gap-3">
-              <img src={it.image} alt="" className="size-12 rounded-md object-cover" />
+              {it.image ? <img src={it.image} alt="" className="size-12 rounded-md object-cover" /> : <span className="size-12 rounded-md bg-sunken" />}
               <div className="min-w-0 text-sm"><p className="font-semibold leading-6">{it.name}{it.qty > 1 && <span className="tabular text-muted-foreground"> × {it.qty}</span>}</p><OptionList items={it.options} className="mt-1" />{it.note && <p className="mt-1 rounded bg-sunken px-2 py-1 text-xs leading-6 text-muted-foreground">{it.note}</p>}</div>
               <strong className="tabular text-sm text-primary">{money(it.price * it.qty)}</strong>
             </li>
@@ -64,6 +74,9 @@ function OrderDetail({ order, onSaved }) {
           {order.paymentMethod === 'card' ? <><CreditCard className="size-4" />بطاقة / Apple Pay</> : <><Landmark className="size-4" />تحويل بنكي</>}
           {(order.paymentRef || order.tapId) && <span className="ms-auto font-mono" dir="ltr">{order.paymentRef || order.tapId}</span>}
         </p>
+        {order.status === 'pending' && (
+          <Button variant="outline" size="sm" className="mt-3 w-full" onClick={copyLink}><Link2 className="size-4" />نسخ رابط الدفع</Button>
+        )}
         {!['pending', 'cancelled'].includes(order.status) && (
           <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => api.downloadInvoice(order).catch((e) => notify(e.message, 'err'))}><FileText className="size-4" />تحميل الفاتورة PDF</Button>
         )}
@@ -96,12 +109,15 @@ function OrderDetail({ order, onSaved }) {
           </ol>
         </section>
       )}
+
+      {owner && <Button variant="ghost" className="text-danger hover:bg-danger-soft" onClick={remove}><Trash2 className="size-4" />حذف الطلب</Button>}
     </div>
   )
 }
 
 export default function Orders() {
   const { notify } = useApp()
+  const access = useOutletContext()
   const [orders, setOrders] = useState(null)
   const [params, setParams] = useSearchParams()
   const [q, setQ] = useState('')
@@ -110,6 +126,7 @@ export default function Orders() {
   useEffect(() => { load() }, [])
   const openId = params.get('open')
   const open = orders?.find((o) => o.id === openId)
+  const creating = params.get('new') === '1'
   const setParam = (k, v) => { const n = new URLSearchParams(params); v ? n.set(k, v) : n.delete(k); setParams(n) }
   const shown = useMemo(() => (orders || []).filter((o) => (!filter || o.status === filter) && (!q || String(o.number).includes(q) || (o.customer?.name || '').includes(q) || (o.customer?.phone || '').includes(q) || (o.customer?.email || '').includes(q))), [orders, filter, q])
   const count = (id) => (orders || []).filter((o) => o.status === id).length
@@ -120,7 +137,12 @@ export default function Orders() {
 
   return (
     <>
-      <AdminHead title="الطلبات" lead={orders ? `${orders.length} طلب` : undefined} action={orders?.length > 0 && <Button variant="outline" size="sm" onClick={copyCsv}><Copy className="size-4" />نسخ الجدول</Button>} />
+      <AdminHead title="الطلبات" lead={orders ? `${orders.length} طلب` : undefined} action={
+        <div className="flex flex-wrap gap-2">
+          {orders?.length > 0 && <Button variant="outline" size="sm" onClick={copyCsv}><Copy className="size-4" />نسخ الجدول</Button>}
+          {can(access, 'customers') && <Button size="sm" onClick={() => setParam('new', '1')}><Plus className="size-4" />طلب جديد</Button>}
+        </div>
+      } />
       <div className="mb-4 grid gap-3">
         <Segments value={filter} onChange={(v) => setParam('status', v)} options={[{ id: '', label: 'الكل', count: orders?.length || 0 }, ...ORDER_STATUSES.map((s) => ({ id: s.id, label: s.label, count: count(s.id) }))]} />
         <SearchBox value={q} onChange={setQ} placeholder="رقم الطلب، اسم العميل، الجوال أو البريد" className="max-w-md" />
@@ -170,9 +192,19 @@ export default function Orders() {
                 <SheetTitle className="tabular font-display text-xl font-semibold text-primary">طلب #{open.number}</SheetTitle>
                 <SheetDescription className="text-sm text-muted-foreground">{dateTime(open.createdAt)}</SheetDescription>
               </div>
-              <div className="p-5"><OrderDetail key={open.id + open.status} order={open} onSaved={load} /></div>
+              <div className="p-5"><OrderDetail key={open.id + open.status} order={open} onSaved={load} owner={!!access?.owner} onDeleted={() => { setOrders((l) => l.filter((x) => x.id !== open.id)); setParam('open', '') }} /></div>
             </>
           )}
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={creating} onOpenChange={(o) => !o && setParam('new', '')}>
+        <SheetContent side="end" className="w-[min(560px,100vw)] overflow-y-auto">
+          <div className="sticky top-0 z-10 border-b border-border bg-background/95 px-5 py-4 pe-16 backdrop-blur">
+            <SheetTitle className="font-display text-xl font-semibold text-primary">طلب جديد</SheetTitle>
+            <SheetDescription className="sr-only">إنشاء طلب</SheetDescription>
+          </div>
+          <div className="p-5">{creating && <NewOrder onDone={(o) => { setOrders((l) => [o, ...(l || [])]); const n = new URLSearchParams(params); n.delete('new'); n.set('open', o.id); setParams(n); notify(`أُنشئ الطلب #${o.number}`) }} />}</div>
         </SheetContent>
       </Sheet>
     </>

@@ -144,7 +144,28 @@ export const local = {
     write('categories', read('categories', []).filter((c) => c.id !== id))
   },
   async getSettings() { return read('settings', null) },
-  async saveSettings(settings) { requireAdmin('design'); write('settings', settings) },
+  async saveSettings(settings, note = '') {
+    const me = requireAdmin('design')
+    if (JSON.stringify(read('settings', null)) === JSON.stringify(settings)) return
+    write('settings', settings)
+    const v = read('versions', [])
+    v.unshift({ id: Date.now(), at: new Date().toISOString(), by: me.email, note, data: settings })
+    write('versions', v.slice(0, 200))
+  },
+  // design backups (owner only), the same as owner_design_versions / owner_restore_design
+  async designVersions() {
+    requireAdmin()
+    const v = read('versions', []), cur = JSON.stringify(read('settings', null))
+    const curId = v.find((x) => JSON.stringify(x.data) === cur)?.id
+    return v.map(({ data, ...x }) => ({ ...x, current: x.id === curId }))
+  },
+  async restoreDesign(id) {
+    requireAdmin()
+    const v = read('versions', []).find((x) => x.id === id)
+    if (!v) throw new Error('النسخة غير موجودة')
+    const at = new Date(v.at)
+    await this.saveSettings(v.data, 'استرجاع نسخة ' + at.toLocaleString('en-CA', { timeZone: 'Asia/Riyadh', hour12: false }).slice(0, 17).replace(',', ''))
+  },
   async rebuildSite() { return { ok: false, reason: 'demo' } },
   async uploadImage(file) {
     return new Promise((res, rej) => {
@@ -224,6 +245,43 @@ export const local = {
     }
   },
   async allOrders() { requireAdmin('orders'); return read('orders', []) },
+  async adminCreateOrder({ userId, items, status, notes, discount }) {
+    requireAdmin('orders')
+    if (!['pending', 'paid'].includes(status)) throw new Error('حالة غير صالحة')
+    const u = read('users', []).find((x) => x.id === userId)
+    if (!u) throw new Error('العميل غير موجود')
+    if (!items?.length) throw new Error('أضف خدمة واحدة على الأقل')
+    const products = read('products', [])
+    const lines = items.map((l) => {
+      const qty = Math.max(1, Math.min(999, Number(l.qty) || 1))
+      if (l.product_id) {
+        const p = products.find((x) => x.id === l.product_id)
+        if (!p) throw new Error('خدمة غير موجودة')
+        const base = p.salePrice != null && p.salePrice < p.price ? p.salePrice : p.price
+        const chosen = (p.options || []).flatMap((o) => (o.values || []).filter((v) => (l.options || []).includes(o.id + ':' + v.id)).map((v) => ({ option: o.name, value: v.name, price: Math.max(0, Number(v.price) || 0) })))
+        return { productId: p.id, name: p.name, price: base + chosen.reduce((a, c) => a + c.price, 0), qty, image: p.image, digital: !!p.digital, note: '', options: chosen }
+      }
+      const name = String(l.name || '').trim(), price = Math.round(Number(l.price) * 100) / 100
+      if (!name) throw new Error('اكتب اسم البند')
+      if (!(price >= 0) || price > 1e6) throw new Error('سعر البند غير صالح')
+      return { productId: null, name: name.slice(0, 120), price, qty, image: null, digital: false, note: '', options: [] }
+    })
+    const subtotal = lines.reduce((a, l) => a + l.price * l.qty, 0)
+    const disc = Math.min(subtotal, Math.max(0, Math.round((Number(discount) || 0) * 100) / 100))
+    const orders = read('orders', []), now = new Date().toISOString()
+    const o = {
+      id: uid('o_'), number: 10000 + orders.length + 1, userId: u.id, customer: { name: u.name, phone: u.phone, email: u.email },
+      items: lines, subtotal, discount: disc, total: subtotal - disc, notes: String(notes || '').slice(0, 2000), paymentMethod: 'card',
+      paymentRef: status === 'paid' ? 'manual' : null, status, createdAt: now, history: [{ status, at: now, note: 'طلب يدوي من لوحة التحكم' }],
+    }
+    orders.unshift(o); write('orders', orders); return o
+  },
+  async deleteOrder(id) {
+    requireAdmin()
+    const orders = read('orders', [])
+    if (!orders.some((o) => o.id === id)) throw new Error('الطلب غير موجود')
+    write('orders', orders.filter((o) => o.id !== id))
+  },
   async updateOrderStatus(id, status, note) {
     requireAdmin('orders')
     const orders = read('orders', []).map((o) => (o.id === id
@@ -244,6 +302,26 @@ export const local = {
       const mine = orders.filter((o) => o.userId === u.id)
       return { ...publicUser(u), orders: mine.length, spent: mine.filter((o) => o.status !== 'cancelled').reduce((s, o) => s + o.total, 0) }
     })
+  },
+  async addCustomer({ name, email, phone }) {
+    requireAdmin('customers')
+    const e = String(email || '').trim().toLowerCase(), n = String(name || '').trim().slice(0, 80)
+    if (!n) throw new Error('اكتب اسم العميل')
+    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(e)) throw new Error('اكتب بريد صحيح')
+    const users = read('users', [])
+    if (users.some((x) => x.email.toLowerCase() === e)) throw new Error('هذا البريد مسجّل من قبل')
+    const u = { id: uid('u_'), name: n, email: e, phone: String(phone || '').replace(/[^\d+]/g, '').slice(0, 20), role: 'customer', pass: '', createdAt: new Date().toISOString() }
+    users.push(u); write('users', users)
+    return { ...publicUser(u), orders: 0, spent: 0 }
+  },
+  async deleteCustomer(id) {
+    requireAdmin()
+    const users = read('users', []), u = users.find((x) => x.id === id)
+    if (!u) throw new Error('العميل غير موجود')
+    if (u.role === 'admin') throw new Error('ما يصير تحذف حساب مالك')
+    if (read('staff', []).some((x) => x.email === u.email.toLowerCase())) throw new Error('هذا الحساب من الفريق، احذفه من صفحة الفريق أولاً')
+    write('users', users.filter((x) => x.id !== id))
+    write('orders', read('orders', []).map((o) => (o.userId === id ? { ...o, userId: null } : o)))
   },
   async listCoupons() { requireAdmin('coupons'); return read('coupons', []) },
   async saveCoupon(c) {

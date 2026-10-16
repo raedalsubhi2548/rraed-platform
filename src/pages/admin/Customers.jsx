@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MessageCircle, Users } from 'lucide-react'
+import { useOutletContext } from 'react-router-dom'
+import { MessageCircle, Trash2, UserPlus, Users } from 'lucide-react'
 import { api } from '@/lib/api.js'
 import { money, date } from '@/lib/format.js'
 import { cn } from '@/lib/utils'
+import { useApp } from '@/state.jsx'
+import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/kit.jsx'
-import { AdminHead, SearchBox, TableCard, Table, Th, Td } from '@/components/admin/ui.jsx'
+import { AdminHead, IconBtn, SearchBox, TableCard, Table, Th, Td, useConfirm } from '@/components/admin/ui.jsx'
+import NewCustomer from '@/components/admin/NewCustomer.jsx'
 
 const SORTS = [['recent', 'الأحدث'], ['spent', 'الأعلى شراءً'], ['orders', 'الأكثر طلبات']]
 const wa = (p) => `https://wa.me/${p.replace(/\D/g, '').replace(/^0/, '966')}`
@@ -13,7 +18,17 @@ export default function Customers() {
   const [list, setList] = useState(null)
   const [q, setQ] = useState('')
   const [sort, setSort] = useState('recent')
-  useEffect(() => { api.listCustomers().then(setList).catch(() => setList([])) }, [])
+  const [adding, setAdding] = useState(false)
+  const access = useOutletContext()
+  const owner = !!access?.owner
+  const { notify } = useApp()
+  const confirm = useConfirm()
+  const load = () => api.listCustomers().then(setList).catch(() => setList([]))
+  useEffect(() => { load() }, [])
+  const remove = async (c) => {
+    if (!(await confirm({ title: `حذف العميل ${c.name || c.email}؟`, body: c.orders ? `طلباته (${c.orders}) تبقى في الطلبات.` : undefined }))) return
+    try { await api.deleteCustomer(c.id); setList((l) => l.filter((x) => x.id !== c.id)); notify('حُذف العميل') } catch (e) { notify(e.message, 'err') }
+  }
   const shown = useMemo(() => {
     const l = (list || []).filter((c) => !q || ((c.name || '') + (c.email || '') + (c.phone || '')).includes(q))
     return [...l].sort((a, b) => sort === 'spent' ? b.spent - a.spent : sort === 'orders' ? b.orders - a.orders : new Date(b.createdAt) - new Date(a.createdAt))
@@ -22,7 +37,7 @@ export default function Customers() {
 
   return (
     <>
-      <AdminHead title="العملاء" lead={list ? `${list.length} عميل مسجّل · ${buyers} اشتروا` : undefined} />
+      <AdminHead title="العملاء" lead={list ? `${list.length} عميل مسجّل · ${buyers} اشتروا` : undefined} action={<Button size="sm" onClick={() => setAdding(true)}><UserPlus className="size-4" />عميل جديد</Button>} />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <SearchBox value={q} onChange={setQ} placeholder="الاسم، البريد، أو الجوال" className="w-full max-w-md" />
         <div className="flex rounded-full bg-sunken p-1" role="tablist" aria-label="الترتيب">
@@ -39,12 +54,13 @@ export default function Customers() {
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-sunken font-display font-semibold text-primary">{(c.name || c.email || '؟').charAt(0)}</span>
                 <div className="min-w-0 flex-1"><p className="truncate font-semibold">{c.name}</p><p className="tabular text-xs text-muted-foreground">{c.orders} طلب · {money(c.spent)}</p></div>
                 {c.phone && <a href={wa(c.phone)} target="_blank" rel="noreferrer" className="grid size-10 place-items-center rounded-full bg-primary text-accent" aria-label={`واتساب ${c.name}`}><MessageCircle className="size-4" /></a>}
+                {owner && <IconBtn tone="danger" onClick={() => remove(c)} aria-label={`حذف ${c.name}`}><Trash2 className="size-4" /></IconBtn>}
               </li>
             ))}
           </ul>
           <TableCard className="hidden md:block">
             <Table>
-              <thead><tr><Th>العميل</Th><Th>الجوال</Th><Th>الطلبات</Th><Th>إجمالي المشتريات</Th><Th>تاريخ التسجيل</Th></tr></thead>
+              <thead><tr><Th>العميل</Th><Th>الجوال</Th><Th>الطلبات</Th><Th>إجمالي المشتريات</Th><Th>تاريخ التسجيل</Th>{owner && <Th className="w-12"><span className="sr-only">حذف</span></Th>}</tr></thead>
               <tbody>{shown.map((c) => (
                 <tr key={c.id} className="hover:bg-sunken/50">
                   <Td>
@@ -57,12 +73,23 @@ export default function Customers() {
                   <Td className="tabular">{c.orders}</Td>
                   <Td className="tabular font-semibold text-primary">{money(c.spent)}</Td>
                   <Td className="whitespace-nowrap text-muted-foreground">{date(c.createdAt)}</Td>
+                  {owner && <Td><IconBtn tone="danger" onClick={() => remove(c)} aria-label={`حذف ${c.name}`}><Trash2 className="size-4" /></IconBtn></Td>}
                 </tr>
               ))}</tbody>
             </Table>
           </TableCard>
         </>
       )}
+
+      <Sheet open={adding} onOpenChange={setAdding}>
+        <SheetContent side="end" className="w-[min(460px,100vw)] overflow-y-auto">
+          <div className="border-b border-border px-5 py-4 pe-16">
+            <SheetTitle className="font-display text-xl font-semibold text-primary">عميل جديد</SheetTitle>
+            <SheetDescription className="sr-only">إضافة عميل</SheetDescription>
+          </div>
+          <div className="p-5">{adding && <NewCustomer onDone={(c) => { setList((l) => [c, ...(l || [])]); setAdding(false); notify('أُضيف العميل') }} onCancel={() => setAdding(false)} />}</div>
+        </SheetContent>
+      </Sheet>
     </>
   )
 }

@@ -245,6 +245,17 @@ export const supa = {
   },
 
   async listCustomers() { return check(await sb.rpc('admin_customers')) },
+  async addCustomer(c) { return (await staffCall('POST', '?kind=customer', c)).customer },
+  async deleteCustomer(id) { await staffCall('DELETE', '?kind=customer&id=' + encodeURIComponent(id)) },
+  // a new order from the dashboard: prices of store services are taken by the database, like checkout
+  async adminCreateOrder({ userId, items, status, notes, discount }) {
+    const id = check(await sb.rpc('admin_create_order', { p_user: userId, p_items: items, p_status: status, p_notes: notes || '', p_discount: Number(discount) || 0 }))
+    return order(check(await sb.from('orders').select('*').eq('id', id).single()))
+  },
+  async deleteOrder(id) { check(await sb.rpc('owner_delete_order', { p_order: id })) },
+  // design backups (owner only)
+  async designVersions() { return check(await sb.rpc('owner_design_versions')).map((v) => ({ id: v.id, at: v.at, by: v.by_email, note: v.note, current: v.current })) },
+  async restoreDesign(id) { check(await sb.rpc('owner_restore_design', { p_id: id })) },
   async listCoupons() { return check(await sb.from('coupons').select('*')).map(coupon) },
   async saveCoupon(c) {
     check(await sb.from('coupons').upsert({ code: c.code.toUpperCase(), type: c.type, value: c.value, active: c.active, expires_at: c.expiresAt || null }))

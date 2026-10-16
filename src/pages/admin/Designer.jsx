@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import {
   Smartphone, Monitor, Upload, RotateCcw, Check, Loader2, ImageIcon, Undo2, ChevronUp, ChevronDown, Eye, EyeOff, Trash2, Plus, Pencil, X,
-  Sparkles, Image as ImageLucide, BadgeCheck, LayoutGrid, Shapes, PanelLeft, Type, GalleryHorizontal, MessageSquareQuote, CircleHelp, Copy,
+  History, Sparkles, Image as ImageLucide, BadgeCheck, LayoutGrid, Shapes, PanelLeft, Type, GalleryHorizontal, MessageSquareQuote, CircleHelp, Copy,
 } from 'lucide-react'
 import { api } from '@/lib/api.js'
 import { useApp } from '@/state.jsx'
@@ -11,6 +12,7 @@ import { SITE } from '@/lib/seo.js'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea, Select, Panel, Switch } from '@/components/ui/kit.jsx'
 import { AdminHead, useConfirm } from '@/components/admin/ui.jsx'
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 
 const MAX_IMAGE = 4 * 1024 * 1024
 const BLOCK_ICON = { Sparkles, Image: ImageLucide, BadgeCheck, LayoutGrid, Shapes, PanelLeft, Type, GalleryHorizontal, MessageSquareQuote, CircleHelp }
@@ -299,11 +301,65 @@ function Preview({ draft, frame }) {
   )
 }
 
+const longDateTime = (d) => new Intl.DateTimeFormat('ar-SA-u-nu-latn-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Riyadh' }).format(new Date(d))
+
+/** Design backups (owner only): every publish is kept with its date; one click brings an older one back and republishes. */
+function Backups({ open, onOpenChange, onRestored }) {
+  const { notify } = useApp()
+  const confirm = useConfirm()
+  const [list, setList] = useState(null)
+  const [busy, setBusy] = useState(0)
+  useEffect(() => { if (open) { setList(null); api.designVersions().then(setList).catch((e) => { setList([]); notify(e.message, 'err') }) } }, [open])
+  const restore = async (v) => {
+    if (!(await confirm({ title: 'استرجاع هذا التصميم؟', body: longDateTime(v.at), ok: 'استرجاع' }))) return
+    setBusy(v.id)
+    try {
+      await api.restoreDesign(v.id)
+      const r = await api.rebuildSite()
+      await onRestored()
+      setList(await api.designVersions())
+      notify(r?.ok ? 'رجع التصميم ✓ ويتحدّث لمحركات البحث خلال دقيقتين' : 'رجع التصميم ✓')
+    } catch (e) { notify(e.message, 'err') } finally { setBusy(0) }
+  }
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="end" className="w-[min(480px,100vw)] overflow-y-auto">
+        <div className="sticky top-0 z-10 border-b border-border bg-background/95 px-5 py-4 pe-16 backdrop-blur">
+          <SheetTitle className="font-display text-xl font-semibold text-primary">النسخ الاحتياطية للتصميم</SheetTitle>
+          <SheetDescription className="sr-only">النسخ المحفوظة من التصميم</SheetDescription>
+        </div>
+        <div className="p-5">
+          {!list ? <div className="grid place-items-center py-16"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>
+            : !list.length ? <p className="py-16 text-center text-muted-foreground">ما فيه نسخ محفوظة.</p>
+              : (
+                <ol className="grid gap-2">
+                  {list.map((v) => (
+                    <li key={v.id} className={cn('flex items-center gap-3 rounded-lg bg-surface p-4 ring-1', v.current ? 'ring-2 ring-primary' : 'ring-border')}>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-primary">{longDateTime(v.at)}</p>
+                        {v.by && <p className="mt-0.5 truncate text-xs text-muted-foreground" dir="ltr">{v.by}</p>}
+                        {v.note && <p className="mt-1 text-xs leading-6 text-muted-foreground">{v.note}</p>}
+                      </div>
+                      {v.current
+                        ? <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-3 py-1.5 text-xs font-bold text-success"><Check className="size-3.5" strokeWidth={3} />الحالي</span>
+                        : <Button variant="outline" size="sm" disabled={!!busy} onClick={() => restore(v)}>{busy === v.id ? <Loader2 className="size-4 animate-spin" /> : <Undo2 className="size-4" />}استرجاع</Button>}
+                    </li>
+                  ))}
+                </ol>
+              )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
 const TABS = [['home', 'الصفحة الرئيسية', 'الرئيسية'], ['store', 'معلومات المتجر', 'المتجر'], ['brand', 'الشعار والألوان والخطوط', 'الهوية'], ['chrome', 'الهيدر والفوتر', 'الهيدر']]
 
 export default function Designer() {
   const { savedSettings, refreshSettings, notify } = useApp()
   const confirm = useConfirm()
+  const access = useOutletContext()
+  const [backups, setBackups] = useState(false)
   const saved = useMemo(() => mergeSettings(savedSettings), [savedSettings])
   const [draft, setDraft] = useState(saved)
   const [tab, setTab] = useState('home')
@@ -342,7 +398,8 @@ export default function Designer() {
 
   return (
     <>
-      <AdminHead title="مصمم المتجر" />
+      <AdminHead title="مصمم المتجر" action={access?.owner && <Button variant="outline" size="sm" onClick={() => setBackups(true)}><History className="size-4" />النسخ الاحتياطية</Button>} />
+      {access?.owner && <Backups open={backups} onOpenChange={setBackups} onRestored={async () => { touched.current = false; await refreshSettings() }} />}
 
       <div className="grid gap-6 pb-28 xl:grid-cols-[minmax(400px,500px)_1fr] xl:items-start">
         <div className="grid gap-5">
