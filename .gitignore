@@ -3,3 +3,7 @@ dist
 .env
 .env.local
 dist-ssr
+
+# local helpers and design review screenshots
+.tmp-*
+.impeccable/review/
