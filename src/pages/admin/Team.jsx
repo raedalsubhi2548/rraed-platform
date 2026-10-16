@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Check, Pencil, Trash2, UserPlus, UsersRound, MailCheck, X } from 'lucide-react'
-import { api, isDemo } from '@/lib/api.js'
+import { Check, Pencil, Trash2, UserPlus, UsersRound, X } from 'lucide-react'
+import { api } from '@/lib/api.js'
 import { useApp } from '@/state.jsx'
 import { date } from '@/lib/format.js'
 import { cn } from '@/lib/utils'
@@ -46,19 +46,19 @@ export default function Team() {
   }
   const edit = (m) => { setF({ email: m.email, name: m.name, role: m.role, perms: m.perms }); setEditing(true); setErr(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const remove = async (m) => {
-    if (!(await confirm({ title: `إزالة ${m.name || m.email} من الفريق؟`, body: 'تنقفل عليه لوحة التحكم فوراً. حسابه في المتجر يبقى كعميل.' }))) return
+    if (!(await confirm({ title: `إزالة ${m.name || m.email} من الفريق؟` }))) return
     try { await api.removeStaff(m.email); if (f.email === m.email) reset(); load(); notify('أُزيل من الفريق') } catch (e) { notify(e.message, 'err') }
   }
 
   return (
     <>
-      <AdminHead title="الفريق والصلاحيات" lead="أضف موظفينك ببريدهم، واختر وش يقدر كل واحد يفتح في لوحة التحكم. الدخول نفس دخولك: كلمة المرور ثم رمز يوصل على بريده." />
+      <AdminHead title="الفريق والصلاحيات" />
 
       <Panel title={editing ? `تعديل صلاحيات ${f.name || f.email}` : 'موظف جديد'} className="mb-6">
         <form onSubmit={save} className="grid gap-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="البريد الإلكتروني"><Input required type="email" value={f.email} disabled={editing} onChange={(e) => setF({ ...f, email: e.target.value })} dir="ltr" placeholder="name@example.com" /></Field>
-            <Field label="الاسم (اختياري)"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="مثلاً: سارة" maxLength={80} /></Field>
+            <Field label="الاسم"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} maxLength={80} /></Field>
           </div>
 
           <fieldset className="grid gap-2">
@@ -68,44 +68,41 @@ export default function Team() {
                 const on = f.role === r.name && same(r.perms, f.perms)
                 return (
                   <button key={r.name} type="button" aria-pressed={on} onClick={() => pickRole(r)}
-                    className={cn('grid gap-1 rounded-lg border-[1.5px] p-3.5 text-start transition-colors', on ? 'border-primary bg-sunken' : 'border-border hover:border-border-strong')}>
+                    className={cn('grid rounded-lg border-[1.5px] p-3.5 text-start transition-colors', on ? 'border-primary bg-sunken' : 'border-border hover:border-border-strong')}>
                     <span className="flex items-center justify-between font-bold text-primary">{r.name}{on && <Check className="size-4 text-accent-text" strokeWidth={3} />}</span>
-                    <span className="text-xs leading-6 text-muted-foreground">{r.perms.length === AREAS.length ? 'كل الأقسام (ما عدا الفريق)' : r.perms.map((p) => AREA_LABEL[p]).join('، ')}</span>
                   </button>
                 )
               })}
             </div>
-            <Field label="اسم الدور (يظهر له في اللوحة وفي رسالة الدعوة)" className="mt-2 sm:max-w-sm"><Input value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} maxLength={40} /></Field>
+            <Field label="اسم الدور" className="mt-2 sm:max-w-sm"><Input value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} maxLength={40} /></Field>
           </fieldset>
 
           <fieldset className="grid gap-2">
-            <legend className="mb-2 text-sm font-bold">الأقسام المسموحة <span className="font-normal text-muted-foreground">(عدّلها براحتك)</span></legend>
+            <legend className="mb-2 text-sm font-bold">الأقسام المسموحة</legend>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {AREAS.map((a) => {
                 const on = f.perms.includes(a.key)
                 return (
                   <button key={a.key} type="button" role="checkbox" aria-checked={on} onClick={() => toggle(a.key)}
-                    className={cn('flex min-h-14 items-start gap-3 rounded-lg border-[1.5px] px-3.5 py-3 text-start transition-colors', on ? 'border-primary bg-sunken' : 'border-border hover:border-border-strong')}>
-                    <span className={cn('mt-0.5 grid size-5 shrink-0 place-items-center rounded-[6px] border-[1.5px]', on ? 'border-primary bg-primary text-primary-foreground' : 'border-border-strong')}>{on && <Check className="size-3" strokeWidth={3.5} />}</span>
-                    <span className="grid"><span className="text-sm font-semibold">{a.label}</span><span className="text-xs leading-5 text-muted-foreground">{a.hint}</span></span>
+                    className={cn('flex min-h-12 items-center gap-3 rounded-lg border-[1.5px] px-3.5 py-3 text-start transition-colors', on ? 'border-primary bg-sunken' : 'border-border hover:border-border-strong')}>
+                    <span className={cn('grid size-5 shrink-0 place-items-center rounded-[6px] border-[1.5px]', on ? 'border-primary bg-primary text-primary-foreground' : 'border-border-strong')}>{on && <Check className="size-3" strokeWidth={3.5} />}</span>
+                    <span className="text-sm font-semibold">{a.label}</span>
                   </button>
                 )
               })}
             </div>
-            <p className="text-xs text-muted-foreground">«الفريق والصلاحيات» لك أنت المالك فقط، ما تنعطى لأحد.</p>
           </fieldset>
 
           {err && <p className="rounded-md bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">{err}</p>}
           <div className="flex flex-wrap gap-2">
-            <Button disabled={busy}>{editing ? <><Check className="size-4" />احفظ الصلاحيات</> : <><UserPlus className="size-4" />أضف وأرسل الدعوة</>}</Button>
+            <Button disabled={busy}>{editing ? <><Check className="size-4" />احفظ الصلاحيات</> : <><UserPlus className="size-4" />أضف</>}</Button>
             {editing && <Button type="button" variant="outline" onClick={reset}><X className="size-4" />إلغاء</Button>}
           </div>
-          {!editing && !isDemo && <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><MailCheck className="mt-0.5 size-4 shrink-0" />توصله رسالة فيها رابط لوحة التحكم. إذا ما عنده حساب في المتجر ننشئ له واحد، ويعيّن كلمة مروره من «نسيت كلمة المرور؟».</p>}
         </form>
       </Panel>
 
       {!list ? <Skeleton className="h-48" /> : list.length === 0 ? (
-        <div className="grid justify-items-center gap-2 rounded-lg border-2 border-dashed border-border-strong py-14 text-center"><UsersRound className="size-8 text-muted-foreground" /><p className="text-muted-foreground">ما أضفت أحد للفريق للحين.</p></div>
+        <div className="grid justify-items-center gap-2 rounded-lg border-2 border-dashed border-border-strong py-14 text-center"><UsersRound className="size-8 text-muted-foreground" /><p className="text-muted-foreground">لا يوجد موظفين</p></div>
       ) : (
         <ul className="grid gap-3 lg:grid-cols-2">
           {list.map((m) => (
