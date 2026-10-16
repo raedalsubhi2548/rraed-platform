@@ -26,7 +26,7 @@ export const SheetContent = React.forwardRef(({ side = 'start', className, child
       {...props}
     >
       {children}
-      <Dialog.Close className="absolute top-4 end-4 grid size-11 place-items-center rounded-full text-primary hover:bg-sunken" aria-label="إغلاق">
+      <Dialog.Close className="absolute top-4 end-4 z-20 grid size-11 place-items-center rounded-full text-primary hover:bg-sunken" aria-label="إغلاق">
         <X className="size-5" />
       </Dialog.Close>
     </Dialog.Content>

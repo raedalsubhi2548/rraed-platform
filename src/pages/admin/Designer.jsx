@@ -12,7 +12,7 @@ import { SITE } from '@/lib/seo.js'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea, Select, Panel, Switch } from '@/components/ui/kit.jsx'
 import { AdminHead, useConfirm } from '@/components/admin/ui.jsx'
-import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet'
+import * as Dialog from '@radix-ui/react-dialog'
 
 const MAX_IMAGE = 4 * 1024 * 1024
 const BLOCK_ICON = { Sparkles, Image: ImageLucide, BadgeCheck, LayoutGrid, Shapes, PanelLeft, Type, GalleryHorizontal, MessageSquareQuote, CircleHelp }
@@ -322,15 +322,18 @@ function Backups({ open, onOpenChange, onRestored }) {
     } catch (e) { notify(e.message, 'err') } finally { setBusy(0) }
   }
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="end" className="w-[min(480px,100vw)] overflow-y-auto">
-        <div className="sticky top-0 z-10 border-b border-border bg-background/95 px-5 py-4 pe-16 backdrop-blur">
-          <SheetTitle className="font-display text-xl font-semibold text-primary">النسخ الاحتياطية للتصميم</SheetTitle>
-          <SheetDescription className="sr-only">النسخ المحفوظة من التصميم</SheetDescription>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+      <Dialog.Overlay className="fixed inset-0 z-50 bg-primary/45 motion-safe:animate-[fade-in_200ms]" />
+      <Dialog.Content onOpenAutoFocus={(e) => e.preventDefault()} className="fixed inset-x-4 top-1/2 z-50 mx-auto flex max-h-[80vh] max-w-lg -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-background shadow-overlay outline-none motion-safe:animate-[rise-in_260ms_var(--p-ease-emphasized)]">
+        <div className="flex items-center gap-3 border-b border-border px-5 py-4">
+          <Dialog.Title className="flex-1 font-display text-lg font-semibold text-primary">النسخ الاحتياطية</Dialog.Title>
+          <Dialog.Description className="sr-only">النسخ المحفوظة من التصميم</Dialog.Description>
+          <Dialog.Close className="grid size-10 place-items-center rounded-full bg-sunken text-primary hover:bg-border" aria-label="إغلاق"><X className="size-5" /></Dialog.Close>
         </div>
-        <div className="p-5">
-          {!list ? <div className="grid place-items-center py-16"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>
-            : !list.length ? <p className="py-16 text-center text-muted-foreground">ما فيه نسخ محفوظة.</p>
+        <div className="overflow-y-auto p-4">
+          {!list ? <div className="grid place-items-center py-10"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>
+            : !list.length ? <p className="py-10 text-center text-muted-foreground">ما فيه نسخ محفوظة.</p>
               : (
                 <ol className="grid gap-2">
                   {list.map((v) => (
@@ -348,8 +351,9 @@ function Backups({ open, onOpenChange, onRestored }) {
                 </ol>
               )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 
