@@ -276,7 +276,7 @@ function Preview({ draft, frame }) {
     return () => ro.disconnect()
   }, [])
   const desk = device === 'desktop'
-  const scale = desk ? Math.min(1, (width - 24) / 1280) : 1
+  const scale = Math.min(1, (width - 24) / (desk ? 1280 : 375))
   return (
     <div className="grid gap-3">
       <div className="flex items-center justify-between gap-3">
@@ -289,11 +289,11 @@ function Preview({ draft, frame }) {
           ))}
         </div>
       </div>
-      <div ref={box} className="grid justify-items-center overflow-hidden rounded-xl bg-[#e9eef5] p-3 ring-1 ring-border">
+      <div ref={box} className="grid min-w-0 justify-items-center overflow-hidden rounded-xl bg-[#e9eef5] p-3 ring-1 ring-border">
         <div className={cn('overflow-hidden bg-white shadow-[0_30px_60px_-30px_rgb(15_26_44/0.6)]', desk ? 'rounded-lg' : 'rounded-[34px] ring-[10px] ring-[#0f1a2c]')}
-          style={desk ? { width: 1280 * scale, height: 800 * scale } : { width: 375, height: 720 }}>
+          style={desk ? { width: 1280 * scale, height: 800 * scale } : { width: 375 * scale, height: 720 * scale }}>
           <iframe ref={frame} src="/admin/preview" title="معاينة المتجر"
-            style={desk ? { width: 1280, height: 800, transform: `scale(${scale})`, transformOrigin: 'top right' } : { width: 375, height: 720 }}
+            style={{ width: desk ? 1280 : 375, height: desk ? 800 : 720, transform: `scale(${scale})`, transformOrigin: 'top right' }}
             className="block border-0" />
         </div>
       </div>
@@ -405,7 +405,7 @@ export default function Designer() {
       <AdminHead title="مصمم المتجر" action={access?.owner && <Button variant="outline" size="sm" onClick={() => setBackups(true)}><History className="size-4" />النسخ الاحتياطية</Button>} />
       {access?.owner && <Backups open={backups} onOpenChange={setBackups} onRestored={async () => { touched.current = false; await refreshSettings() }} />}
 
-      <div className="grid gap-6 pb-28 xl:grid-cols-[minmax(400px,500px)_1fr] xl:items-start">
+      <div className="grid grid-cols-1 gap-6 pb-28 xl:grid-cols-[minmax(400px,500px)_1fr] xl:items-start">
         <div className="grid gap-5">
           <div className="flex gap-1 overflow-x-auto rounded-full bg-sunken p-1 ring-1 ring-border">
             {TABS.map(([id, t, short]) => (
@@ -534,7 +534,7 @@ export default function Designer() {
           </>}
         </div>
 
-        <div id="design-preview" className="scroll-mt-4 xl:sticky xl:top-6"><Preview draft={draft} frame={frame} /></div>
+        <div id="design-preview" className="min-w-0 scroll-mt-4 xl:sticky xl:top-6"><Preview draft={draft} frame={frame} /></div>
       </div>
 
       {/* publish bar */}
