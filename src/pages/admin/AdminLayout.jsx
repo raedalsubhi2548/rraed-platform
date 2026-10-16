@@ -25,7 +25,7 @@ const NAV = [
 
 function Nav({ pending, onNavigate, dark, access }) {
   return (
-    <nav className="grid gap-1" aria-label="لوحة التحكم">
+    <nav className="grid gap-0.5" aria-label="لوحة التحكم">
       {NAV.filter((n) => can(access, n.area)).map(({ to, end, icon: I, label, badge }) => (
         <NavLink key={to} to={to} end={end} onClick={onNavigate}
           className={({ isActive }) => cn('group flex h-11 items-center gap-3 rounded-md px-3 text-[15px] font-semibold transition-colors',
@@ -111,10 +111,10 @@ export default function AdminLayout() {
   return (
     <ConfirmProvider>
       <div className="min-h-dvh bg-background lg:grid lg:grid-cols-[264px_1fr]">
-        <aside className="sticky top-0 hidden h-dvh flex-col gap-7 overflow-hidden bg-[radial-gradient(120%_60%_at_100%_0%,#2c4470,#1b2b44_45%,#0f1a2c)] p-5 text-white lg:flex">
+        <aside className="sticky top-0 hidden h-dvh flex-col gap-5 overflow-hidden bg-[radial-gradient(120%_60%_at_100%_0%,#2c4470,#1b2b44_45%,#0f1a2c)] p-5 text-white lg:flex">
           <span className="pointer-events-none absolute -bottom-24 -start-24 size-72 rounded-full border-[14px] border-white/[0.04]" aria-hidden="true" />
           <div className="relative pt-1"><Brand dark /></div>
-          <div className="relative flex-1 overflow-y-auto"><Nav access={access} pending={pending} dark /></div>
+          <div className="relative min-h-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"><Nav access={access} pending={pending} dark /></div>
           <div className="relative"><SideFoot access={access} user={user} dark /></div>
         </aside>
 
@@ -127,7 +127,7 @@ export default function AdminLayout() {
           <SheetContent side="start" className="gap-6 bg-surface p-5">
             <SheetTitle className="sr-only">قائمة لوحة التحكم</SheetTitle>
             <Brand />
-            <div className="flex-1 overflow-y-auto"><Nav access={access} pending={pending} onNavigate={() => setMenu(false)} /></div>
+            <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"><Nav access={access} pending={pending} onNavigate={() => setMenu(false)} /></div>
             <SideFoot access={access} user={user} />
           </SheetContent>
         </Sheet>
