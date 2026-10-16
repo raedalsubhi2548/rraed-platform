@@ -17,15 +17,23 @@ export async function userFromRequest(req) {
 }
 
 // How the session signed in (the JWT's amr claim; the token itself was just verified by getUser).
-const signInMethods = (req) => {
-  try { return (JSON.parse(Buffer.from((req.headers.authorization || '').split('.')[1] || '', 'base64url').toString()).amr || []).map((a) => a.method) } catch { return [] }
+const signIns = (req) => {
+  try { return JSON.parse(Buffer.from((req.headers.authorization || '').split('.')[1] || '', 'base64url').toString()).amr || [] } catch { return [] }
 }
-/** The signed-in owner, only when the session came from an email code (never from a password). */
+/** The signed-in owner, only when the session is the code of a two-step sign-in: never a password session, and the
+ *  code must follow a correct password that api/login-start.js recorded within the 15 minutes before it
+ *  (the same rule as public.is_admin() in supabase/login-2fa-2026-10.sql). */
 export async function adminFromRequest(req) {
   const user = await userFromRequest(req)
-  if (!user || signInMethods(req).includes('password')) return null
+  if (!user) return null
+  const amr = signIns(req)
+  if (!amr.length || amr.some((a) => a.method === 'password')) return null
+  const at = Math.max(...amr.map((a) => Number(a.timestamp) || 0)) * 1000
   const { data: me } = await admin.from('profiles').select('role').eq('id', user.id).single()
-  return me?.role === 'admin' ? user : null
+  if (me?.role !== 'admin') return null
+  const { count } = await admin.from('login_checks').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+    .gte('at', new Date(at - 15 * 60_000).toISOString()).lte('at', new Date(at + 60_000).toISOString())
+  return count ? user : null
 }
 
 // Asks Tap for the charge (never trusts the redirect) and marks the order paid if it matches.

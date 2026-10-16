@@ -145,3 +145,21 @@ export async function sendOrderEmail(orderOrId, ev) {
     return { sent: false, reason: 'smtp-error' }
   }
 }
+
+/** The sign-in code, sent only after the password was checked (api/login-start.js). Throws if sending fails. */
+export async function sendLoginCodeEmail(to, code) {
+  const t = mailer(); if (!t) throw new Error('smtp-not-configured')
+  const s = await loadSeller()
+  const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;background:#f3f6fa;font-family:Tahoma,'Segoe UI',Arial,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f6fa;padding:24px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:18px;overflow:hidden;direction:rtl;text-align:right">
+<tr><td style="background:#1b2b44;padding:26px 28px" align="center"><img src="${s.logo || siteUrl() + '/logo-white.png'}" width="150" alt="${esc(s.name)}" style="display:block;border:0;height:auto"></td></tr>
+<tr><td style="padding:32px 28px 10px"><h1 style="margin:0 0 10px;font-size:23px;color:#1b2b44">رمز التحقق</h1>
+<p style="margin:0;font-size:15px;line-height:1.9;color:#3a4352">تم إدخال كلمة المرور الصحيحة لحسابك في ${esc(s.name)}. اكتب هذا الرمز لإكمال الدخول.</p></td></tr>
+<tr><td style="padding:18px 28px" align="center"><div dir="ltr" style="display:inline-block;background:#f3f6fa;border:1px solid #dfe5ee;border-radius:14px;padding:16px 26px;font-size:34px;font-weight:bold;letter-spacing:10px;color:#1b2b44;font-family:'Courier New',monospace">${esc(code)}</div>
+<p style="margin:14px 0 0;font-size:13px;color:#6b7686">الرمز صالح لفترة محدودة، لا تشاركه مع أحد.</p></td></tr>
+<tr><td style="padding:18px 28px;background:#f8fafc;border-top:1px solid #e9edf3;font-size:12px;line-height:1.8;color:#6b7686" align="center">إذا ما كنت أنت، غيّر كلمة المرور من «نسيت كلمة المرور؟» فوراً.<br>${esc(s.name)} · ${esc(s.email)}</td></tr>
+</table></td></tr></table></body></html>`
+  await t.sendMail({ from: sender(s.name), to, subject: `${code} رمز التحقق لدخول ${s.name}`, html })
+}

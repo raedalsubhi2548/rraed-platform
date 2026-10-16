@@ -9,8 +9,8 @@ import { STORE_ORIGIN } from '@/lib/host.js'
 /** The owner's own sign-in for the dashboard — no store header, no store look. */
 export default function AdminLogin() {
   const { user, authReady, applyUser } = useApp()
-  const [form, setForm] = useState({ email: '', code: '' })
-  const [sent, setSent] = useState(false) // the code is on its way: the second step asks for it
+  const [form, setForm] = useState({ email: '', password: '', code: '' })
+  const [sent, setSent] = useState(false) // the password was right and the code is on its way
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const [captcha, setCaptcha] = useState('')
@@ -24,15 +24,15 @@ export default function AdminLogin() {
 
   if (authReady && user) return <Navigate to="/admin" replace />
 
-  // sign-in is always an email code: step 1 sends it (to an existing account only), step 2 checks it
-  const send = async () => {
+  // step 1: email + password, checked on the server, which emails a code · step 2: the code signs in
+  const start = async () => {
     if (TURNSTILE_KEY && !captcha) { setErr('انتظر لين يكتمل التحقق'); return }
     setBusy(true)
-    try { await api.sendLoginCode(form.email, {}, captcha); setSent(true); setForm((x) => ({ ...x, code: '' })) } catch (e2) { setErr(/ما عندنا حساب/.test(e2.message) ? 'هذا البريد ما له حساب في لوحة التحكم' : e2.message) } finally { setBusy(false); human.current?.reset() }
+    try { await api.loginStart(form.email, form.password, captcha); setSent(true); setForm((x) => ({ ...x, code: '' })) } catch (e2) { setErr(e2.message) } finally { setBusy(false); human.current?.reset() }
   }
   const submit = async (e) => {
     e.preventDefault(); setErr('')
-    if (!sent) return send()
+    if (!sent) return start()
     setBusy(true)
     try { applyUser(await api.verifyLoginCode(form.email, form.code)) } catch (e2) { setErr(e2.message) } finally { setBusy(false) }
   }
@@ -52,30 +52,37 @@ export default function AdminLogin() {
         <form onSubmit={submit} className="grid gap-4 rounded-[22px] bg-white/[0.04] p-6 shadow-[0_40px_80px_-40px_rgb(0_0_0/0.8)] ring-1 ring-white/10 backdrop-blur-xl sm:p-8">
           <div>
             <h1 className="text-2xl font-bold">دخول المالك</h1>
-            <p className="mt-1 text-sm text-white/55">{sent ? <>أرسلنا رمز الدخول إلى <span dir="ltr">{form.email.trim()}</span></> : 'اكتب بريدك ونرسل لك رمز دخول.'}</p>
+            <p className="mt-1 text-sm text-white/55">{sent ? <>كلمة المرور صحيحة. أرسلنا رمز التحقق إلى <span dir="ltr">{form.email.trim()}</span></> : 'أدر متجرك وطلباتك ومنتجاتك من مكان واحد.'}</p>
           </div>
 
-          {!sent && <label className="grid gap-1.5">
+          {!sent && <>
+          <label className="grid gap-1.5">
             <span className="text-sm font-semibold text-white/80">البريد الإلكتروني</span>
             <span className="relative"><Mail className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-white/40" />
               <input type="email" required dir="ltr" autoComplete="username" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={field} placeholder="name@rraed.com" /></span>
-          </label>}
-          {sent && <label className="grid gap-1.5">
-            <span className="text-sm font-semibold text-white/80">رمز الدخول</span>
+          </label>
+          <label className="grid gap-1.5">
+            <span className="text-sm font-semibold text-white/80">كلمة المرور</span>
             <span className="relative"><KeyRound className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-white/40" />
-              <input required dir="ltr" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={8} autoFocus value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.replace(/D/g, '').slice(0, 8) })} className={field + ' text-center text-2xl tracking-[0.5em]'} placeholder="••••••" /></span>
+              <input type="password" required minLength={6} dir="ltr" autoComplete="current-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={field} placeholder="••••••••" /></span>
+          </label>
+          </>}
+          {sent && <label className="grid gap-1.5">
+            <span className="text-sm font-semibold text-white/80">رمز التحقق</span>
+            <input required dir="ltr" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={8} autoFocus value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.replace(/D/g, '').slice(0, 8) })} className={field.replace('pl-11', 'pl-4') + ' text-center text-2xl tracking-[0.5em]'} placeholder="••••••" />
           </label>}
 
           {TURNSTILE_KEY && <div className="rounded-xl bg-white p-1 text-foreground"><HumanCheck ref={human} onToken={setCaptcha} /></div>}
           {err && <p className="rounded-xl bg-red-500/15 px-4 py-3 text-sm text-red-200 ring-1 ring-red-400/30" role="alert">{err}</p>}
 
           <button disabled={busy} className="mt-1 flex h-12 items-center justify-center gap-2 rounded-xl bg-white text-[15px] font-bold text-[#0b1322] transition hover:bg-[#e6ecf4] disabled:opacity-60">
-            <Lock className="size-4" />{busy ? 'لحظة…' : sent ? 'دخول للوحة التحكم' : 'أرسل رمز الدخول'}
+            <Lock className="size-4" />{busy ? 'لحظة…' : sent ? 'دخول للوحة التحكم' : 'متابعة'}
           </button>
-          {sent && <div className="flex justify-between text-sm text-white/55">
-            <button type="button" onClick={() => { setSent(false); setErr('') }} className="underline-offset-4 hover:text-white hover:underline">غيّر البريد</button>
-            <button type="button" disabled={busy} onClick={() => { setErr(''); send() }} className="underline-offset-4 hover:text-white hover:underline">أرسل رمز جديد</button>
-          </div>}
+          {sent ? <div className="flex justify-between text-sm text-white/55">
+            <button type="button" onClick={() => { setSent(false); setErr('') }} className="underline-offset-4 hover:text-white hover:underline">رجوع</button>
+            <button type="button" disabled={busy} onClick={() => { setErr(''); start() }} className="underline-offset-4 hover:text-white hover:underline">أرسل رمز جديد</button>
+          </div>
+          : <a href={`${STORE_ORIGIN}/login?mode=forgot`} className="justify-self-center text-sm text-white/55 underline-offset-4 hover:text-white hover:underline">نسيت كلمة المرور؟</a>}
         </form>
 
         <div className="mt-6 flex items-center justify-between text-xs text-white/40">

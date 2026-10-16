@@ -40,7 +40,7 @@ Custom-coded store for Raed's services (Salla store design, landing pages, pixel
 - `public/llms.txt` — keep in sync when adding pages.
 
 ## Database (Supabase) — SQL files, run by Raed in the SQL Editor (never by us)
-Order: `schema.sql` → `seed.sql` → `options.sql` → `hardening.sql` → `designer.sql` → `security-2026-10.sql` → `reports.sql` → `login-code-2026-10.sql`.
+Order: `schema.sql` → `seed.sql` → `options.sql` → `hardening.sql` → `designer.sql` → `security-2026-10.sql` → `reports.sql` → `login-code-2026-10.sql` → `login-2fa-2026-10.sql`.
 `reports.sql` is confirmed run on production; `security-2026-10.sql` was handed over but not confirmed — ask Raed before relying on it. Re-running `schema.sql` reopens weaker grants — if it is ever re-run, re-run `security-2026-10.sql` after it.
 New DB changes = a new SQL file in `supabase/` that Raed runs; test it first on a local Postgres 16 (`/usr/lib/postgresql/16/bin`) with stubbed `auth.uid()`.
 
@@ -64,4 +64,4 @@ The owner's order copies go to ORDER_NOTIFY_TO, else every admin account's email
 - Snap Pixel `affec170-…` is in `src/lib/analytics.js` (PAGE_VIEW, VIEW_CONTENT, ADD_CART, START_CHECKOUT, PURCHASE) and the Conversions API in `api/_snap.js` (PURCHASE when an order is marked paid, deduplicated by order id). Token only in Vercel: `SNAP_CAPI_TOKEN` (Raed added it). CSP allows sc-static.net and tr.snapchat.com. Never remove these.
 - A full "night route" luxury redesign was built and rejected by Raed on 16 Oct 2026; it lives on branch `luxury` only. The live design is the earlier one (backup tag `backup-2026-10-16-before-luxury`).
 - Security audit 16 Oct 2026: no secrets in git history or client bundles; anon role denied on orders/profiles/coupons/visits/wishlists/product_files and on the RPCs (security-2026-10.sql confirmed applied); headers strict. Open item: react-router 6.x has moderate advisories fixed only in v7 (breaking); the login `next` redirect is validated as a defence.
-- Sign-in is email code only (16 Oct 2026, Raed's request): `api.sendLoginCode` / `verifyLoginCode` (signInWithOtp + verifyOtp), no passwords anywhere. `supabase/login-code-2026-10.sql` wipes old passwords and makes `is_admin()` refuse password sessions; server functions use `adminFromRequest` (same rule via the JWT amr claim). Supabase «Magic Link» email template must show {{ .Token }} (supabase/email-templates/magic-link.html).
+- Sign-in is two steps (16 Oct 2026, Raed's request): email + password are checked on the server (`api/login-start.js`), which records the check in `login_checks` and emails a code (generateLink + our SMTP); the browser signs in only with that code (`verifyLoginCode`). The dashboard (`is_admin()`, `adminFromRequest`) accepts only a code session that follows a recorded password within 15 minutes. SQL: `login-code-2026-10.sql` (wiped old passwords) then `login-2fa-2026-10.sql`.
