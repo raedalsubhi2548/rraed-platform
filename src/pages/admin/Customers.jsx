@@ -19,11 +19,12 @@ export default function Customers() {
   const [q, setQ] = useState('')
   const [sort, setSort] = useState('recent')
   const [adding, setAdding] = useState(false)
+  const [loadErr, setLoadErr] = useState('')
   const access = useOutletContext()
   const owner = !!access?.owner
   const { notify } = useApp()
   const confirm = useConfirm()
-  const load = () => api.listCustomers().then(setList).catch(() => setList([]))
+  const load = () => api.listCustomers().then((l) => { setLoadErr(''); setList(l) }).catch((e) => { setLoadErr(e.message); setList([]) })
   useEffect(() => { load() }, [])
   const remove = async (c) => {
     if (!(await confirm({ title: `حذف العميل ${c.name || c.email}؟`, body: c.orders ? `طلباته (${c.orders}) تبقى في الطلبات.` : undefined }))) return
@@ -45,7 +46,7 @@ export default function Customers() {
         </div>
       </div>
       {!list ? <Skeleton className="h-96" /> : shown.length === 0 ? (
-        <div className="grid justify-items-center gap-2 rounded-lg border-2 border-dashed border-border-strong py-16 text-center"><Users className="size-8 text-muted-foreground" /><p className="text-muted-foreground">ما فيه عملاء هنا.</p></div>
+        <div className="grid justify-items-center gap-2 rounded-lg border-2 border-dashed border-border-strong py-16 text-center"><Users className="size-8 text-muted-foreground" /><p className="text-muted-foreground">{loadErr || 'ما فيه عملاء هنا.'}</p></div>
       ) : (
         <>
           <ul className="grid gap-2 md:hidden">
