@@ -2,6 +2,7 @@
 // as an ordered list of blocks). Saved as one JSON row (site_settings, id 'main'), baked into the pre-rendered
 // pages and applied live. Every value is checked here before it reaches the page.
 import { waLink } from './format.js'
+import { tamaraRules } from './payrules.js'
 
 export const DEFAULT_SETTINGS = {
   logo: '/logo-300.png', // on light backgrounds (header after scrolling, menus)
@@ -183,6 +184,7 @@ export function mergeSettings(raw) {
     },
     radius: RADII.some(([k]) => k === s.radius) ? s.radius : 'round',
     categoryImages: Object.fromEntries(Object.entries(s.categoryImages && typeof s.categoryImages === 'object' ? s.categoryImages : {}).filter(([k, v]) => SLUG.test(k) && safeUrl(v, '')).slice(0, 40)),
+    payments: { tamara: tamaraRules(s.payments?.tamara) },
     footer: {
       links: ((f) => (f && sig(f) === OLD_FOOTER ? null : f))(Array.isArray(s.footer?.links) ? s.footer.links.slice(0, 8).map((l) => ({ label: text(l?.label, '', 30), to: safeLink(l?.to, '') })).filter((l) => l.label && l.to) : null),
       about: text(s.footer?.about, DEFAULT_ABOUT, 200), payments: s.footer?.payments !== false,

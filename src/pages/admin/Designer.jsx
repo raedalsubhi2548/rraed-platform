@@ -360,7 +360,7 @@ function Backups({ open, onOpenChange, onRestored }) {
 const TABS = [['home', 'الصفحة الرئيسية', 'الرئيسية'], ['store', 'معلومات المتجر', 'المتجر'], ['brand', 'الشعار والألوان والخطوط', 'الهوية'], ['chrome', 'الهيدر والفوتر', 'الهيدر']]
 
 export default function Designer() {
-  const { savedSettings, refreshSettings, notify } = useApp()
+  const { savedSettings, refreshSettings, notify, categories } = useApp()
   const confirm = useConfirm()
   const access = useOutletContext()
   const [backups, setBackups] = useState(false)
@@ -444,6 +444,35 @@ export default function Designer() {
                 ))}
               </div>
             </Panel>
+            {access?.owner && (() => {
+              const t = draft.payments?.tamara || { min: 300, max: 0, coupons: true, exclude: [] }
+              const setT = (fn) => patch((d) => { d.payments ||= {}; d.payments.tamara ||= { ...t }; fn(d.payments.tamara) })
+              return (
+                <Panel title="التقسيط مع تمارا">
+                  <div className="grid gap-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="أقل مبلغ للطلب (ر.س)"><Input value={t.min} inputMode="numeric" dir="ltr" className="text-end" onChange={(e) => setT((x) => { x.min = e.target.value.replace(/\D/g, '').slice(0, 7) })} /></Field>
+                      <Field label="أعلى مبلغ للطلب (ر.س)"><Input value={t.max || ''} inputMode="numeric" dir="ltr" className="text-end" placeholder="بدون حد" onChange={(e) => setT((x) => { x.max = e.target.value.replace(/\D/g, '').slice(0, 7) })} /></Field>
+                    </div>
+                    <Switch checked={t.coupons} onChange={(v) => setT((x) => { x.coupons = v })} label="أكواد الخصم تشمل تمارا" />
+                    <fieldset className="grid gap-2">
+                      <legend className="mb-1 text-sm font-bold">تصنيفات بدون تمارا</legend>
+                      <div className="flex flex-wrap gap-2">
+                        {(categories || []).map((c) => {
+                          const off = (t.exclude || []).includes(c.id)
+                          return (
+                            <button key={c.id} type="button" aria-pressed={off} onClick={() => setT((x) => { x.exclude = off ? (x.exclude || []).filter((y) => y !== c.id) : [...(x.exclude || []), c.id] })}
+                              className={cn('inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-bold ring-1 transition-colors', off ? 'bg-primary text-on-inverse ring-primary' : 'ring-border hover:ring-primary')}>
+                              {off && <Check className="size-3.5" strokeWidth={3} />}{c.name}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </fieldset>
+                  </div>
+                </Panel>
+              )
+            })()}
           </>}
 
           {tab === 'brand' && <>

@@ -87,7 +87,7 @@ export default function Product({ slug: fromProps }) {
               {onSale && <s className="tabular text-muted-foreground">{money(p.price)}</s>}
               {onSale && <Badge variant="soft" className="bg-success-soft text-success">وفّر {money(p.price - p.salePrice)}</Badge>}
               {p.perUnit && <span className="text-sm text-muted-foreground">{p.perUnit}</span>}
-              <TamaraWidget amount={total} className="basis-full" />
+              <TamaraWidget amount={total} categoryId={p.categoryId} className="basis-full" />
             </div>
           }>
             <div className="grid gap-4 p-5">

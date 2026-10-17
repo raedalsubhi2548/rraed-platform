@@ -9,6 +9,7 @@
 import crypto from 'node:crypto'
 import { admin, siteUrl, userFromRequest } from './_shared.js'
 import { browserOf } from './_snap.js'
+import { tamaraRules, tamaraBlock, tamaraBlockText } from '../src/lib/payrules.js'
 
 const BASE = () => (process.env.TAMARA_SANDBOX ? 'https://api-sandbox.tamara.co' : 'https://api.tamara.co')
 const enabled = () => !!process.env.TAMARA_API_TOKEN
@@ -137,8 +138,13 @@ async function start(req, res) {
   if (!order || order.user_id !== user.id) return res.status(404).json({ error: 'الطلب غير موجود' })
   if (order.status !== 'pending') return res.status(409).json({ error: 'هذا الطلب مدفوع مسبقاً' })
   if (!(Number(order.total) > 0)) return res.status(400).json({ error: 'مبلغ الطلب غير صالح' })
-  // the store's floor for Tamara (same as src/components/brand/Tamara.jsx TAMARA_MIN)
-  if (Number(order.total) < 300) return res.status(400).json({ error: 'التقسيط مع تمارا للطلبات من 300 ر.س' })
+  // the owner's rules from the store designer (min, max, coupons, excluded categories) — the same check as the pages
+  const { data: set } = await admin.from('site_settings').select('data').eq('id', 'main').maybeSingle()
+  const rules = tamaraRules(set?.data?.payments?.tamara)
+  const ids = [...new Set((order.items || []).map((it) => it.productId).filter(Boolean))]
+  const { data: prods } = ids.length ? await admin.from('products').select('id, category_id').in('id', ids) : { data: [] }
+  const why = tamaraBlock(rules, { total: Number(order.total), coupon: order.coupon, categories: (prods || []).map((p) => p.category_id) })
+  if (why) return res.status(400).json({ error: `التقسيط مع تمارا: ${tamaraBlockText(why, rules)}` })
 
   const phone = '966' + String(order.customer?.phone || '').replace(/\D/g, '').replace(/^(966|0)/, '')
   if (!/^9665\d{8}$/.test(phone)) return res.status(400).json({ error: 'رقم الجوال في الطلب غير صحيح' })

@@ -8,7 +8,7 @@ export const STOPS = [
   {
     key: 'build', title: 'جهّز', name: 'المتجر',
     text: 'اشتراك سلة، دومين باسمك، ثيم احترافي، وتصميم متجر كامل من 2 إلى 6 أيام.',
-    ids: ['salla-store-design', 'salla-subscription', 'buy-domain', 'salla-theme', 'landing-page-design', 'add-products', 'add-product-options', 'banner-design', 'logo-design'],
+    ids: ['custom-ecommerce-store', 'salla-store-design', 'salla-subscription', 'buy-domain', 'salla-theme', 'landing-page-design', 'add-products', 'add-product-options', 'banner-design', 'logo-design'],
   },
   {
     key: 'activate', title: 'فعّل', name: 'الدفع والتتبع',

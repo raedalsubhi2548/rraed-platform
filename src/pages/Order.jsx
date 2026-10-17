@@ -36,7 +36,7 @@ function InvoiceButton({ order }) {
 export default function Order() {
   const { id } = useParams()
   const [params] = useSearchParams()
-  const { user, authReady, clearCart, notify } = useApp()
+  const { user, authReady, clearCart, notify, byId } = useApp()
   const [paying, setPaying] = useState(false)
   const [order, setOrder] = useState(undefined)
   const [verifying, setVerifying] = useState(false)
@@ -78,6 +78,7 @@ export default function Order() {
   if (!order) return <div className="container-w py-14"><Empty title="ما لقينا الطلب" action={<Button asChild><Link to="/account">طلباتي</Link></Button>}>تأكد إنك مسجّل دخول بنفس الحساب اللي طلبت فيه.</Empty></div>
 
   const paid = order.status !== 'pending' && order.status !== 'cancelled'
+  const tamCtx = { coupon: order.coupon, categories: order.items.map((it) => byId?.[it.productId]?.categoryId) }
   const payTamara = async () => {
     setTamaraBusy(true)
     try { const { redirect } = await api.startTamara(order); window.location.href = redirect } catch (e) { notify(e.message, 'err'); setTamaraBusy(false) }
@@ -109,12 +110,12 @@ export default function Order() {
           {order.status === 'pending' && order.paymentMethod === 'card' && (
             <div className="mt-5 grid gap-3">
               <Button size="lg" className="sm:justify-self-start" onClick={payNow} disabled={paying || tamaraBusy}><Lock />{paying ? 'نحوّلك لبوابة الدفع…' : `أكمل الدفع ${money(order.total)}`}</Button>
-              {tamaraSplit(tamaraCfg, order.total) && (
+              {tamaraSplit(tamaraCfg, order.total, tamCtx) && (
                 <button type="button" onClick={payTamara} disabled={paying || tamaraBusy}
                   className="flex items-center gap-3 rounded-lg p-4 text-start ring-1 ring-border transition-shadow hover:ring-primary disabled:opacity-60 sm:max-w-md">
                   <TamaraBadge className="h-7 shrink-0" />
                   <span className="grid">
-                    <b>{tamaraBusy ? 'نحوّلك لتمارا…' : <>أو قسّمها على {splitText(tamaraSplit(tamaraCfg, order.total))}</>}</b>
+                    <b>{tamaraBusy ? 'نحوّلك لتمارا…' : <>أو قسّمها على {splitText(tamaraSplit(tamaraCfg, order.total, tamCtx))}</>}</b>
                     <small className="text-muted-foreground">بدون فوائد ولا رسوم إضافية</small>
                   </span>
                 </button>

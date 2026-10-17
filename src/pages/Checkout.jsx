@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { CreditCard, Lock, ChevronDown } from 'lucide-react'
-import { useTamara, TamaraBadge, tamaraSplit, tamaraMin, splitText } from '@/components/brand/Tamara.jsx'
+import { useTamara, TamaraBadge, tamaraSplit, tamaraWhy, splitText } from '@/components/brand/Tamara.jsx'
 import { DECLARATION } from '@/data/terms.js'
 import { useApp } from '@/state.jsx'
 import { api, isDemo } from '@/lib/api.js'
@@ -58,6 +58,7 @@ export default function Checkout() {
 
   const discount = coupon ? Math.min(subtotal, coupon.type === 'percent' ? (subtotal * coupon.value) / 100 : coupon.value) : 0
   const total = Math.max(0, subtotal - discount)
+  const tamCtx = { coupon: coupon?.code || null, categories: lines.map((l) => l.product?.categoryId) }
 
   const applyCoupon = async () => {
     setCouponErr('')
@@ -69,7 +70,7 @@ export default function Checkout() {
     setErr('')
     if (!/^0?5\d{8}$|^\+?9665\d{8}$/.test(form.phone.replace(/\s/g, ''))) { setPhoneErr('اكتب رقم جوال سعودي صحيح، مثل 05xxxxxxxx'); document.getElementById('checkout-phone')?.focus(); return }
     setPhoneErr('')
-    if (method === 'tamara' && total > 0 && !tamaraSplit(tamaraCfg, total)) { setErr('التقسيط مع تمارا للطلبات من 300 ر.س، اختر الدفع بالبطاقة'); return }
+    if (method === 'tamara' && total > 0 && !tamaraSplit(tamaraCfg, total, tamCtx)) { setErr(`${tamaraWhy(tamaraCfg, total, tamCtx) || 'التقسيط غير متاح'}، اختر الدفع بالبطاقة`); return }
     if (!agreed) { setErr('لازم توافق على السياسات والشروط والإقرار والتعهد قبل إتمام الطلب'); return }
     setBusy(true)
     try {
@@ -84,7 +85,7 @@ export default function Checkout() {
         pending.current = { key, order }
         try { sessionStorage.setItem('raed:pending-order', JSON.stringify({ key, order: { id: order.id, number: order.number } })) } catch { /* private mode */ }
         // a 100% coupon never goes to Tamara: Tap's path marks it paid without charging
-        const { redirect, free } = method === 'tamara' && total > 0 && tamaraSplit(tamaraCfg, total) ? await api.startTamara(order) : await api.startPayment(order)
+        const { redirect, free } = method === 'tamara' && total > 0 && tamaraSplit(tamaraCfg, total, tamCtx) ? await api.startTamara(order) : await api.startPayment(order)
         if (free) { // a 100% coupon: the order is already paid, no payment page
           pending.current = undefined; try { sessionStorage.removeItem('raed:pending-order') } catch { /* ignore */ }
           clearCart(); nav(`/order/${order.id}?new=1`, { replace: true }); return
@@ -127,14 +128,14 @@ export default function Checkout() {
                 <span className="grid min-w-0"><b className="truncate">بطاقة أو Apple Pay</b><small className="truncate text-muted-foreground">مدى، فيزا، ماستركارد عبر Tap</small></span>
               </label>
               {tamaraCfg?.enabled && total > 0 && (() => {
-                const sp = tamaraSplit(tamaraCfg, total), min = tamaraMin(tamaraCfg)
+                const sp = tamaraSplit(tamaraCfg, total, tamCtx)
                 return (
                   <label className={cn(pay('tamara'), !sp && 'cursor-not-allowed opacity-60')}>
                     <input type="radio" name="pay" checked={method === 'tamara'} disabled={!sp} onChange={() => setMethod('tamara')} className="size-5 shrink-0 accent-[var(--primary)]" />
                     <span className="grid h-9 w-16 shrink-0 place-items-center"><TamaraBadge className="h-7 max-w-16" /></span>
                     <span className="grid min-w-0">
                       <b className="truncate">قسّطها مع تمارا</b>
-                      <small className="truncate text-muted-foreground">{sp ? <>{splitText(sp)} · بدون فوائد</> : min ? `متاح للطلبات من ${min.toLocaleString('en-US')} ر.س` : 'غير متاح لهذا المبلغ'}</small>
+                      <small className="truncate text-muted-foreground">{sp ? <>{splitText(sp)} · بدون فوائد</> : tamaraWhy(tamaraCfg, total, tamCtx)}</small>
                     </span>
                   </label>
                 )

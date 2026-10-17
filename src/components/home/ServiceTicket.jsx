@@ -54,7 +54,7 @@ export default function ServiceTicket({ p, className }) {
               <Plus className="size-[18px]" />
             </button>
           </div>
-          <TamaraMini amount={effectivePrice(p)} className="relative z-10 pt-1" />
+          <TamaraMini amount={effectivePrice(p)} categoryId={p.categoryId} className="relative z-10 pt-1" />
         </div>
       </article>
       {p.options?.length > 0 && <OptionsDialog p={p} open={choose} onOpenChange={setChoose} />}
