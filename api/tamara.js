@@ -12,6 +12,8 @@ import { browserOf } from './_snap.js'
 
 const BASE = () => (process.env.TAMARA_SANDBOX ? 'https://api-sandbox.tamara.co' : 'https://api.tamara.co')
 const enabled = () => !!process.env.TAMARA_API_TOKEN
+// sandbox keys, or TAMARA_TEAM_ONLY=1 (first live test): only the owner and the team see Tamara
+const teamOnly = () => !!(process.env.TAMARA_SANDBOX || process.env.TAMARA_TEAM_ONLY)
 // while testing (sandbox) only the owner and the team see and use Tamara: a test approval moves no real money
 async function isTeam(user) {
   if (!user) return false
@@ -127,7 +129,7 @@ async function start(req, res) {
   const user = await userFromRequest(req)
   if (!user) return res.status(401).json({ error: 'سجّل دخولك أولاً' })
   // while testing (sandbox), only the owner's account can use it: a test approval moves no real money
-  if (process.env.TAMARA_SANDBOX && !(await isTeam(user))) return res.status(403).json({ error: 'التقسيط مع تمارا غير متاح الحين' })
+  if (teamOnly() && !(await isTeam(user))) return res.status(403).json({ error: 'التقسيط مع تمارا غير متاح الحين' })
   const { orderId, city } = req.body || {}
   // Tamara needs an address; services are delivered online, so the city is the customer's if given, else the store's
   const town = String(city || '').replace(/[<>]/g, '').trim().slice(0, 60) || 'الرس'
@@ -201,7 +203,7 @@ export default async function handler(req, res) {
   const op = String(req.query?.op || '')
   if (op === 'config') {
     const sandbox = !!process.env.TAMARA_SANDBOX
-    const on = enabled() && (!sandbox || (await isTeam(await userFromRequest(req))))
+    const on = enabled() && (!teamOnly() || (await isTeam(await userFromRequest(req))))
     return res.status(200).json({ enabled: on, publicKey: on ? process.env.TAMARA_PUBLIC_KEY || '' : '', sandbox, plans: on ? await plans() : [] })
   }
   if (!enabled()) return res.status(503).json({ error: 'التقسيط مع تمارا غير متاح الحين' })

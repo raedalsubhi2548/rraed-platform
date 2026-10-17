@@ -45,7 +45,7 @@ Order: `schema.sql` → `seed.sql` → `options.sql` → `hardening.sql` → `de
 New DB changes = a new SQL file in `supabase/` that Raed runs; test it first on a local Postgres 16 (`/usr/lib/postgresql/16/bin`) with stubbed `auth.uid()`.
 
 ## Env vars (names only; values are in Vercel)
-`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `TAP_SECRET_KEY`, `SITE_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `ORDER_NOTIFY_TO` (optional), `VERCEL_DEPLOY_HOOK`, `TAMARA_API_TOKEN`, `TAMARA_NOTIFICATION_TOKEN`, `TAMARA_PUBLIC_KEY`, `TAMARA_SANDBOX` (=1 while testing; remove for live).
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `TAP_SECRET_KEY`, `SITE_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `ORDER_NOTIFY_TO` (optional), `VERCEL_DEPLOY_HOOK`, `TAMARA_API_TOKEN`, `TAMARA_NOTIFICATION_TOKEN`, `TAMARA_PUBLIC_KEY`, `TAMARA_SANDBOX` (=1 while testing; remove for live), `TAMARA_TEAM_ONLY` (=1: live but visible only to owner and team; remove to open for customers).
 The owner's order copies go to ORDER_NOTIFY_TO, else every admin account's email, else the store email.
 
 ## Rules that broke things before
