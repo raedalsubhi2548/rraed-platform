@@ -202,10 +202,10 @@ function Promises({ b, afterHero }) {
 
 /* ---------------- Store sections ---------------- */
 const CAT_ART = {
-  'design-services': 'raed-cat2-design.webp',
-  'marketing-services': 'raed-cat2-marketing.webp',
-  subscriptions: 'raed-cat2-subscriptions.webp',
-  'government-services': 'raed-cat2-government.webp',
+  'design-services': 'raed-cat3-design.webp',
+  'marketing-services': 'raed-cat3-marketing.webp',
+  subscriptions: 'raed-cat3-subscriptions.webp',
+  'government-services': 'raed-cat3-government.webp',
 }
 /** All categories as one still bento: a large tile locked together with four smaller ones, nothing scrolls. */
 function Categories() {

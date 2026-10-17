@@ -155,7 +155,7 @@ function BlockForm({ block, onChange, catImages, setCatImage }) {
         <div className="grid gap-3 sm:col-span-2">
           <p className="text-sm font-semibold text-primary">صور الأقسام</p>
           <div className="grid grid-cols-2 gap-3">
-            {categories.map((c) => <ImageSlot key={c.id} tall label={c.name} value={catImages[c.id] || ''} fallback={BUILT_IN_CAT[c.id] ? `/brand/ai/raed-cat2-${BUILT_IN_CAT[c.id]}-480.webp` : ''} onChange={(url) => setCatImage(c.id, url)} />)}
+            {categories.map((c) => <ImageSlot key={c.id} tall label={c.name} value={catImages[c.id] || ''} fallback={BUILT_IN_CAT[c.id] ? `/brand/ai/raed-cat3-${BUILT_IN_CAT[c.id]}-480.webp` : ''} onChange={(url) => setCatImage(c.id, url)} />)}
           </div>
         </div>
       )}
