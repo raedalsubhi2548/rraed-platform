@@ -42,7 +42,16 @@ export default function Checkout() {
   useEffect(() => { if (!counted.current && lines.length) { counted.current = true; trackBeginCheckout(lines, subtotal) } }, [lines, subtotal])
   useEffect(() => { if (user) setForm((f) => ({ ...f, name: f.name || user.name, phone: f.phone || user.phone, email: user.email })) }, [user])
 
-  if (leaving) return <div className="container-w grid min-h-[50vh] place-items-center py-14"><p className="flex items-center gap-3 text-lg font-semibold text-primary"><Lock className="size-5" />{method === 'tamara' ? 'نحوّلك لتمارا…' : 'نحوّلك لبوابة الدفع الآمنة…'}</p></div>
+  // on the way to Tamara / Tap: a full-screen hold, so the page never shows its footer while the browser leaves
+  if (leaving) return (
+    <div className="fixed inset-0 z-[200] grid place-items-center bg-background px-6" role="status" aria-live="polite">
+      <div className="grid justify-items-center gap-5 text-center">
+        {method === 'tamara' ? <TamaraBadge className="h-10" /> : <Lock className="size-9 text-primary" />}
+        <span className="size-9 animate-spin rounded-full border-[3px] border-primary/15 border-t-primary" aria-hidden="true" />
+        <p className="text-lg font-semibold text-primary">{method === 'tamara' ? 'نحوّلك لتمارا…' : 'نحوّلك لبوابة الدفع الآمنة…'}</p>
+      </div>
+    </div>
+  )
   if (!authReady) return <div className="container-w py-14"><Skeleton className="h-96" /></div>
   if (!user) return <Navigate to="/login?next=/checkout" replace />
   if (lines.length === 0) return <Navigate to="/cart" replace />
@@ -94,7 +103,7 @@ export default function Checkout() {
   }
 
   const f = (k) => ({ value: form[k], onChange: (e) => setForm({ ...form, [k]: e.target.value }) })
-  const pay = (id) => cn('flex cursor-pointer items-center gap-4 rounded-lg border-[1.5px] p-4 transition-colors', method === id ? 'border-primary bg-sunken' : 'border-border hover:border-border-strong')
+  const pay = (id) => cn('flex min-h-[76px] cursor-pointer items-center gap-3 rounded-lg border-[1.5px] p-4 transition-colors', method === id ? 'border-primary bg-sunken' : 'border-border hover:border-border-strong')
 
   return (
     <div className="container-w py-10 sm:py-14">
@@ -112,19 +121,19 @@ export default function Checkout() {
           <Panel title="طريقة الدفع">
             <div className="grid gap-3">
               <label className={pay('card')}>
-                <input type="radio" name="pay" checked={method === 'card'} onChange={() => setMethod('card')} className="size-5 accent-[var(--primary)]" />
-                <CreditCard className="size-6 text-primary" />
-                <span className="grid"><b>بطاقة أو Apple Pay</b><small className="text-muted-foreground">مدى، فيزا، ماستركارد عبر بوابة Tap الآمنة</small></span>
+                <input type="radio" name="pay" checked={method === 'card'} onChange={() => setMethod('card')} className="size-5 shrink-0 accent-[var(--primary)]" />
+                <span className="grid h-9 w-16 shrink-0 place-items-center"><CreditCard className="size-6 text-primary" /></span>
+                <span className="grid min-w-0"><b className="truncate">بطاقة أو Apple Pay</b><small className="truncate text-muted-foreground">مدى، فيزا، ماستركارد عبر Tap</small></span>
               </label>
               {tamaraCfg?.enabled && total > 0 && (() => {
                 const sp = tamaraSplit(tamaraCfg, total), min = tamaraMin(tamaraCfg)
                 return (
                   <label className={cn(pay('tamara'), !sp && 'cursor-not-allowed opacity-60')}>
-                    <input type="radio" name="pay" checked={method === 'tamara'} disabled={!sp} onChange={() => setMethod('tamara')} className="size-5 accent-[var(--primary)]" />
-                    <TamaraBadge className="h-7 shrink-0" />
-                    <span className="grid">
-                      <b>{sp ? <>قسّمها على {splitText(sp)}</> : 'قسّطها مع تمارا'}</b>
-                      <small className="text-muted-foreground">{sp ? 'بدون فوائد ولا رسوم إضافية، متوافقة مع الشريعة' : min ? `متاح للطلبات من ${min.toLocaleString('en-US')} ر.س` : 'غير متاح لهذا المبلغ'}</small>
+                    <input type="radio" name="pay" checked={method === 'tamara'} disabled={!sp} onChange={() => setMethod('tamara')} className="size-5 shrink-0 accent-[var(--primary)]" />
+                    <span className="grid h-9 w-16 shrink-0 place-items-center"><TamaraBadge className="h-7 max-w-16" /></span>
+                    <span className="grid min-w-0">
+                      <b className="truncate">قسّطها مع تمارا</b>
+                      <small className="truncate text-muted-foreground">{sp ? <>{splitText(sp)} · بدون فوائد</> : min ? `متاح للطلبات من ${min.toLocaleString('en-US')} ر.س` : 'غير متاح لهذا المبلغ'}</small>
                     </span>
                   </label>
                 )

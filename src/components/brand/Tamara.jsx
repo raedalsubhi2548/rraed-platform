@@ -53,6 +53,18 @@ export function TamaraWidget({ amount, className }) {
   )
 }
 
+/** The short version for service cards: badge + «4 × 25 ر.س». Keeps the same height on every card of a row. */
+export function TamaraMini({ amount, className }) {
+  const cfg = useTamara()
+  if (!cfg?.enabled) return null
+  const sp = tamaraSplit(cfg, amount)
+  return (
+    <p className={cn('flex h-6 items-center gap-1.5 text-[11.5px] text-muted-foreground', className)}>
+      {sp && <><TamaraBadge className="h-5" /><span className="tabular">أو {sp.n} × <b className="font-bold text-foreground">{sp.per.toLocaleString('en-US')} ر.س</b></span></>}
+    </p>
+  )
+}
+
 /** The badge itself, for the checkout option. */
 export const TamaraBadge = ({ className }) => <img src="https://cdn.tamara.co/assets/svg/tamara-logo-badge-ar.svg" alt="تمارا" className={cn('h-7 w-auto', className)} />
 

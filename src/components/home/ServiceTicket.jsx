@@ -8,6 +8,7 @@ import { coverFor } from '@/lib/cover.js'
 import { productPath } from '@/lib/slug.js'
 import { trackAddToCart } from '@/lib/analytics.js'
 import OptionsDialog from '@/components/OptionsDialog.jsx'
+import { TamaraMini } from '@/components/brand/Tamara.jsx'
 
 /** A white card pinned with a navy pin: straight, equal height, everything on the same lines across a row. */
 export default function ServiceTicket({ p, className }) {
@@ -53,6 +54,7 @@ export default function ServiceTicket({ p, className }) {
               <Plus className="size-[18px]" />
             </button>
           </div>
+          <TamaraMini amount={effectivePrice(p)} className="relative z-10 pt-1" />
         </div>
       </article>
       {p.options?.length > 0 && <OptionsDialog p={p} open={choose} onOpenChange={setChoose} />}
