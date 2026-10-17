@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { isDemo } from '@/lib/api.js'
+import { useApp } from '@/state.jsx'
 
 // Tamara (pay in instalments). The server says whether it is switched on and gives the public key (api/tamara.js).
 let configP = null
@@ -11,8 +12,11 @@ export function tamaraConfig() {
 }
 /** { enabled, publicKey } after hydration (null until known), so the prerendered page and the first render match. */
 export function useTamara() {
+  const { user } = useApp()
   const [cfg, setCfg] = useState(null)
   useEffect(() => { let alive = true; tamaraConfig().then((c) => alive && setCfg(c)); return () => { alive = false } }, [])
+  // test mode (sandbox keys) shows only to the owner's account, never to customers
+  if (cfg?.sandbox && user?.role !== 'admin') return { enabled: false }
   return cfg
 }
 

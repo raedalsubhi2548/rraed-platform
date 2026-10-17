@@ -97,6 +97,11 @@ async function confirm(tamaraId, browser = {}) {
 async function start(req, res) {
   const user = await userFromRequest(req)
   if (!user) return res.status(401).json({ error: 'سجّل دخولك أولاً' })
+  // while testing (sandbox), only the owner's account can use it: a test approval moves no real money
+  if (process.env.TAMARA_SANDBOX) {
+    const { data: me } = await admin.from('profiles').select('role').eq('id', user.id).maybeSingle()
+    if (me?.role !== 'admin') return res.status(403).json({ error: 'التقسيط مع تمارا غير متاح الحين' })
+  }
   const { orderId, city } = req.body || {}
   const town = String(city || '').replace(/[<>]/g, '').trim().slice(0, 60)
   if (!town) return res.status(400).json({ error: 'اكتب مدينتك' })
