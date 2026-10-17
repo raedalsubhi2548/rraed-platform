@@ -245,8 +245,8 @@ export function seoFor(path, data = {}) {
   return { ...base, title: SITE.name, description: SITE.description, robots: 'noindex,nofollow' }
 }
 
-// How long a service takes, in days [min, max]: every service is delivered in 2 to 6 days (Raed, 16 Oct 2026).
-export const DELIVERY_DAYS = new Proxy({}, { get: () => [2, 6] })
+// How long a service takes, in days [min, max]: 2 to 6 days (Raed, 16 Oct 2026); the custom-coded store 10 to 15 (17 Oct).
+export const DELIVERY_DAYS = new Proxy({ 'custom-ecommerce-store': [10, 15] }, { get: (o, k) => o[k] || [2, 6] })
 
 function itemList(list) {
   return {

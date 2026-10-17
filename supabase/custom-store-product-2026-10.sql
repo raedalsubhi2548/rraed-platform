@@ -41,7 +41,9 @@ values ('custom-ecommerce-store', 'تصميم متجر إلكتروني خاص �
 ## قبل الطلب
 - الشعار والصور ومحتوى المنتجات تكون منك
 - تفعيل بوابة الدفع وتمارا يكون باسم منشأتك، والموافقة عليها من مزوّد الخدمة نفسه
-- نتواصل معك بعد الطلب مباشرة نتفق على التصميم وأقسام متجرك',
+- نتواصل معك بعد الطلب مباشرة نتفق على التصميم وأقسام متجرك
+## مدة التنفيذ
+- من 10 إلى 15 يوم',
         true, false, '[]'::jsonb)
 on conflict (id) do update set
   name = excluded.name, price = excluded.price, category_id = excluded.category_id, image = excluded.image,
