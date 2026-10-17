@@ -69,6 +69,7 @@ export default function Checkout() {
     setErr('')
     if (!/^0?5\d{8}$|^\+?9665\d{8}$/.test(form.phone.replace(/\s/g, ''))) { setPhoneErr('اكتب رقم جوال سعودي صحيح، مثل 05xxxxxxxx'); document.getElementById('checkout-phone')?.focus(); return }
     setPhoneErr('')
+    if (method === 'tamara' && total > 0 && !tamaraSplit(tamaraCfg, total)) { setErr('التقسيط مع تمارا للطلبات من 300 ر.س، اختر الدفع بالبطاقة'); return }
     if (!agreed) { setErr('لازم توافق على السياسات والشروط والإقرار والتعهد قبل إتمام الطلب'); return }
     setBusy(true)
     try {

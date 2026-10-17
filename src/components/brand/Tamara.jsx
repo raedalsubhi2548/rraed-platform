@@ -27,18 +27,24 @@ export function useTamara() {
   return cfg
 }
 
+// The store's own floor for paying with Tamara (Raed, 17 Oct 2026). Below it Tamara is greyed out at checkout and its
+// badge shows nowhere. The server refuses below it too (api/tamara.js).
+export const TAMARA_MIN = 300
+const per = (amount, n) => Math.round((amount / n) * 100) / 100 // exact: 399 / 4 = 99.75
+export const sar = (x) => x.toLocaleString('en-US', { maximumFractionDigits: 2 })
+
 /** How an amount splits with Tamara: { n, per } from the store's own plans (Tamara's limits), or null when it can't. */
 export function tamaraSplit(cfg, amount) {
-  if (!cfg?.enabled || !(amount > 0)) return null
+  if (!cfg?.enabled || !(amount >= TAMARA_MIN)) return null
   const plans = cfg.plans?.length ? cfg.plans : [{ instalments: 4, min: 0, max: 0 }] // Tamara's standard plan in KSA
   const fits = plans.filter((p) => (!p.min || amount >= p.min) && (!p.max || amount <= p.max))
   const p = fits.find((x) => x.instalments === 4) || fits[0]
-  return p ? { n: p.instalments, per: Math.ceil(amount / p.instalments) } : null
+  return p ? { n: p.instalments, per: per(amount, p.instalments) } : null
 }
 /** The smallest order Tamara accepts here (0 when unknown). */
-export const tamaraMin = (cfg) => Math.min(...(cfg?.plans || []).map((p) => p.min || 0).filter(Boolean), Infinity) || 0
+export const tamaraMin = (cfg) => { const mins = (cfg?.plans || []).map((p) => Number(p.min) || 0).filter((x) => x > 0); return Math.max(TAMARA_MIN, mins.length ? Math.min(...mins) : 0) }
 const n = (x) => (x === 2 ? 'دفعتين' : `${x} دفعات`)
-export const splitText = (sp) => `${n(sp.n)} بقيمة ${sp.per.toLocaleString('en-US')} ر.س`
+export const splitText = (sp) => `${n(sp.n)} بقيمة ${sar(sp.per)} ر.س`
 
 /** «Split it with Tamara» under a price (service page, cart): the Tamara badge with the instalment amount.
  *  Nothing shows when Tamara is off or the amount is outside its limits. */
@@ -48,7 +54,7 @@ export function TamaraWidget({ amount, className }) {
   return (
     <p className={cn('flex flex-wrap items-center gap-2 text-[14px] leading-6 text-muted-foreground', className)}>
       <TamaraBadge className="h-6" />
-      <span>قسّمها على {n(sp.n)} بقيمة <b className="tabular font-bold text-foreground">{sp.per.toLocaleString('en-US')} ر.س</b> بدون فوائد</span>
+      <span>قسّمها على {n(sp.n)} بقيمة <b className="tabular font-bold text-foreground">{sar(sp.per)} ر.س</b> بدون فوائد</span>
     </p>
   )
 }
@@ -60,7 +66,7 @@ export function TamaraMini({ amount, className }) {
   const sp = tamaraSplit(cfg, amount)
   return (
     <p className={cn('flex h-6 items-center gap-1.5 text-[11.5px] text-muted-foreground', className)}>
-      {sp && <><TamaraBadge className="h-5" /><span className="tabular">أو {sp.n} × <b className="font-bold text-foreground">{sp.per.toLocaleString('en-US')} ر.س</b></span></>}
+      {sp && <><TamaraBadge className="h-5" /><span className="tabular">أو {sp.n} × <b className="font-bold text-foreground">{sar(sp.per)} ر.س</b></span></>}
     </p>
   )
 }

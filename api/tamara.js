@@ -137,6 +137,8 @@ async function start(req, res) {
   if (!order || order.user_id !== user.id) return res.status(404).json({ error: 'الطلب غير موجود' })
   if (order.status !== 'pending') return res.status(409).json({ error: 'هذا الطلب مدفوع مسبقاً' })
   if (!(Number(order.total) > 0)) return res.status(400).json({ error: 'مبلغ الطلب غير صالح' })
+  // the store's floor for Tamara (same as src/components/brand/Tamara.jsx TAMARA_MIN)
+  if (Number(order.total) < 300) return res.status(400).json({ error: 'التقسيط مع تمارا للطلبات من 300 ر.س' })
 
   const phone = '966' + String(order.customer?.phone || '').replace(/\D/g, '').replace(/^(966|0)/, '')
   if (!/^9665\d{8}$/.test(phone)) return res.status(400).json({ error: 'رقم الجوال في الطلب غير صحيح' })
