@@ -25,7 +25,7 @@ const sar = (n) => ({ amount: Math.round(Number(n) * 100) / 100, currency: 'SAR'
 async function tamara(path, method = 'GET', body) {
   const r = await fetch(BASE() + path, {
     method,
-    headers: { authorization: `Bearer ${process.env.TAMARA_API_TOKEN}`, 'content-type': 'application/json', accept: 'application/json' },
+    headers: { authorization: `Bearer ${String(process.env.TAMARA_API_TOKEN || '').trim().replace(/^Bearer\s+/i, '').replace(/^["']|["']$/g, '')}`, 'content-type': 'application/json', accept: 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
   })
   const data = await r.json().catch(() => ({}))
@@ -35,7 +35,7 @@ const tamaraError = (d) => d?.errors?.[0]?.error_code || d?.message || d?.errors
 
 /** HS256 JWT check with the notification token (no library: header.payload.signature, base64url). */
 function validToken(token) {
-  const key = process.env.TAMARA_NOTIFICATION_TOKEN
+  const key = String(process.env.TAMARA_NOTIFICATION_TOKEN || '').trim()
   if (!key || typeof token !== 'string') return false
   const [h, p, s] = token.split('.')
   if (!h || !p || !s) return false

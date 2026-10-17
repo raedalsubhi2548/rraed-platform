@@ -27,21 +27,6 @@ export function useTamara() {
   return cfg
 }
 
-let scriptP = null
-function loadWidget(publicKey) {
-  if (scriptP) return scriptP
-  window.tamaraWidgetConfig = { lang: 'ar', country: 'SA', publicKey, style: { fontSize: '14px', badgeRatio: 1 } }
-  scriptP = new Promise((resolve) => {
-    const s = document.createElement('script')
-    s.src = 'https://cdn.tamara.co/widget-v2/tamara-widget.js'
-    s.defer = true
-    s.onload = resolve
-    s.onerror = resolve
-    document.head.appendChild(s)
-  })
-  return scriptP
-}
-
 /** How an amount splits with Tamara: { n, per } from the store's own plans (Tamara's limits), or null when it can't. */
 export function tamaraSplit(cfg, amount) {
   if (!cfg?.enabled || !(amount > 0)) return null
@@ -55,25 +40,11 @@ export const tamaraMin = (cfg) => Math.min(...(cfg?.plans || []).map((p) => p.mi
 const n = (x) => (x === 2 ? 'دفعتين' : `${x} دفعات`)
 export const splitText = (sp) => `${n(sp.n)} بقيمة ${sp.per.toLocaleString('en-US')} ر.س`
 
-/** «Split it with Tamara» under a price (service page, cart, checkout): Tamara's own widget when the public key is set,
- *  otherwise the same message drawn here. Nothing shows when Tamara is off or the amount is outside its limits. */
+/** «Split it with Tamara» under a price (service page, cart): the Tamara badge with the instalment amount.
+ *  Nothing shows when Tamara is off or the amount is outside its limits. */
 export function TamaraWidget({ amount, className }) {
-  const cfg = useTamara()
-  const [ready, setReady] = useState(false)
-  const official = !!(cfg?.enabled && cfg.publicKey)
-  useEffect(() => { if (official) loadWidget(cfg.publicKey).then(() => setReady(!!window.customElements?.get('tamara-widget'))) }, [official])
-  // a new amount (options, quantity) re-draws the widget with the new numbers
-  useEffect(() => { if (ready) window.TamaraWidgetV2?.refresh?.() }, [ready, amount])
-  const sp = tamaraSplit(cfg, amount)
+  const sp = tamaraSplit(useTamara(), amount)
   if (!sp) return null
-  if (official && ready) {
-    const value = String(Math.round(Number(amount) * 100) / 100)
-    return (
-      <div className={cn('min-h-6', className)} key={value}>
-        <tamara-widget type="tamara-summary" amount={value} inline-type="2" config='{"badgePosition":"start","showExtraContent":""}' />
-      </div>
-    )
-  }
   return (
     <p className={cn('flex flex-wrap items-center gap-2 text-[14px] leading-6 text-muted-foreground', className)}>
       <TamaraBadge className="h-6" />
