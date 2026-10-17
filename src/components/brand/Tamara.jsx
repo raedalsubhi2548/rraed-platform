@@ -4,19 +4,26 @@ import { isDemo } from '@/lib/api.js'
 import { useApp } from '@/state.jsx'
 
 // Tamara (pay in instalments). The server says whether it is switched on and gives the public key (api/tamara.js).
-let configP = null
-export function tamaraConfig() {
+const configs = new Map() // per signed-in account
+export function tamaraConfig(uid = '') {
   if (isDemo || typeof window === 'undefined') return Promise.resolve({ enabled: false })
-  configP ||= fetch('/api/tamara?op=config').then((r) => (r.ok ? r.json() : { enabled: false })).catch(() => ({ enabled: false }))
-  return configP
+  if (configs.has(uid)) return configs.get(uid)
+  // sent with the session: while testing, the server shows Tamara only to the owner and the team
+  const p = (async () => {
+    const { sb } = await import('@/lib/supa.js')
+    const token = uid && sb ? (await sb.auth.getSession()).data.session?.access_token : ''
+    const r = await fetch('/api/tamara?op=config', { headers: token ? { authorization: 'Bearer ' + token } : {} })
+    return r.ok ? r.json() : { enabled: false }
+  })().catch(() => ({ enabled: false }))
+  configs.set(uid, p)
+  return p
 }
 /** { enabled, publicKey } after hydration (null until known), so the prerendered page and the first render match. */
 export function useTamara() {
   const { user } = useApp()
   const [cfg, setCfg] = useState(null)
-  useEffect(() => { let alive = true; tamaraConfig().then((c) => alive && setCfg(c)); return () => { alive = false } }, [])
-  // test mode (sandbox keys) shows only to the owner's account, never to customers
-  if (cfg?.sandbox && user?.role !== 'admin') return { enabled: false }
+  // asked again when the signed-in account changes (test mode depends on who is signed in)
+  useEffect(() => { let alive = true; tamaraConfig(user?.id || '').then((c) => alive && setCfg(c)); return () => { alive = false } }, [user?.id])
   return cfg
 }
 

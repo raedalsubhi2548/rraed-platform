@@ -12,6 +12,14 @@ import { browserOf } from './_snap.js'
 
 const BASE = () => (process.env.TAMARA_SANDBOX ? 'https://api-sandbox.tamara.co' : 'https://api.tamara.co')
 const enabled = () => !!process.env.TAMARA_API_TOKEN
+// while testing (sandbox) only the owner and the team see and use Tamara: a test approval moves no real money
+async function isTeam(user) {
+  if (!user) return false
+  const { data: me } = await admin.from('profiles').select('role').eq('id', user.id).maybeSingle()
+  if (me?.role === 'admin') return true
+  const { data: st } = await admin.from('staff').select('email').eq('email', String(user.email || '').toLowerCase()).maybeSingle()
+  return !!st
+}
 const sar = (n) => ({ amount: Math.round(Number(n) * 100) / 100, currency: 'SAR' })
 
 async function tamara(path, method = 'GET', body) {
@@ -98,10 +106,7 @@ async function start(req, res) {
   const user = await userFromRequest(req)
   if (!user) return res.status(401).json({ error: 'سجّل دخولك أولاً' })
   // while testing (sandbox), only the owner's account can use it: a test approval moves no real money
-  if (process.env.TAMARA_SANDBOX) {
-    const { data: me } = await admin.from('profiles').select('role').eq('id', user.id).maybeSingle()
-    if (me?.role !== 'admin') return res.status(403).json({ error: 'التقسيط مع تمارا غير متاح الحين' })
-  }
+  if (process.env.TAMARA_SANDBOX && !(await isTeam(user))) return res.status(403).json({ error: 'التقسيط مع تمارا غير متاح الحين' })
   const { orderId, city } = req.body || {}
   const town = String(city || '').replace(/[<>]/g, '').trim().slice(0, 60)
   if (!town) return res.status(400).json({ error: 'اكتب مدينتك' })
@@ -172,8 +177,9 @@ export default async function handler(req, res) {
   res.setHeader('cache-control', 'no-store')
   const op = String(req.query?.op || '')
   if (op === 'config') {
-    res.setHeader('cache-control', 'public, max-age=300')
-    return res.status(200).json({ enabled: enabled(), publicKey: enabled() ? process.env.TAMARA_PUBLIC_KEY || '' : '', sandbox: !!process.env.TAMARA_SANDBOX })
+    const sandbox = !!process.env.TAMARA_SANDBOX
+    const on = enabled() && (!sandbox || (await isTeam(await userFromRequest(req))))
+    return res.status(200).json({ enabled: on, publicKey: on ? process.env.TAMARA_PUBLIC_KEY || '' : '', sandbox })
   }
   if (!enabled()) return res.status(503).json({ error: 'التقسيط مع تمارا غير متاح الحين' })
 
