@@ -192,7 +192,7 @@ async function start(req, res) {
       : /phone/i.test(code) ? 'تمارا ما قبلت رقم الجوال، تأكد منه'
         : 'تعذّر فتح تمارا الحين، جرّب بعد شوي أو ادفع بالبطاقة'
     // while testing, the owner sees Tamara's own reason to fix it fast
-    const detail = process.env.TAMARA_SANDBOX ? ` (${r.status}: ${JSON.stringify(r.data).slice(0, 300)})` : ''
+    const detail = teamOnly() ? (process.env.TAMARA_SANDBOX ? ' [sandbox]' : ' [live]') + ` (${r.status}: ${JSON.stringify(r.data).slice(0, 300)})` : ''
     return res.status(502).json({ error: msg + detail, code: String(code).slice(0, 80) })
   }
   return res.status(200).json({ url: r.data.checkout_url })
