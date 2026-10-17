@@ -1,6 +1,6 @@
 // Tamara (pay in instalments). One function, three jobs (?op=):
 //   GET  config            → { enabled, publicKey } for the widget and the checkout option
-//   POST start  { orderId, city }   → { url }  a Tamara checkout session for the signed-in customer's pending order
+//   POST start  { orderId }   → { url }  a Tamara checkout session for the signed-in customer's pending order
 //   POST notify            ← Tamara's webhook (tamaraToken = JWT signed with TAMARA_NOTIFICATION_TOKEN)
 //   GET  verify ?order=&tamara=     → { ok }   the customer is back from Tamara: confirm the order now
 // An order is marked paid only after Tamara confirms it (authorise), and its amount matches ours. The Tamara order id
@@ -102,14 +102,35 @@ async function confirm(tamaraId, browser = {}) {
   return { ok: true, orderId: order.id }
 }
 
+/** The instalment plans Tamara offers this store, with their limits: [{ instalments, min, max }] (cached 10 minutes). */
+let plansCache = { at: 0, list: [] }
+async function plans() {
+  if (Date.now() - plansCache.at < 600_000) return plansCache.list
+  const list = []
+  for (const value of [1000, 300]) {
+    const r = await tamara(`/checkout/payment-types?country=SA&currency=SAR&order_value=${value}`).catch(() => ({ ok: false }))
+    const types = Array.isArray(r.data) ? r.data : r.data?.payment_types || []
+    for (const t of types) {
+      for (const p of t.supported_instalments?.length ? t.supported_instalments : [{ instalments: t.instalments || (t.name === 'PAY_BY_INSTALMENTS' ? 4 : 0), min_limit: t.min_limit, max_limit: t.max_limit }]) {
+        const n = Number(p.instalments) || 0
+        if (n > 1 && !list.some((x) => x.instalments === n)) list.push({ instalments: n, min: Number(p.min_limit?.amount ?? p.min_limit) || 0, max: Number(p.max_limit?.amount ?? p.max_limit) || 0 })
+      }
+    }
+    if (list.length) break
+  }
+  list.sort((a, b) => a.instalments - b.instalments)
+  plansCache = { at: Date.now(), list }
+  return list
+}
+
 async function start(req, res) {
   const user = await userFromRequest(req)
   if (!user) return res.status(401).json({ error: 'سجّل دخولك أولاً' })
   // while testing (sandbox), only the owner's account can use it: a test approval moves no real money
   if (process.env.TAMARA_SANDBOX && !(await isTeam(user))) return res.status(403).json({ error: 'التقسيط مع تمارا غير متاح الحين' })
   const { orderId, city } = req.body || {}
-  const town = String(city || '').replace(/[<>]/g, '').trim().slice(0, 60)
-  if (!town) return res.status(400).json({ error: 'اكتب مدينتك' })
+  // Tamara needs an address; services are delivered online, so the city is the customer's if given, else the store's
+  const town = String(city || '').replace(/[<>]/g, '').trim().slice(0, 60) || 'الرس'
   const { data: order } = await admin.from('orders').select('*').eq('id', orderId).maybeSingle()
   if (!order || order.user_id !== user.id) return res.status(404).json({ error: 'الطلب غير موجود' })
   if (order.status !== 'pending') return res.status(409).json({ error: 'هذا الطلب مدفوع مسبقاً' })
@@ -168,7 +189,9 @@ async function start(req, res) {
     const msg = /limit|amount|total/i.test(code) ? 'مبلغ الطلب خارج حدود التقسيط في تمارا، جرّب الدفع بالبطاقة'
       : /phone/i.test(code) ? 'تمارا ما قبلت رقم الجوال، تأكد منه'
         : 'تعذّر فتح تمارا الحين، جرّب بعد شوي أو ادفع بالبطاقة'
-    return res.status(502).json({ error: msg, code: String(code).slice(0, 80) })
+    // while testing, the owner sees Tamara's own reason to fix it fast
+    const detail = process.env.TAMARA_SANDBOX ? ` (${r.status}: ${JSON.stringify(r.data).slice(0, 300)})` : ''
+    return res.status(502).json({ error: msg + detail, code: String(code).slice(0, 80) })
   }
   return res.status(200).json({ url: r.data.checkout_url })
 }
@@ -179,7 +202,7 @@ export default async function handler(req, res) {
   if (op === 'config') {
     const sandbox = !!process.env.TAMARA_SANDBOX
     const on = enabled() && (!sandbox || (await isTeam(await userFromRequest(req))))
-    return res.status(200).json({ enabled: on, publicKey: on ? process.env.TAMARA_PUBLIC_KEY || '' : '', sandbox })
+    return res.status(200).json({ enabled: on, publicKey: on ? process.env.TAMARA_PUBLIC_KEY || '' : '', sandbox, plans: on ? await plans() : [] })
   }
   if (!enabled()) return res.status(503).json({ error: 'التقسيط مع تمارا غير متاح الحين' })
 

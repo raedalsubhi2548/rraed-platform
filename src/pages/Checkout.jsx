@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { CreditCard, Lock, ChevronDown } from 'lucide-react'
-import { useTamara, TamaraWidget, TamaraBadge, CITIES } from '@/components/brand/Tamara.jsx'
+import { useTamara, TamaraBadge, tamaraSplit, tamaraMin, splitText } from '@/components/brand/Tamara.jsx'
 import { DECLARATION } from '@/data/terms.js'
 import { useApp } from '@/state.jsx'
 import { api, isDemo } from '@/lib/api.js'
@@ -18,7 +18,6 @@ export default function Checkout() {
   const nav = useNavigate()
   const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' })
   const [method, setMethod] = useState('card')
-  const [city, setCity] = useState('')
   const tamaraCfg = useTamara()
   const [code, setCode] = useState('')
   const [coupon, setCoupon] = useState(null)
@@ -61,7 +60,6 @@ export default function Checkout() {
     setErr('')
     if (!/^0?5\d{8}$|^\+?9665\d{8}$/.test(form.phone.replace(/\s/g, ''))) { setPhoneErr('اكتب رقم جوال سعودي صحيح، مثل 05xxxxxxxx'); document.getElementById('checkout-phone')?.focus(); return }
     setPhoneErr('')
-    if (method === 'tamara' && total > 0 && !city.trim()) { setErr('اكتب مدينتك للتقسيط مع تمارا'); document.getElementById('checkout-city')?.focus(); return }
     if (!agreed) { setErr('لازم توافق على السياسات والشروط والإقرار والتعهد قبل إتمام الطلب'); return }
     setBusy(true)
     try {
@@ -76,7 +74,7 @@ export default function Checkout() {
         pending.current = { key, order }
         try { sessionStorage.setItem('raed:pending-order', JSON.stringify({ key, order: { id: order.id, number: order.number } })) } catch { /* private mode */ }
         // a 100% coupon never goes to Tamara: Tap's path marks it paid without charging
-        const { redirect, free } = method === 'tamara' && total > 0 ? await api.startTamara(order, city) : await api.startPayment(order)
+        const { redirect, free } = method === 'tamara' && total > 0 && tamaraSplit(tamaraCfg, total) ? await api.startTamara(order) : await api.startPayment(order)
         if (free) { // a 100% coupon: the order is already paid, no payment page
           pending.current = undefined; try { sessionStorage.removeItem('raed:pending-order') } catch { /* ignore */ }
           clearCart(); nav(`/order/${order.id}?new=1`, { replace: true }); return
@@ -118,22 +116,19 @@ export default function Checkout() {
                 <CreditCard className="size-6 text-primary" />
                 <span className="grid"><b>بطاقة أو Apple Pay</b><small className="text-muted-foreground">مدى، فيزا، ماستركارد عبر بوابة Tap الآمنة</small></span>
               </label>
-              {tamaraCfg?.enabled && total > 0 && (
-                <div className={cn(pay('tamara'), 'grid gap-3')}>
-                  <label className="flex cursor-pointer items-center gap-4">
-                    <input type="radio" name="pay" checked={method === 'tamara'} onChange={() => setMethod('tamara')} className="size-5 accent-[var(--primary)]" />
-                    <TamaraBadge />
-                    <span className="grid"><b>قسّطها مع تمارا</b><small className="text-muted-foreground">بدون فوائد، متوافقة مع الشريعة</small></span>
+              {tamaraCfg?.enabled && total > 0 && (() => {
+                const sp = tamaraSplit(tamaraCfg, total), min = tamaraMin(tamaraCfg)
+                return (
+                  <label className={cn(pay('tamara'), !sp && 'cursor-not-allowed opacity-60')}>
+                    <input type="radio" name="pay" checked={method === 'tamara'} disabled={!sp} onChange={() => setMethod('tamara')} className="size-5 accent-[var(--primary)]" />
+                    <TamaraBadge className="h-7 shrink-0" />
+                    <span className="grid">
+                      <b>{sp ? <>قسّمها على {splitText(sp)}</> : 'قسّطها مع تمارا'}</b>
+                      <small className="text-muted-foreground">{sp ? 'بدون فوائد ولا رسوم إضافية، متوافقة مع الشريعة' : min ? `متاح للطلبات من ${min.toLocaleString('en-US')} ر.س` : 'غير متاح لهذا المبلغ'}</small>
+                    </span>
                   </label>
-                  <TamaraWidget amount={total} className="ps-9" />
-                  {method === 'tamara' && (
-                    <Field label="المدينة" className="ps-9">
-                      <Input id="checkout-city" value={city} onChange={(e) => setCity(e.target.value)} list="sa-cities" autoComplete="address-level2" placeholder="مثل الرياض" maxLength={60} />
-                      <datalist id="sa-cities">{CITIES.map((c) => <option key={c} value={c} />)}</datalist>
-                    </Field>
-                  )}
-                </div>
-              )}
+                )
+              })()}
             </div>
             {isDemo && method === 'card' && <p className="mt-4 rounded-md border border-dashed border-accent bg-accent/15 p-3 text-sm text-accent-text">وضع العرض: الدفع بالبطاقة يُسجَّل كمدفوع بدون خصم أي مبلغ.</p>}
           </Panel>

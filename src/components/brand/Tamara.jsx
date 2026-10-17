@@ -42,20 +42,43 @@ function loadWidget(publicKey) {
   return scriptP
 }
 
-/** Tamara's own «split it» line for an amount (product page, cart, checkout). Nothing shows when Tamara is off. */
+/** How an amount splits with Tamara: { n, per } from the store's own plans (Tamara's limits), or null when it can't. */
+export function tamaraSplit(cfg, amount) {
+  if (!cfg?.enabled || !(amount > 0)) return null
+  const plans = cfg.plans?.length ? cfg.plans : [{ instalments: 4, min: 0, max: 0 }] // Tamara's standard plan in KSA
+  const fits = plans.filter((p) => (!p.min || amount >= p.min) && (!p.max || amount <= p.max))
+  const p = fits.find((x) => x.instalments === 4) || fits[0]
+  return p ? { n: p.instalments, per: Math.ceil(amount / p.instalments) } : null
+}
+/** The smallest order Tamara accepts here (0 when unknown). */
+export const tamaraMin = (cfg) => Math.min(...(cfg?.plans || []).map((p) => p.min || 0).filter(Boolean), Infinity) || 0
+const n = (x) => (x === 2 ? 'دفعتين' : `${x} دفعات`)
+export const splitText = (sp) => `${n(sp.n)} بقيمة ${sp.per.toLocaleString('en-US')} ر.س`
+
+/** «Split it with Tamara» under a price (service page, cart, checkout): Tamara's own widget when the public key is set,
+ *  otherwise the same message drawn here. Nothing shows when Tamara is off or the amount is outside its limits. */
 export function TamaraWidget({ amount, className }) {
   const cfg = useTamara()
   const [ready, setReady] = useState(false)
-  const on = !!(cfg?.enabled && cfg.publicKey)
-  useEffect(() => { if (on) loadWidget(cfg.publicKey).then(() => setReady(true)) }, [on])
+  const official = !!(cfg?.enabled && cfg.publicKey)
+  useEffect(() => { if (official) loadWidget(cfg.publicKey).then(() => setReady(!!window.customElements?.get('tamara-widget'))) }, [official])
   // a new amount (options, quantity) re-draws the widget with the new numbers
   useEffect(() => { if (ready) window.TamaraWidgetV2?.refresh?.() }, [ready, amount])
-  if (!on || !ready || !(amount > 0)) return null
-  const value = String(Math.round(Number(amount) * 100) / 100)
+  const sp = tamaraSplit(cfg, amount)
+  if (!sp) return null
+  if (official && ready) {
+    const value = String(Math.round(Number(amount) * 100) / 100)
+    return (
+      <div className={cn('min-h-6', className)} key={value}>
+        <tamara-widget type="tamara-summary" amount={value} inline-type="2" config='{"badgePosition":"start","showExtraContent":""}' />
+      </div>
+    )
+  }
   return (
-    <div className={cn('min-h-6', className)} key={value}>
-      <tamara-widget type="tamara-summary" amount={value} inline-type="2" config='{"badgePosition":"start","showExtraContent":""}' />
-    </div>
+    <p className={cn('flex flex-wrap items-center gap-2 text-[14px] leading-6 text-muted-foreground', className)}>
+      <TamaraBadge className="h-6" />
+      <span>قسّمها على {n(sp.n)} بقيمة <b className="tabular font-bold text-foreground">{sp.per.toLocaleString('en-US')} ر.س</b> بدون فوائد</span>
+    </p>
   )
 }
 
@@ -65,4 +88,3 @@ export const TamaraBadge = ({ className }) => <img src="https://cdn.tamara.co/as
 /** How an order was paid, for labels. */
 export const payLabel = (o) => (String(o?.paymentRef || '').startsWith('tamara:') ? 'تمارا (تقسيط)' : o?.paymentMethod === 'bank' ? 'تحويل بنكي' : 'بطاقة / Apple Pay')
 
-export const CITIES = ['الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر', 'الظهران', 'الطائف', 'بريدة', 'عنيزة', 'الرس', 'تبوك', 'أبها', 'خميس مشيط', 'حائل', 'جازان', 'نجران', 'الجبيل', 'الأحساء', 'ينبع', 'الباحة', 'سكاكا', 'عرعر', 'القطيف']

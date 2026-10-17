@@ -8,8 +8,8 @@ import { money, dateTime, waLink } from '@/lib/format.js'
 import { Button } from '@/components/ui/button'
 import OptionList from '@/components/OptionList.jsx'
 import { trackPurchase } from '@/lib/analytics.js'
-import { Panel, OrderTracker, StatusPill, statusLabel, Skeleton, Empty, Field, Input } from '@/components/ui/kit.jsx'
-import { useTamara, TamaraBadge, TamaraWidget, payLabel, CITIES } from '@/components/brand/Tamara.jsx'
+import { Panel, OrderTracker, StatusPill, statusLabel, Skeleton, Empty } from '@/components/ui/kit.jsx'
+import { useTamara, TamaraBadge, payLabel, tamaraSplit, splitText } from '@/components/brand/Tamara.jsx'
 
 export { statusLabel }
 export const StatusTrack = OrderTracker
@@ -43,7 +43,6 @@ export default function Order() {
   const tamaraBack = params.get('tamara') // success | failure | cancel, from Tamara's redirect
   const isNew = params.get('new') || params.get('tap_id') || tamaraBack
   const tamaraCfg = useTamara()
-  const [city, setCity] = useState('')
   const [tamaraBusy, setTamaraBusy] = useState(false)
 
   useEffect(() => {
@@ -80,9 +79,8 @@ export default function Order() {
 
   const paid = order.status !== 'pending' && order.status !== 'cancelled'
   const payTamara = async () => {
-    if (!city.trim()) { notify('اكتب مدينتك أول', 'err'); document.getElementById('order-city')?.focus(); return }
     setTamaraBusy(true)
-    try { const { redirect } = await api.startTamara(order, city); window.location.href = redirect } catch (e) { notify(e.message, 'err'); setTamaraBusy(false) }
+    try { const { redirect } = await api.startTamara(order); window.location.href = redirect } catch (e) { notify(e.message, 'err'); setTamaraBusy(false) }
   }
   const payNow = async () => {
     setPaying(true)
@@ -111,16 +109,15 @@ export default function Order() {
           {order.status === 'pending' && order.paymentMethod === 'card' && (
             <div className="mt-5 grid gap-3">
               <Button size="lg" className="sm:justify-self-start" onClick={payNow} disabled={paying || tamaraBusy}><Lock />{paying ? 'نحوّلك لبوابة الدفع…' : `أكمل الدفع ${money(order.total)}`}</Button>
-              {tamaraCfg?.enabled && order.total > 0 && (
-                <div className="grid gap-3 rounded-lg p-4 ring-1 ring-border sm:max-w-md">
-                  <p className="flex items-center gap-3 font-semibold"><TamaraBadge />أو قسّطها مع تمارا</p>
-                  <TamaraWidget amount={order.total} />
-                  <Field label="المدينة">
-                    <Input id="order-city" value={city} onChange={(e) => setCity(e.target.value)} list="sa-cities-o" autoComplete="address-level2" placeholder="مثل الرياض" maxLength={60} />
-                    <datalist id="sa-cities-o">{CITIES.map((c) => <option key={c} value={c} />)}</datalist>
-                  </Field>
-                  <Button variant="outline" onClick={payTamara} disabled={paying || tamaraBusy}>{tamaraBusy ? 'نحوّلك لتمارا…' : 'أكمل مع تمارا'}</Button>
-                </div>
+              {tamaraSplit(tamaraCfg, order.total) && (
+                <button type="button" onClick={payTamara} disabled={paying || tamaraBusy}
+                  className="flex items-center gap-3 rounded-lg p-4 text-start ring-1 ring-border transition-shadow hover:ring-primary disabled:opacity-60 sm:max-w-md">
+                  <TamaraBadge className="h-7 shrink-0" />
+                  <span className="grid">
+                    <b>{tamaraBusy ? 'نحوّلك لتمارا…' : <>أو قسّمها على {splitText(tamaraSplit(tamaraCfg, order.total))}</>}</b>
+                    <small className="text-muted-foreground">بدون فوائد ولا رسوم إضافية</small>
+                  </span>
+                </button>
               )}
             </div>
           )}
