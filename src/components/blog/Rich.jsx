@@ -65,8 +65,8 @@ function ServiceBox({ id }) {
           {p.summary && <p className="mt-1 text-[14px] leading-7 text-on-inverse/75">{p.summary}</p>}
         </div>
         <div className="relative flex items-center gap-3 sm:flex-col sm:items-end">
-          <span className="tabular font-display text-2xl font-bold">{money(price)}</span>
-          <Link to={productPath(p.id)} className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-[14px] font-bold text-primary transition-colors hover:bg-accent">
+          <span className="tabular flex items-baseline gap-2 whitespace-nowrap">{price < p.price && <s className="text-[14px] text-on-inverse/60">{money(p.price)}</s>}<span className={price < p.price ? 'font-display text-xl font-bold text-[#ff6b6b] sm:text-2xl' : 'font-display text-2xl font-bold'}>{money(price)}</span></span>
+          <Link to={productPath(p.id)} className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-white px-5 text-[14px] font-bold text-primary transition-colors hover:bg-accent">
             تفاصيل الخدمة<ArrowLeft className="size-4" />
           </Link>
         </div>

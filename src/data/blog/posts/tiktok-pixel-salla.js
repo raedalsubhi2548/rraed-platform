@@ -58,4 +58,6 @@ export default `
 [[service:tiktok-ads-creation]]
 
 واقرأ كمان عن [فوائد بكسل سناب شات لمتجرك](/blog/snapchat-pixel-salla).
+
+وإذا تبغى زوار إعلانك يوصلون لصفحة مصممة للبيع بس، اقرأ [مميزات صفحة الهبوط المبرمجة](/blog/landing-page-benefits).
 `

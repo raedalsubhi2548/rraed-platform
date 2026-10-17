@@ -3,7 +3,7 @@
 import { seedCategories, seedProducts } from '../data/seed.js'
 
 const K = (k) => `raed:${k}`
-const SEED_VERSION = '2026-10-17'
+const SEED_VERSION = '2026-10-17b'
 
 function read(key, fallback) {
   try {

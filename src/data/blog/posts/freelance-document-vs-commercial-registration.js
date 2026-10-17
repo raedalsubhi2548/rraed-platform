@@ -62,4 +62,6 @@ export default `
 أو نطلع لك سجل تجاري إلكتروني ونتابع الطلب لين يطلع:
 
 [[service:issue-commercial-registration-saudi]]
+
+وبعد ما تطلع وثيقتك أو سجلك، تقدر تفعّل التقسيط في متجرك. اقرأ [التقسيط مع تمارا لمتجرك](/blog/tamara-instalments-store).
 `

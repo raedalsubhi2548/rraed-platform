@@ -146,7 +146,7 @@ const linkTo = (link) => (!link ? {} : /^https:/i.test(link) ? { href: liveWa(li
 function ImageTextBlock({ b }) {
   const { byId } = useApp()
   const p = b.priceOf && byId[b.priceOf]
-  const extra = (p || b.payIcons) && <>{p && <span className="tabular text-xl font-semibold text-primary">{money(effectivePrice(p))}</span>}{b.payIcons && <PayIcons className="w-full max-w-[460px]" />}</>
+  const extra = (p || b.payIcons) && <>{p && <span className="tabular flex items-baseline gap-2">{effectivePrice(p) < p.price && <s className="text-base text-muted-foreground">{money(p.price)}</s>}<span className={cn('text-xl font-semibold', effectivePrice(p) < p.price ? 'text-danger' : 'text-primary')}>{money(effectivePrice(p))}</span></span>}{b.payIcons && <PayIcons className="w-full max-w-[460px]" />}</>
   return <SceneBanner img={b.image || `${ART}/raed-landing.webp`} {...linkTo(b.link)} kicker={b.kicker} title={b.title} accent={b.accent} body={b.text} cta={b.cta} extra={extra} />
 }
 

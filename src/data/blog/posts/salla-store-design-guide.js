@@ -54,4 +54,6 @@ export default `
 [[service:salla-theme]]
 
 ولما يجهز متجرك، اقرأ عن [فوائد بكسل سناب شات](/blog/snapchat-pixel-salla) عشان تبدأ إعلاناتك صح.
+
+وإذا كبر متجرك وتبغى تتحرر من الباقات والقوالب، اقرأ [الفرق بين المتجر الإلكتروني الخاص والمنصة الجاهزة](/blog/custom-store-vs-ready-platform).
 `

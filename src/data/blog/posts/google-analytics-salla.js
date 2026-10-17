@@ -42,4 +42,6 @@ Google Analytics يشتغل مع **Google Ads** و**Search Console** و**Merchan
 [[service:google-tools-integration]]
 
 ولو تعلن على السوشال ميديا، اقرأ عن [مميزات بكسل سناب شات](/blog/snapchat-pixel-salla) و[فوائد بكسل تيك توك](/blog/tiktok-pixel-salla).
+
+وتبغى متجر فيه أدوات قوقل والبكسلات والتقارير جاهزة من أول يوم؟ اقرأ عن [المتجر الإلكتروني الخاص بالبرمجة](/blog/custom-store-vs-ready-platform).
 `

@@ -26,7 +26,7 @@ const IMG = 'https://cdn.salla.sa/zvxNvp/'
 
 const RAW_PRODUCTS = [
   {
-    id: 'custom-ecommerce-store', name: 'تصميم متجر إلكتروني خاص بالبرمجة', price: 3999, categoryId: 'design-services',
+    id: 'custom-ecommerce-store', name: 'تصميم متجر إلكتروني خاص بالبرمجة', price: 4999, salePrice: 3999, categoryId: 'design-services',
     image: '/brand/products/custom-ecommerce-store.webp',
     badge: 'الأقوى عندنا', featured: true, sort: 0,
     summary: 'متجر إلكتروني مبرمج باسمك بلوحة تحكم كاملة، دفع وتقسيط تمارا، بكسلات وأدوات قوقل وسيو قوي، بدون باقات ولا اشتراك منصة. دومين واستضافة مجاناً أول سنة.',

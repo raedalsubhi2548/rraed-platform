@@ -1,6 +1,6 @@
--- Raed store — new flagship service (17 Oct 2026): «تصميم متجر إلكتروني خاص بالبرمجة», 3999 SAR. Safe to run again.
+-- Raed store — new flagship service (17 Oct 2026): «تصميم متجر إلكتروني خاص بالبرمجة», 4999 → 3999 SAR (sale). Safe to run again.
 insert into public.products (id, name, price, sale_price, category_id, image, badge, featured, sort, summary, description, active, digital, options)
-values ('custom-ecommerce-store', 'تصميم متجر إلكتروني خاص بالبرمجة', 3999, null, 'design-services',
+values ('custom-ecommerce-store', 'تصميم متجر إلكتروني خاص بالبرمجة', 4999, 3999, 'design-services',
         '/brand/products/custom-ecommerce-store.webp', 'الأقوى عندنا', true, 0,
         'متجر إلكتروني مبرمج باسمك بلوحة تحكم كاملة، دفع وتقسيط تمارا، بكسلات وأدوات قوقل وسيو قوي، بدون باقات ولا اشتراك منصة. دومين واستضافة مجاناً أول سنة.',
         'متجرك الإلكتروني الخاص، مبرمج من الصفر باسمك وبهويتك، بلوحة تحكم كاملة تدير منها كل شي: الطلبات والمنتجات والعملاء والخصومات والتقارير والتصميم. نفس المنصة اللي تشوفها الحين في منصة رائد، تصير لك أنت، بدون باقات ولا اشتراك شهري لمنصة جاهزة ولا ميزات مقفلة عليك. بدل ما تأجّر متجر على منصة غيرك وتنحصر في حدود باقتك، تمتلك متجرك بالكامل: تصميم ما يشبه أحد، سرعة عالية، سيو قوي من أول يوم، دفع إلكتروني وتقسيط، وأدوات تسويق وتتبع تخلي كل ريال إعلان محسوب.
@@ -46,6 +46,6 @@ values ('custom-ecommerce-store', 'تصميم متجر إلكتروني خاص �
 - من 10 إلى 15 يوم',
         true, false, '[]'::jsonb)
 on conflict (id) do update set
-  name = excluded.name, price = excluded.price, category_id = excluded.category_id, image = excluded.image,
+  name = excluded.name, price = excluded.price, sale_price = excluded.sale_price, category_id = excluded.category_id, image = excluded.image,
   badge = excluded.badge, featured = excluded.featured, sort = excluded.sort, summary = excluded.summary,
   description = excluded.description, active = true;

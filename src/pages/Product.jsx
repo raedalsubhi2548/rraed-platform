@@ -83,8 +83,8 @@ export default function Product({ slug: fromProps }) {
 
           <Ticket className="mt-6" head={
             <div className="flex flex-wrap items-baseline gap-3 p-5">
-              <span className="tabular font-display text-4xl font-semibold text-primary">{money(effectivePrice(p))}</span>
-              {onSale && <s className="tabular text-muted-foreground">{money(p.price)}</s>}
+              <span className={cn('tabular font-display text-4xl font-semibold', onSale ? 'text-danger' : 'text-primary')}>{money(effectivePrice(p))}</span>
+              {onSale && <s className="tabular text-lg text-muted-foreground">{money(p.price)}</s>}
               {onSale && <Badge variant="soft" className="bg-success-soft text-success">وفّر {money(p.price - p.salePrice)}</Badge>}
               {p.perUnit && <span className="text-sm text-muted-foreground">{p.perUnit}</span>}
               <TamaraWidget amount={total} categoryId={p.categoryId} className="basis-full" />
