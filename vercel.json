@@ -8,10 +8,6 @@
     {
       "source": "/(order|account|admin)/:path*",
       "destination": "/200"
-    },
-    {
-      "source": "/([^/.]+)",
-      "destination": "/200"
     }
   ],
   "headers": [

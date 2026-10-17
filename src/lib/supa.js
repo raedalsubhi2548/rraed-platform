@@ -85,6 +85,10 @@ async function staffCall(method, query = '', body) {
   return out
 }
 
+// Every service and section has its own pre-built page: after a catalog change the site rebuilds (api/rebuild.js,
+// which collapses quick changes into one), so a new service gets its page and an old one returns a real 404.
+const republish = () => { supa.rebuildSite().catch(() => {}) }
+
 export const supa = {
   mode: 'live',
   ready: Promise.resolve(),
@@ -175,16 +179,19 @@ export const supa = {
     const row = productRow({ ...p, id: p.id || 'p-' + Date.now().toString(36) })
     check(await sb.from('products').upsert(row))
     if (p.fileUrl !== undefined) check(await sb.rpc('set_product_file', { p_product: row.id, p_path: p.fileUrl || '' }))
+    republish()
     return product(row)
   },
-  async deleteProduct(id) { check(await sb.from('products').delete().eq('id', id)) },
+  async deleteProduct(id) { check(await sb.from('products').delete().eq('id', id)); republish() },
   async saveCategory(c) {
     check(await sb.from('categories').upsert({ id: c.id || 'c-' + Date.now().toString(36), name: c.name, blurb: c.blurb, icon: c.icon || 'spark', sort: c.sort ?? 99 }))
+    republish()
   },
   async deleteCategory(id) {
     const { count } = await sb.from('products').select('id', { count: 'exact', head: true }).eq('category_id', id)
     if (count) throw new Error('انقل منتجات هذا التصنيف أولاً ثم احذفه')
     check(await sb.from('categories').delete().eq('id', id))
+    republish()
   },
   // ---------- store designer ----------
   async getSettings() {
