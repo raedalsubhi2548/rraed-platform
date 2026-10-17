@@ -82,6 +82,7 @@ export const BLOCK_DEFAULTS = {
 /** The home page as it was designed (used until the owner saves their own). */
 export const defaultHome = (hero = {}) => [
   { id: 'hero', type: 'hero', on: true, ...HERO, ...hero },
+  { id: 'custom-store', type: 'imageText', on: true, kicker: 'منصة كاملة باسمك، بدون باقات', title: 'متجرك الخاص بالبرمجة', accent: 'بلوحة تحكم كاملة', text: 'نفس منصة رائد تصير لك: دفع وتقسيط تمارا، بكسلات وأدوات قوقل، وسيو قوي. دومين واستضافة أول سنة هدية.', cta: 'اطلبه الحين', link: '/custom-ecommerce-store', image: '/brand/ai/raed-custom-store.webp', priceOf: 'custom-ecommerce-store', payIcons: false },
   { id: 'promises', type: 'promises', on: true, ...BLOCK_DEFAULTS.promises },
   { id: 'new', type: 'products', on: true, eyebrow: 'جديدنا ومميزاتنا', title: 'الأكثر طلباً عند عملائنا', source: 'picked', category: '', ids: ['salla-store-design', 'landing-page-design', 'google-tools-integration', 'ai-integration-chatgpt-claude-salla'], limit: 4, viewAll: true, viewAllTo: '/shop' },
   { id: 'landing', type: 'imageText', on: true, kicker: 'طفشت من الاشتراكات الشهرية؟', title: 'صفحة هبوط مبرمجة لك', accent: 'بدون اشتراك شهري', text: 'مبرمجة بـ HTML وCSS وJavaScript، مع دومين واستضافة سنة هدية.', cta: 'اطلبها الحين', link: '/landing-page-design', image: '/brand/ai/raed-landing.webp', priceOf: 'landing-page-design', payIcons: false },
@@ -152,6 +153,15 @@ const safeLink = (v, d = '') => {
 }
 const text = (v, d, max = 160) => (typeof v === 'string' ? v.slice(0, max) : d)
 
+// The flagship «متجرك الخاص بالبرمجة» block (17 Oct 2026) goes once into home pages saved before it existed, right after
+// the hero. `added.customStore` is saved with the next publish, so if the owner removes the block it doesn't come back.
+function withCustomStore(s, home) {
+  if (s.added?.customStore || home.some((b) => b.id === 'custom-store')) return home
+  const blk = cleanBlock(defaultHome().find((b) => b.id === 'custom-store'))
+  const at = home.findIndex((b) => b.type === 'hero')
+  return [...home.slice(0, at + 1), blk, ...home.slice(at + 1)].slice(0, 30)
+}
+
 /** Saved settings on top of the defaults, every value checked. */
 export function mergeSettings(raw) {
   const s = raw && typeof raw === 'object' ? raw : {}
@@ -164,7 +174,8 @@ export function mergeSettings(raw) {
     colors: { primary: safeColor(c.primary, D.colors.primary), accent: safeColor(c.accent, D.colors.accent), background: safeColor(c.background, D.colors.background) },
     announcement: { on: !!a.on && !!String(a.text || '').trim(), text: text(a.text, '', 140), link: safeLink(a.link) },
     // the first designer kept the hero on its own; it now lives in the home blocks
-    home: (Array.isArray(s.home) ? s.home : defaultHome(typeof s.hero === 'object' ? s.hero : {})).slice(0, 30).map(cleanBlock).filter(Boolean),
+    home: withCustomStore(s, (Array.isArray(s.home) ? s.home : defaultHome(typeof s.hero === 'object' ? s.hero : {})).slice(0, 30).map(cleanBlock).filter(Boolean)),
+    added: { customStore: true },
     background: { image: safeUrl(s.background?.image, ''), decor: s.background?.decor !== false },
     header: {
       links: ((h) => (h && sig(h) !== OLD_HEADER ? h : DEFAULT_HEADER_LINKS))(Array.isArray(s.header?.links) ? s.header.links.slice(0, 6).map((l) => ({ label: text(l?.label, '', 24), to: safeLink(l?.to, '') })).filter((l) => l.label && l.to) : null),
