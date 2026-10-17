@@ -51,4 +51,6 @@ export default `
 [[service:snapchat-ads-creation]]
 
 وتبغى الصورة كاملة؟ اقرأ عن [فوائد ربط Google Analytics بمتجرك](/blog/google-analytics-salla) و[مميزات بكسل تيك توك](/blog/tiktok-pixel-salla).
+
+ولما يكون البكسل جاهز، اقرأ [كيف تسوي حملة سناب شات تجيب طلبات مو مشاهدات](/blog/snapchat-ads-for-stores).
 `

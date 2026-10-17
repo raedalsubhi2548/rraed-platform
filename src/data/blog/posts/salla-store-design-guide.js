@@ -56,4 +56,6 @@ export default `
 ولما يجهز متجرك، اقرأ عن [فوائد بكسل سناب شات](/blog/snapchat-pixel-salla) عشان تبدأ إعلاناتك صح.
 
 وإذا كبر متجرك وتبغى تتحرر من الباقات والقوالب، اقرأ [الفرق بين المتجر الإلكتروني الخاص والمنصة الجاهزة](/blog/custom-store-vs-ready-platform).
+
+وقبل ما تختار مين يصمم متجرك، اقرأ [5 معايير تختار فيها مصمم متاجر سلة](/blog/choose-salla-store-designer) و[كم سعر تصميم متجر إلكتروني؟](/blog/ecommerce-store-design-cost)
 `

@@ -7,6 +7,7 @@ import Icon from '@/components/Icon.jsx'
 import ServiceTicket from '@/components/home/ServiceTicket.jsx'
 import { PageHead, Empty, Input, Select, Skeleton } from '@/components/ui/kit.jsx'
 import { Button } from '@/components/ui/button'
+import { SEO_H1 } from '@/lib/seo.js'
 import { effectivePrice } from '@/lib/format.js'
 
 const SORTS = [
@@ -44,7 +45,7 @@ export default function Shop({ categoryId: fromProps }) {
     <div className="container-w py-10 sm:py-14 [--notch:var(--background)]">
       <PageHead
         crumbs={<><Link to="/" className="hover:underline">الرئيسية</Link><span>/</span><span>{cat ? cat.name : 'كل الخدمات'}</span></>}
-        title={cat ? cat.name : q ? `نتائج «${q}»` : 'كل الخدمات'}
+        title={cat ? SEO_H1[cat.id] || cat.name : q ? `نتائج «${q}»` : 'كل الخدمات'}
         lead={cat?.blurb || `كل خدمات ${settings.store.name} بأسعار ثابتة. اختر القسم أو ابحث باسم الخدمة.`}
       />
 

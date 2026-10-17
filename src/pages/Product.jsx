@@ -16,6 +16,8 @@ import { trackAddToCart, trackViewProduct } from '@/lib/analytics.js'
 import NotFound from './NotFound.jsx'
 import Stars from '@/components/brand/Stars.jsx'
 import { SERVICE_RATINGS } from '@/data/reviews.js'
+import { SEO_H1 } from '@/lib/seo.js'
+import { POSTS, blogPath } from '@/data/blog/index.js'
 
 export default function Product({ slug: fromProps }) {
   const { id: fromUrl } = useParams()
@@ -36,6 +38,7 @@ export default function Product({ slug: fromProps }) {
   const cat = categories.find((c) => c.id === p.categoryId)
   const { intro, sections } = parseDescription(p.description)
   const related = products.filter((x) => x.categoryId === p.categoryId && x.id !== p.id).slice(0, 4)
+  const articles = POSTS.filter((a) => a.services?.includes(p.id)).slice(0, 4)
   const wished = wishlist.includes(p.id)
   const onSale = p.salePrice && p.salePrice < p.price
   const total = unitPrice(p, sel) * qty
@@ -73,7 +76,7 @@ export default function Product({ slug: fromProps }) {
         </div>
 
         <div>
-          <h1 className="text-balance font-display text-display-sm font-semibold leading-tight text-primary sm:text-display-md">{p.name}</h1>
+          <h1 className="text-balance font-display text-display-sm font-semibold leading-tight text-primary sm:text-display-md">{SEO_H1[p.id] || p.name}</h1>
           {rating && (
             <a href={rating.reviews.length ? '#reviews' : undefined} className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground">
               <Stars size={15} /><span className="tabular font-semibold text-foreground">5.0</span><span>({rating.count} تقييم)</span>
@@ -166,6 +169,17 @@ export default function Product({ slug: fromProps }) {
               </figure>
             ))}
           </div>
+        </section>
+      )}
+
+      {articles.length > 0 && (
+        <section className="mt-16">
+          <h2 className="mb-5 font-display text-2xl font-semibold text-primary">مقالات تفيدك</h2>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {articles.map((a) => (
+              <li key={a.slug}><Link to={blogPath(a.slug)} className="flex h-full items-center rounded-lg bg-surface p-4 font-semibold leading-7 text-primary shadow-hairline ring-1 ring-border transition-colors hover:ring-primary">{a.title}</Link></li>
+            ))}
+          </ul>
         </section>
       )}
 

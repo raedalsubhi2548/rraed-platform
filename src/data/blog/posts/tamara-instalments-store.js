@@ -48,4 +48,6 @@ export default `
 التقسيط يشجع العميل يشتري، والتوثيق يطمّنه إن متجرك رسمي. اقرأ [فوائد توثيق المتجر في منصة الأعمال](/blog/business-platform-verification).
 
 [[service:business-verification]]
+
+ومحتار بين الخدمتين؟ اقرأ [تابي أو تمارا للمتاجر: أيهم تفعّل؟](/blog/tabby-vs-tamara-stores)
 `

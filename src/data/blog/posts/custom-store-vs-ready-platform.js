@@ -88,4 +88,6 @@ export default `
 [[service:landing-page-design]]
 
 وإذا تفضّل تكمل على سلة حالياً، شوف [مميزات تصميم متجر سلة الاحترافي](/blog/salla-store-design-guide).
+
+واقرأ بعدها: [أفضل منصة لإنشاء متجر إلكتروني في السعودية](/blog/best-ecommerce-platform-saudi) و[سعر تصميم متجر إلكتروني والتكاليف كاملة](/blog/ecommerce-store-design-cost).
 `
