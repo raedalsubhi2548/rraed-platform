@@ -17,6 +17,9 @@ export const SITE = {
   url: ((typeof process !== 'undefined' && process.env?.SITE_URL) || 'https://rraed.com').replace(/\/$/, ''),
   phone: '+' + WA,
   email: 'info@rraed.com',
+  // the same business elsewhere: Google Business Profile (verified Oct 2026); add the official social accounts here
+  sameAs: ['https://www.google.com/maps?cid=13261550770911996180'],
+  map: 'https://www.google.com/maps?cid=13261550770911996180',
   logo: '/logo.png',
   ogImage: '/og-v2.jpg', // new file name: WhatsApp and others cache link previews by image URL
   tagline: 'تصميم متاجر سلة وصفحات الهبوط والتسويق والخدمات التجارية',
@@ -114,6 +117,8 @@ const ORG = () => ({
   areaServed: { '@type': 'Country', name: 'المملكة العربية السعودية' },
   priceRange: 'SAR',
   contactPoint: [{ '@type': 'ContactPoint', telephone: SITE.phone, email: SITE.email, contactType: 'customer service', availableLanguage: ['ar', 'en'] }],
+  sameAs: SITE.sameAs,
+  hasMap: SITE.map,
 })
 
 const WEBSITE = () => ({
