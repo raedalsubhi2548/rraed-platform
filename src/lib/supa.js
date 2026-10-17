@@ -320,6 +320,18 @@ export const supa = {
     const a = Object.assign(document.createElement('a'), { href: url, download: `فاتورة-${order.number}.pdf` })
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000)
   },
+  // Tamara instalments (api/tamara.js): a checkout session for a pending order, then the check when the customer is back
+  async startTamara(o, city) {
+    const { data } = await sb.auth.getSession()
+    const res = await fetch('/api/tamara?op=start', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + data.session?.access_token }, body: JSON.stringify({ orderId: o.id, city }) })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(body.error || 'تعذّر فتح تمارا، جرّب بعد شوي')
+    return { redirect: body.url }
+  },
+  async verifyTamara(orderId, tamaraId) {
+    const res = await fetch(`/api/tamara?op=verify&order=${encodeURIComponent(orderId)}&tamara=${encodeURIComponent(tamaraId || '')}`)
+    return res.json().catch(() => ({}))
+  },
   async verifyPayment(orderId, tapId) {
     const res = await fetch(`/api/tap-verify?order=${encodeURIComponent(orderId)}&tap_id=${encodeURIComponent(tapId)}`)
     return res.json().catch(() => ({}))

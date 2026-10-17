@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { CreditCard, Lock, ChevronDown } from 'lucide-react'
+import { useTamara, TamaraWidget, TamaraBadge, CITIES } from '@/components/brand/Tamara.jsx'
 import { DECLARATION } from '@/data/terms.js'
 import { useApp } from '@/state.jsx'
 import { api, isDemo } from '@/lib/api.js'
@@ -17,6 +18,8 @@ export default function Checkout() {
   const nav = useNavigate()
   const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' })
   const [method, setMethod] = useState('card')
+  const [city, setCity] = useState('')
+  const tamaraCfg = useTamara()
   const [code, setCode] = useState('')
   const [coupon, setCoupon] = useState(null)
   const [couponErr, setCouponErr] = useState('')
@@ -40,7 +43,7 @@ export default function Checkout() {
   useEffect(() => { if (!counted.current && lines.length) { counted.current = true; trackBeginCheckout(lines, subtotal) } }, [lines, subtotal])
   useEffect(() => { if (user) setForm((f) => ({ ...f, name: f.name || user.name, phone: f.phone || user.phone, email: user.email })) }, [user])
 
-  if (leaving) return <div className="container-w grid min-h-[50vh] place-items-center py-14"><p className="flex items-center gap-3 text-lg font-semibold text-primary"><Lock className="size-5" />نحوّلك لبوابة الدفع الآمنة…</p></div>
+  if (leaving) return <div className="container-w grid min-h-[50vh] place-items-center py-14"><p className="flex items-center gap-3 text-lg font-semibold text-primary"><Lock className="size-5" />{method === 'tamara' ? 'نحوّلك لتمارا…' : 'نحوّلك لبوابة الدفع الآمنة…'}</p></div>
   if (!authReady) return <div className="container-w py-14"><Skeleton className="h-96" /></div>
   if (!user) return <Navigate to="/login?next=/checkout" replace />
   if (lines.length === 0) return <Navigate to="/cart" replace />
@@ -58,20 +61,22 @@ export default function Checkout() {
     setErr('')
     if (!/^0?5\d{8}$|^\+?9665\d{8}$/.test(form.phone.replace(/\s/g, ''))) { setPhoneErr('اكتب رقم جوال سعودي صحيح، مثل 05xxxxxxxx'); document.getElementById('checkout-phone')?.focus(); return }
     setPhoneErr('')
+    if (method === 'tamara' && total > 0 && !city.trim()) { setErr('اكتب مدينتك للتقسيط مع تمارا'); document.getElementById('checkout-city')?.focus(); return }
     if (!agreed) { setErr('لازم توافق على السياسات والشروط والإقرار والتعهد قبل إتمام الطلب'); return }
     setBusy(true)
     try {
       const items = lines.map(({ product: p, qty, note, options, chosen, unit }) => ({ productId: p.id, name: p.name, price: unit, qty, note: note || '', image: p.image, digital: !!p.digital, optionKeys: options, options: chosen }))
       // if paying failed a moment ago, retry the same order instead of creating a duplicate
-      const key = `${method}|${total}|${coupon?.code || ''}|${lines.map((l) => l.key + 'x' + l.qty).join(',')}`
+      const key = `${total}|${coupon?.code || ''}|${lines.map((l) => l.key + 'x' + l.qty).join(',')}`
       const order = (pending.current?.key === key && pending.current.order) || await api.createOrder({
         items, customer: { name: form.name, phone: form.phone, email: form.email },
-        notes: form.notes, coupon: coupon?.code || null, subtotal, discount, total, paymentMethod: method,
+        notes: form.notes, coupon: coupon?.code || null, subtotal, discount, total, paymentMethod: 'card',
       })
-      if (method === 'card' && !isDemo) {
+      if ((method === 'card' || method === 'tamara') && !isDemo) {
         pending.current = { key, order }
         try { sessionStorage.setItem('raed:pending-order', JSON.stringify({ key, order: { id: order.id, number: order.number } })) } catch { /* private mode */ }
-        const { redirect, free } = await api.startPayment(order)
+        // a 100% coupon never goes to Tamara: Tap's path marks it paid without charging
+        const { redirect, free } = method === 'tamara' && total > 0 ? await api.startTamara(order, city) : await api.startPayment(order)
         if (free) { // a 100% coupon: the order is already paid, no payment page
           pending.current = undefined; try { sessionStorage.removeItem('raed:pending-order') } catch { /* ignore */ }
           clearCart(); nav(`/order/${order.id}?new=1`, { replace: true }); return
@@ -113,6 +118,22 @@ export default function Checkout() {
                 <CreditCard className="size-6 text-primary" />
                 <span className="grid"><b>بطاقة أو Apple Pay</b><small className="text-muted-foreground">مدى، فيزا، ماستركارد عبر بوابة Tap الآمنة</small></span>
               </label>
+              {tamaraCfg?.enabled && total > 0 && (
+                <div className={cn(pay('tamara'), 'grid gap-3')}>
+                  <label className="flex cursor-pointer items-center gap-4">
+                    <input type="radio" name="pay" checked={method === 'tamara'} onChange={() => setMethod('tamara')} className="size-5 accent-[var(--primary)]" />
+                    <TamaraBadge />
+                    <span className="grid"><b>قسّطها مع تمارا</b><small className="text-muted-foreground">بدون فوائد، متوافقة مع الشريعة</small></span>
+                  </label>
+                  <TamaraWidget amount={total} className="ps-9" />
+                  {method === 'tamara' && (
+                    <Field label="المدينة" className="ps-9">
+                      <Input id="checkout-city" value={city} onChange={(e) => setCity(e.target.value)} list="sa-cities" autoComplete="address-level2" placeholder="مثل الرياض" maxLength={60} />
+                      <datalist id="sa-cities">{CITIES.map((c) => <option key={c} value={c} />)}</datalist>
+                    </Field>
+                  )}
+                </div>
+              )}
             </div>
             {isDemo && method === 'card' && <p className="mt-4 rounded-md border border-dashed border-accent bg-accent/15 p-3 text-sm text-accent-text">وضع العرض: الدفع بالبطاقة يُسجَّل كمدفوع بدون خصم أي مبلغ.</p>}
           </Panel>
@@ -151,7 +172,7 @@ export default function Checkout() {
             </div>
           </details>
           {!agreed && <p className="mt-3 text-center text-[13px] text-muted-foreground">علّم على الموافقة فوق عشان يتفعّل زر الدفع</p>}
-          <Button size="lg" className="mt-4 w-full" disabled={busy || !agreed}><Lock />{busy ? 'جاري تأكيد الطلب…' : total === 0 ? 'أكمل الطلب' : method === 'card' ? `ادفع ${money(total)}` : 'أكّد الطلب'}</Button>
+          <Button size="lg" className="mt-4 w-full" disabled={busy || !agreed}><Lock />{busy ? 'جاري تأكيد الطلب…' : total === 0 ? 'أكمل الطلب' : method === 'tamara' && total > 0 ? 'أكمل مع تمارا' : method === 'card' ? `ادفع ${money(total)}` : 'أكّد الطلب'}</Button>
 
         </Panel>
       </form>

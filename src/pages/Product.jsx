@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { Heart, ShieldCheck, Clock, Download, MessageCircle, Check } from 'lucide-react'
 import { useApp } from '@/state.jsx'
+import { TamaraWidget } from '@/components/brand/Tamara.jsx'
 import { cn } from '@/lib/utils'
 import ServiceTicket from '@/components/home/ServiceTicket.jsx'
 import { Ticket } from '@/components/home/Waybill.jsx'
@@ -86,6 +87,7 @@ export default function Product({ slug: fromProps }) {
               {onSale && <s className="tabular text-muted-foreground">{money(p.price)}</s>}
               {onSale && <Badge variant="soft" className="bg-success-soft text-success">وفّر {money(p.price - p.salePrice)}</Badge>}
               {p.perUnit && <span className="text-sm text-muted-foreground">{p.perUnit}</span>}
+              <TamaraWidget amount={total} className="basis-full" />
             </div>
           }>
             <div className="grid gap-4 p-5">

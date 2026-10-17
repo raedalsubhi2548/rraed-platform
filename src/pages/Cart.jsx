@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ShoppingBag, Trash2 } from 'lucide-react'
 import { useApp } from '@/state.jsx'
+import { TamaraWidget } from '@/components/brand/Tamara.jsx'
 import { money } from '@/lib/format.js'
 import { productPath } from '@/lib/slug.js'
 import OptionList from '@/components/OptionList.jsx'
@@ -38,6 +39,7 @@ export default function Cart() {
           </ul>
           <Panel title="ملخص الطلب" className="lg:sticky lg:top-[calc(var(--header-height)+24px)]">
             <div className="flex items-center justify-between border-b border-border pb-4"><span className="text-muted-foreground">المجموع</span><strong className="tabular font-display text-2xl text-primary">{money(subtotal)}</strong></div>
+            <TamaraWidget amount={subtotal} className="mt-4" />
             <p className="my-4 text-sm text-muted-foreground">كود الخصم وطريقة الدفع في الخطوة التالية.</p>
             <div className="grid gap-2">
               <Button asChild size="lg"><Link to="/checkout">إتمام الطلب</Link></Button>

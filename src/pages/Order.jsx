@@ -8,7 +8,8 @@ import { money, dateTime, waLink } from '@/lib/format.js'
 import { Button } from '@/components/ui/button'
 import OptionList from '@/components/OptionList.jsx'
 import { trackPurchase } from '@/lib/analytics.js'
-import { Panel, OrderTracker, StatusPill, statusLabel, Skeleton, Empty } from '@/components/ui/kit.jsx'
+import { Panel, OrderTracker, StatusPill, statusLabel, Skeleton, Empty, Field, Input } from '@/components/ui/kit.jsx'
+import { useTamara, TamaraBadge, TamaraWidget, payLabel, CITIES } from '@/components/brand/Tamara.jsx'
 
 export { statusLabel }
 export const StatusTrack = OrderTracker
@@ -39,7 +40,11 @@ export default function Order() {
   const [paying, setPaying] = useState(false)
   const [order, setOrder] = useState(undefined)
   const [verifying, setVerifying] = useState(false)
-  const isNew = params.get('new') || params.get('tap_id')
+  const tamaraBack = params.get('tamara') // success | failure | cancel, from Tamara's redirect
+  const isNew = params.get('new') || params.get('tap_id') || tamaraBack
+  const tamaraCfg = useTamara()
+  const [city, setCity] = useState('')
+  const [tamaraBusy, setTamaraBusy] = useState(false)
 
   useEffect(() => {
     if (!authReady) return
@@ -47,7 +52,21 @@ export default function Order() {
     let paidNow = false
     const load = () => api.getOrder(id).then((o) => { if (paidNow && o && o.status !== 'pending') trackPurchase(o); if (alive) setOrder(o) }).catch(() => alive && setOrder(null))
     const tap = params.get('tap_id')
-    if (tap && api.verifyPayment) {
+    if (tamaraBack === 'success' && api.verifyTamara) {
+      // Tamara sends its own order id back; the server checks it with Tamara before marking anything paid.
+      // If it isn't there yet, the webhook may still be on its way: look again for a few seconds.
+      setVerifying(true)
+      const tid = params.get('orderId') || params.get('order_id') || ''
+      const tries = async (n) => {
+        const r = tid ? await api.verifyTamara(id, tid).catch(() => ({})) : {}
+        const o = await api.getOrder(id).catch(() => null)
+        if (r?.ok || (o && o.status !== 'pending') || n <= 0) return { paid: !!(r?.ok || (o && o.status !== 'pending')) }
+        await new Promise((res) => setTimeout(res, 2500))
+        return tries(n - 1)
+      }
+      tries(4).then(({ paid }) => { if (paid) { paidNow = true; clearCart(); try { sessionStorage.removeItem('raed:pending-order') } catch { /* ignore */ } } })
+        .finally(() => { if (alive) setVerifying(false); load() })
+    } else if (tap && api.verifyPayment) {
       setVerifying(true)
       api.verifyPayment(id, tap).then((r) => {
         if (r?.ok) { paidNow = true; clearCart(); try { sessionStorage.removeItem('raed:pending-order') } catch { /* ignore */ } }
@@ -60,6 +79,11 @@ export default function Order() {
   if (!order) return <div className="container-w py-14"><Empty title="ما لقينا الطلب" action={<Button asChild><Link to="/account">طلباتي</Link></Button>}>تأكد إنك مسجّل دخول بنفس الحساب اللي طلبت فيه.</Empty></div>
 
   const paid = order.status !== 'pending' && order.status !== 'cancelled'
+  const payTamara = async () => {
+    if (!city.trim()) { notify('اكتب مدينتك أول', 'err'); document.getElementById('order-city')?.focus(); return }
+    setTamaraBusy(true)
+    try { const { redirect } = await api.startTamara(order, city); window.location.href = redirect } catch (e) { notify(e.message, 'err'); setTamaraBusy(false) }
+  }
   const payNow = async () => {
     setPaying(true)
     try { const { redirect, free } = await api.startPayment(order); if (free) { setOrder(await api.getOrder(order.id)); setPaying(false); return } window.location.href = redirect } catch (e) { notify(e.message, 'err'); setPaying(false) }
@@ -72,7 +96,7 @@ export default function Order() {
           <div>
             <h1 className={cn('font-display text-2xl font-semibold sm:text-3xl', !paid && 'text-primary')}>{paid ? 'وصلنا طلبك' : 'استلمنا طلبك وبانتظار الدفع'}</h1>
             <p className={cn('mt-1', paid ? 'text-on-inverse/80' : 'text-muted-foreground')}>
-              <span className="tabular">رقم الطلب #{order.number}.</span> {paid ? 'بنتواصل معك قريباً لبدء التنفيذ.' : 'ما اكتملت عملية الدفع، تقدر تكملها الحين.'}
+              <span className="tabular">رقم الطلب #{order.number}.</span> {paid ? 'بنتواصل معك قريباً لبدء التنفيذ.' : tamaraBack === 'cancel' ? 'ألغيت الدفع مع تمارا، تقدر تكمل بالبطاقة أو ترجع لتمارا.' : tamaraBack === 'failure' ? 'ما تمت الموافقة مع تمارا، تقدر تكمل الدفع بالبطاقة.' : 'ما اكتملت عملية الدفع، تقدر تكملها الحين.'}
             </p>
           </div>
         </div>
@@ -85,7 +109,20 @@ export default function Order() {
           <OrderTracker status={order.status} />
           {paid && <div className="mt-5"><InvoiceButton order={order} /></div>}
           {order.status === 'pending' && order.paymentMethod === 'card' && (
-            <div className="mt-5"><Button size="lg" onClick={payNow} disabled={paying}><Lock />{paying ? 'نحوّلك لبوابة الدفع…' : `أكمل الدفع ${money(order.total)}`}</Button></div>
+            <div className="mt-5 grid gap-3">
+              <Button size="lg" className="sm:justify-self-start" onClick={payNow} disabled={paying || tamaraBusy}><Lock />{paying ? 'نحوّلك لبوابة الدفع…' : `أكمل الدفع ${money(order.total)}`}</Button>
+              {tamaraCfg?.enabled && order.total > 0 && (
+                <div className="grid gap-3 rounded-lg p-4 ring-1 ring-border sm:max-w-md">
+                  <p className="flex items-center gap-3 font-semibold"><TamaraBadge />أو قسّطها مع تمارا</p>
+                  <TamaraWidget amount={order.total} />
+                  <Field label="المدينة">
+                    <Input id="order-city" value={city} onChange={(e) => setCity(e.target.value)} list="sa-cities-o" autoComplete="address-level2" placeholder="مثل الرياض" maxLength={60} />
+                    <datalist id="sa-cities-o">{CITIES.map((c) => <option key={c} value={c} />)}</datalist>
+                  </Field>
+                  <Button variant="outline" onClick={payTamara} disabled={paying || tamaraBusy}>{tamaraBusy ? 'نحوّلك لتمارا…' : 'أكمل مع تمارا'}</Button>
+                </div>
+              )}
+            </div>
           )}
           <h3 className="mt-8 mb-3 font-display font-semibold text-primary">السجل</h3>
           <ol className="relative grid gap-4 border-s-2 border-border-strong ps-5">
@@ -118,7 +155,7 @@ export default function Order() {
             {order.discount > 0 && <div className="flex justify-between text-success"><dt>خصم {order.coupon}</dt><dd className="tabular">− {money(order.discount)}</dd></div>}
             <div className="flex items-baseline justify-between"><dt className="font-bold">الإجمالي</dt><dd className="tabular font-display text-2xl font-semibold text-primary">{money(order.total)}</dd></div>
           </dl>
-          <p className="mt-2 text-xs text-muted-foreground">{order.paymentMethod === 'card' ? 'بطاقة / Apple Pay' : 'تحويل بنكي'} · <span className="tabular">{dateTime(order.createdAt)}</span></p>
+          <p className="mt-2 text-xs text-muted-foreground">{payLabel(order)} · <span className="tabular">{dateTime(order.createdAt)}</span></p>
           <Button asChild variant="outline" className="mt-5 w-full"><Link to="/account">كل طلباتي</Link></Button>
         </Panel>
       </div>

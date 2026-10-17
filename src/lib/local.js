@@ -181,8 +181,8 @@ export const local = {
     const now = new Date().toISOString()
     const o = {
       ...order, id: uid('o_'), number: 10000 + orders.length + 1, userId: me?.id || null,
-      status: order.paymentMethod === 'card' ? 'paid' : 'pending', createdAt: now,
-      history: order.paymentMethod === 'card'
+      status: order.paymentMethod !== 'bank' ? 'paid' : 'pending', createdAt: now,
+      history: order.paymentMethod !== 'bank'
         ? [{ status: 'pending', at: now }, { status: 'paid', at: now, note: 'دفع تجريبي في وضع العرض' }]
         : [{ status: 'pending', at: now, note: 'بانتظار التحويل البنكي' }],
     }
@@ -342,6 +342,8 @@ export const local = {
 
   // ---------- payments ----------
   async startPayment(order) { return { redirect: null, order } },
+  async startTamara() { throw new Error('تمارا متاحة في المتجر الحقيقي فقط') },
+  async verifyTamara() { return { ok: false } },
   async notifyOrder() {},
   async testOrderNotice() { return { sent: false, reason: 'demo' } },
   async downloadInvoice() { throw new Error('الفاتورة متاحة في المتجر الحقيقي فقط') },

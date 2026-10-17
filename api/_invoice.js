@@ -87,7 +87,7 @@ export function invoicePdf(order, seller) {
 
     // meta strip
     let y = 156
-    const meta = [['رقم الفاتورة', String(order.number)], ['التاريخ', date(order.paid_at || order.created_at)], ['حالة الدفع', STATUS_AR[order.status] || order.status], ['طريقة الدفع', order.payment_method === 'bank' ? 'تحويل بنكي' : 'بطاقة أو Apple Pay']]
+    const meta = [['رقم الفاتورة', String(order.number)], ['التاريخ', date(order.paid_at || order.created_at)], ['حالة الدفع', STATUS_AR[order.status] || order.status], ['طريقة الدفع', String(order.payment_ref || '').startsWith('tamara:') ? 'تمارا (تقسيط)' : order.payment_method === 'bank' ? 'تحويل بنكي' : 'بطاقة أو Apple Pay']]
     const cw = (R - L) / meta.length
     meta.forEach(([k, v], i) => {
       const xr = R - i * cw

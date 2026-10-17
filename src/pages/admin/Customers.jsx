@@ -76,7 +76,7 @@ export default function Customers() {
                   <Td>{c.phone ? <a className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline" href={wa(c.phone)} target="_blank" rel="noreferrer"><MessageCircle className="size-4" /><span dir="ltr">{c.phone}</span></a> : <span className="text-muted-foreground">—</span>}</Td>
                   <Td className="tabular">{c.orders}</Td>
                   <Td className="tabular font-semibold text-primary">{money(c.spent)}</Td>
-                  <Td className="whitespace-nowrap text-muted-foreground">{date(c.createdAt)}</Td>
+                  <Td className="whitespace-nowrap text-muted-foreground">{c.createdAt ? date(c.createdAt) : "—"}</Td>
                   {owner && <Td>{canDelete(c) && <IconBtn tone="danger" onClick={() => remove(c)} aria-label={`حذف ${c.name}`}><Trash2 className="size-4" /></IconBtn>}</Td>}
                 </tr>
               ))}</tbody>

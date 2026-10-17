@@ -13,6 +13,7 @@ import { AdminHead, SearchBox, Segments, TableCard, Table, Th, Td, useConfirm } 
 import NewOrder from '@/components/admin/NewOrder.jsx'
 import { can } from '@/lib/perms.js'
 import { STORE_ORIGIN } from '@/lib/host.js'
+import { payLabel } from '@/components/brand/Tamara.jsx'
 import OptionList from '@/components/OptionList.jsx'
 
 const waPhone = (p) => (p || '').replace(/\D/g, '').replace(/^0/, '966')
@@ -71,8 +72,8 @@ function OrderDetail({ order, onSaved, owner, onDeleted }) {
           <div className="flex justify-between pt-1 font-display text-base font-semibold text-primary"><dt>الإجمالي</dt><dd className="tabular">{money(order.total)}</dd></div>
         </dl>
         <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-          {order.paymentMethod === 'card' ? <><CreditCard className="size-4" />بطاقة / Apple Pay</> : <><Landmark className="size-4" />تحويل بنكي</>}
-          {(order.paymentRef || order.tapId) && <span className="ms-auto font-mono" dir="ltr">{order.paymentRef || order.tapId}</span>}
+          {order.paymentMethod === 'bank' ? <Landmark className="size-4" /> : <CreditCard className="size-4" />}{payLabel(order)}
+          {(order.paymentRef || order.tapId) && <span className="ms-auto truncate font-mono" dir="ltr">{String(order.paymentRef || order.tapId).replace(/^tamara:/, '')}</span>}
         </p>
         {order.status === 'pending' && (
           <Button variant="outline" size="sm" className="mt-3 w-full" onClick={copyLink}><Link2 className="size-4" />نسخ رابط الدفع</Button>
@@ -173,7 +174,7 @@ export default function Orders() {
                   <Td><strong className="tabular text-primary">#{o.number}</strong></Td>
                   <Td><p className="font-semibold">{o.customer?.name}</p><p className="text-xs text-muted-foreground" dir="ltr">{o.customer?.phone}</p></Td>
                   <Td className="max-w-56"><p className="truncate">{o.items.map((i) => i.name).join('، ')}</p></Td>
-                  <Td className="text-muted-foreground">{o.paymentMethod === 'card' ? <CreditCard className="size-4" aria-label="بطاقة" /> : <Landmark className="size-4" aria-label="تحويل" />}</Td>
+                  <Td className="text-muted-foreground">{String(o.paymentRef || '').startsWith('tamara:') ? <span className="text-xs font-bold">تمارا</span> : o.paymentMethod === 'card' ? <CreditCard className="size-4" aria-label="بطاقة" /> : <Landmark className="size-4" aria-label="تحويل" />}</Td>
                   <Td><StatusPill status={o.status} /></Td>
                   <Td className="tabular font-semibold">{money(o.total)}</Td>
                   <Td className="whitespace-nowrap text-muted-foreground">{dateTime(o.createdAt)}</Td>
