@@ -1,5 +1,6 @@
 import { fromSlug, toSlug, productPath } from './slug.js'
 import { POSTS, BLOG_CATEGORIES, blogPath } from '../data/blog/index.js'
+import { SERVICE_FAQ } from '../data/serviceFaq.js'
 import { SERVICE_RATINGS } from '../data/reviews.js'
 // One source of truth for titles, descriptions, canonical links, social cards and structured
 // data. Used at runtime (useSeo) and at build time (scripts/prerender.mjs) so crawlers that do
@@ -68,7 +69,7 @@ export const SEO_H1 = {
   'pixel-integration': 'ربط بكسل سناب وتيك توك وميتا بمتجرك',
   'google-tools-integration': 'ربط قوقل أناليتكس وأدوات قوقل بمتجرك',
   'issue-commercial-registration-saudi': 'إصدار سجل تجاري إلكتروني',
-  'freelance-certificate-family-platform': 'وثيقة العمل الحر للتجارة الإلكترونية',
+  'freelance-certificate-family-platform': 'وثيقة العمل الحر للأسر المنتجة والتجارة الإلكترونية',
   'business-verification': 'توثيق متجر إلكتروني في منصة الأعمال',
   'tabby-registration': 'تابي للمتاجر: التسجيل وتفعيل التقسيط',
   'tmara-registration': 'تمارا للمتاجر: التسجيل وتفعيل التقسيط',
@@ -92,7 +93,7 @@ const SEO_PRODUCT = {
   'salla-theme': ['شراء ثيم سلة «ثيم عالي» الأصلي وتركيبه', 'شراء ثيمات سلة الأصلية المرخّصة: نركّب «ثيم عالي» ونفعّله على متجرك، مع ضبط الإعدادات ودعم بعد التركيب.'],
   'buy-domain': ['حجز دومين لمتجر سلة وربطه', 'حجز دومين رسمي باسم متجرك (.com أو .sa) وربطه بمتجر سلة، مع ضبط الإعدادات والتأكد من التفعيل. خدمة حجز دومين سلة من منصة رائد.'],
   'issue-commercial-registration-saudi': ['إصدار سجل تجاري إلكتروني في السعودية', 'إصدار سجل تجاري إلكتروني عبر وزارة التجارة، مع اختيار النشاط المناسب ومتابعة الطلب حتى الإصدار.'],
-  'freelance-certificate-family-platform': ['وثيقة العمل الحر للتجارة الإلكترونية', 'إصدار وثيقة العمل الحر عبر منصة الأسر المنتجة: السنة الأولى مجانية والوثيقة لثلاث سنوات. نجهّز طلبك ونتابعه حتى الإصدار.'],
+  'freelance-certificate-family-platform': ['إصدار وثيقة العمل الحر للأسر المنتجة', 'إصدار وثيقة العمل الحر عبر منصة الأسر المنتجة: السنة الأولى مجانية والوثيقة لثلاث سنوات. نجهّز طلبك ونتابعه حتى الإصدار.'],
   'business-verification': ['توثيق متجر إلكتروني في منصة الأعمال', 'توثيق متجرك الإلكتروني في منصة الأعمال والحصول على علامة التوثيق الرسمية، مع تجهيز الطلب ومتابعته حتى القبول.'],
   'tabby-registration': ['تابي للمتاجر: التسجيل وتفعيل التقسيط بمتجرك', 'تفعيل الدفع بالتقسيط عبر تابي في متجرك، مع تجهيز طلب التسجيل لنسبة قبول أعلى.'],
   'tmara-registration': ['تمارا للمتاجر: التسجيل وتفعيل التقسيط بمتجرك', 'تفعيل الدفع بالتقسيط عبر تمارا في متجرك، مع متابعة طلب التسجيل حتى التفعيل.'],
@@ -269,7 +270,8 @@ export function seoFor(path, data = {}) {
             hasMerchantReturnPolicy: { '@type': 'MerchantReturnPolicy', applicableCountry: 'SA', returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted', merchantReturnLink: abs('/policies') },
           },
         },
-      ],
+        SERVICE_FAQ[p.id]?.length && { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: SERVICE_FAQ[p.id].map((q) => ({ '@type': 'Question', name: q.q, acceptedAnswer: { '@type': 'Answer', text: q.a } })) },
+      ].filter(Boolean),
     }
   }
   if (path === '/work') return { ...base, title: t('أعمالنا: متاجر سلة صممناها وتصاميم سوشال ميديا'), description: clip(`نماذج من أعمال ${SITE.name}: 13 متجر سلة صممناها كاملة، وبنرات وتصاميم سوشال ميديا لعملائنا. شوف شغلنا قبل ما تطلب.`), jsonLd: [crumbs([['الرئيسية', '/'], ['أعمالنا', '/work']])] }

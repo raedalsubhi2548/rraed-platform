@@ -1,7 +1,7 @@
 import { coverFor } from '@/lib/cover.js'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { Heart, ShieldCheck, Clock, Download, MessageCircle, Check } from 'lucide-react'
+import { Heart, ShieldCheck, Clock, Download, MessageCircle, Check, ChevronDown } from 'lucide-react'
 import { useApp } from '@/state.jsx'
 import { TamaraWidget } from '@/components/brand/Tamara.jsx'
 import { cn } from '@/lib/utils'
@@ -18,6 +18,7 @@ import Stars from '@/components/brand/Stars.jsx'
 import { SERVICE_RATINGS } from '@/data/reviews.js'
 import { SEO_H1 } from '@/lib/seo.js'
 import { blogPath } from '@/data/blog/index.js'
+import { SERVICE_FAQ } from '@/data/serviceFaq.js'
 
 export default function Product({ slug: fromProps }) {
   const { id: fromUrl } = useParams()
@@ -155,6 +156,20 @@ export default function Product({ slug: fromProps }) {
           ))}
         </div>
       </section>
+
+      {SERVICE_FAQ[p.id]?.length > 0 && (
+        <section className="mt-16" aria-labelledby="faq">
+          <h2 id="faq" className="mb-5 font-display text-2xl font-semibold text-primary">أسئلة شائعة</h2>
+          <div className="grid max-w-[860px] gap-2.5">
+            {SERVICE_FAQ[p.id].map((f) => (
+              <details key={f.q} className="group rounded-lg bg-surface shadow-hairline ring-1 ring-border open:ring-primary/30">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-5 py-4 font-semibold leading-7 text-primary">{f.q}<ChevronDown className="mt-1.5 size-4 shrink-0 transition-transform group-open:rotate-180" /></summary>
+                <p className="px-5 pb-5 text-[15.5px] leading-8 text-foreground/80">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
 
       {rating?.reviews.length > 0 && (
         <section id="reviews" className="mt-16 scroll-mt-28">

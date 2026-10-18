@@ -6,10 +6,6 @@ update public.products
 - وثيقة عمل حر معتمدة للأنشطة المنزلية والصغيرة
 - تجهيز الطلب ومتابعة الإجراءات حتى الإصدار
 - اختيار المهنة المناسبة حسب نشاطك
-## الرسوم والمدة
-- السنة الأولى مجانية بدون رسوم
-- بعد سنة: دورة تأهيلية (فيديو 15 دقيقة) برسوم 40 ريال، وتتجدد الوثيقة لمدة عامين
-- بعد الثلاث سنوات: تجديد سنوي برسوم 20 ريال
 ## شروط وتعليمات الإصدار
 - إصدار الوثيقة يعني التسجيل في نظام بنك التنمية الاجتماعية كأسرة منتجة
 - الإصدار الأول مدته ثلاث سنوات
@@ -23,5 +19,5 @@ update public.products
 - الخدمة لا تشمل الرسوم الحكومية الخاصة بالمنصة$d$
  where id = 'freelance-certificate-family-platform';
 
--- should show 1 row with «الرسوم والمدة» inside
-select id, position('## الرسوم والمدة' in description) > 0 as "الرسوم موجودة" from public.products where id = 'freelance-certificate-family-platform';
+-- both columns should show true
+select position('## شروط وتعليمات الإصدار' in description) > 0 as "الشروط موجودة", position('## الرسوم والمدة' in description) = 0 as "تم حذف المكرر" from public.products where id = 'freelance-certificate-family-platform';
