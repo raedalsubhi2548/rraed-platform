@@ -8,6 +8,8 @@ export const PAY_METHODS = [
   { name: 'Apple Pay', src: 'https://cdn.salla.network/images/payment/applepay.png', invert: true },
   { name: 'Visa', src: 'https://cdn.salla.network/images/payment/visa.png' },
   { name: 'Mastercard', src: 'https://cdn.salla.network/images/payment/mastercard.png' },
+  // mada: official mark (CC0, Wikimedia Commons «Mada Only»), cropped to the logo and served from our own files
+  { name: 'مدى', src: '/brand/pay/mada.webp' },
 ]
 
 export default function PayIcons({ className, bank = false, size = 'md' }) {
