@@ -52,6 +52,8 @@ const AdminLogin = lazy(() => import('./pages/admin/AdminLogin.jsx'))
 const Reports = lazy(() => import('./pages/admin/Reports.jsx'))
 const Designer = lazy(() => import('./pages/admin/Designer.jsx'))
 const Team = lazy(() => import('./pages/admin/Team.jsx'))
+const AdminBlog = lazy(() => import('./pages/admin/Blog.jsx'))
+const BlogEditor = lazy(() => import('./pages/admin/BlogEditor.jsx'))
 const DesignPreview = lazy(() => import('./pages/admin/DesignPreview.jsx'))
 
 function PageViews() { usePageViews(); return null }
@@ -127,6 +129,8 @@ export default function App({ Router, routerProps = {}, initialCatalog }) {
             <Route path="customers" element={<Customers />} />
             <Route path="coupons" element={<Coupons />} />
             <Route path="design" element={<Designer />} />
+            <Route path="blog" element={<AdminBlog />} />
+            <Route path="blog/:slug" element={<BlogEditor />} />
             <Route path="team" element={<Team />} />
           </Route>
         </Routes>

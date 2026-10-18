@@ -1,9 +1,11 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Clock, CalendarDays, ChevronDown, ExternalLink, MessageCircle, ArrowLeft } from 'lucide-react'
 import Cover from '@/components/blog/Cover.jsx'
 import Rich, { parse } from '@/components/blog/Rich.jsx'
-import { POSTS, BLOG_CATEGORIES, postBySlug, blogPath } from '@/data/blog/index.js'
+import { BLOG_CATEGORIES, blogPath } from '@/data/blog/index.js'
+import { useApp } from '@/state.jsx'
+import { api } from '@/lib/api.js'
 import { longDate } from '@/pages/Blog.jsx'
 import NotFound from '@/pages/NotFound.jsx'
 import { waLink } from '@/lib/format.js'
@@ -44,14 +46,30 @@ function Toc({ items, open, setOpen, side }) {
   )
 }
 
+// a dashboard article's text arrives on its own page (pre-rendered pages already carry it); a built-in one loads from its file
+const inlineBody = (text) => { const blocks = parse(text); return ({ children }) => children(blocks) }
+const Pending = () => <div className="container-w mt-10"><div className="mx-auto h-96 max-w-[720px] animate-pulse rounded-2xl bg-primary/[0.04]" /></div>
+
 export default function BlogPost() {
   const { slug } = useParams()
-  const post = postBySlug(slug)
+  const { posts, catalogReady } = useApp()
+  const post = posts.find((p) => p.slug === slug)
+  if (!post) return catalogReady ? <NotFound /> : <Pending />
+  return <Article key={post.slug} post={post} posts={posts} />
+}
+
+function Article({ post, posts }) {
   const [tocOpen, setTocOpen] = useState(false)
-  if (!post) return <NotFound />
+  const [text, setText] = useState(post.custom ? post.body : undefined)
+  useEffect(() => {
+    if (!post.custom) return
+    let on = true
+    api.getPostBody(post.slug).then((b) => { if (on && b != null) setText(b) }).catch(() => {})
+    return () => { on = false }
+  }, [post.slug, post.custom])
+  const Body = useMemo(() => (post.custom ? (text == null ? Pending : inlineBody(text)) : bodyOf(post.slug)), [post.slug, post.custom, text])
   const cat = BLOG_CATEGORIES[post.category]
-  const Body = bodyOf(post.slug)
-  const related = POSTS.filter((p) => p.slug !== post.slug).sort((a, b) => (b.category === post.category) - (a.category === post.category)).slice(0, 3)
+  const related = posts.filter((p) => p.slug !== post.slug).sort((a, b) => (b.category === post.category) - (a.category === post.category)).slice(0, 3)
 
   return (
     <div className="pb-16">

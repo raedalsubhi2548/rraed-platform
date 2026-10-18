@@ -352,4 +352,15 @@ export const POSTS = [
 ]
 
 export const postBySlug = (slug) => POSTS.find((p) => p.slug === slug)
+
+/** Reading time in minutes from the article text (about 170 words a minute). */
+export const readMinutes = (body = '') => Math.max(2, Math.round(String(body).split(/\s+/).filter(Boolean).length / 170))
+
+/** Built-in articles plus the ones written in the dashboard. A published dashboard article replaces the built-in one
+ *  with the same address; newest first (same day keeps the built-in order). */
+export function mergePosts(extra = []) {
+  const live = (extra || []).filter((p) => p && p.published !== false && p.slug)
+  const taken = new Set(live.map((p) => p.slug))
+  return [...live, ...POSTS.filter((p) => !taken.has(p.slug))].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+}
 export const blogPath = (slug) => (slug ? `/blog/${slug}` : '/blog')

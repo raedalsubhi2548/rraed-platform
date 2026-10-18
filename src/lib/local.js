@@ -51,7 +51,7 @@ function sessionUser() {
 }
 const uid = (p) => p + Math.random().toString(36).slice(2, 10)
 function requireUser() { const u = sessionUser(); if (!u) throw new Error('سجّل دخولك أولاً'); return u }
-const ALL = ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design']
+const ALL = ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog']
 function accessOf(u) {
   if (!u) return { owner: false, role: '', perms: [], strong: true }
   if (u.role === 'admin') return { owner: true, role: 'المالك', perms: [...ALL, 'team'], strong: true }
@@ -84,6 +84,21 @@ export const local = {
     if (!u || read('pending') !== u.id || code.trim() !== DEMO_CODE) throw new Error('الرمز غير صحيح أو انتهت صلاحيته')
     localStorage.removeItem(K('pending')); write('session', u.id); emit(); return publicUser(u)
   },
+  // ---------- the blog (articles written in the dashboard; the built-in ones live in the code) ----------
+  async getPosts({ full = false } = {}) { await this.ready; return read('blog_posts', []).filter((p) => p.published).map((p) => ({ ...p, custom: true, body: full ? p.body : undefined })) },
+  async getPostBody(slug) { await this.ready; return read('blog_posts', []).find((p) => p.slug === slug && p.published)?.body ?? null },
+  async listPosts() { requireAdmin('blog'); return read('blog_posts', []) },
+  async savePost(p) {
+    requireAdmin('blog')
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(p.slug || '')) throw new Error('الرابط حروف إنجليزية صغيرة وأرقام وشرطات فقط')
+    if (!String(p.title || '').trim()) throw new Error('اكتب عنوان المقال')
+    const list = read('blog_posts', []), i = list.findIndex((x) => x.slug === p.slug)
+    const row = { ...p, faq: (p.faq || []).filter((f) => f.q?.trim() && f.a?.trim()), services: p.services || [], minutes: Math.max(2, Math.round(String(p.body || '').split(/\s+/).filter(Boolean).length / 170)), updated: new Date().toISOString().slice(0, 10) }
+    if (i >= 0) list[i] = row; else list.push(row)
+    write('blog_posts', list); return row
+  },
+  async deletePost(slug) { requireAdmin('blog'); write('blog_posts', read('blog_posts', []).filter((p) => p.slug !== slug)) },
+
   // ---------- the team ----------
   async myAccess() { await this.ready; return accessOf(sessionUser()) },
   async listStaff() { requireAdmin(); return read('staff', []) },

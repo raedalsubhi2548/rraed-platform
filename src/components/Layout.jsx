@@ -37,9 +37,9 @@ export default function Layout() {
       document.removeEventListener('keydown', keys)
     }
   }, [guarded])
-  const { products, categories, catalogReady, settings } = useApp()
+  const { products, categories, posts, catalogReady, settings } = useApp()
   // the store name/description (store designer) is part of every title, so a change re-applies the head
-  const seoData = useMemo(() => ({ products, categories, faq: FAQ, reviews: ALL_REVIEWS, store: settings.store }), [products, categories, settings.store])
+  const seoData = useMemo(() => ({ products, categories, posts, faq: FAQ, reviews: ALL_REVIEWS, store: settings.store }), [products, categories, posts, settings.store])
   const home = pathname === '/' || pathname === '/admin/preview' // the store designer previews the home page there
   // single-segment paths may be a category or a service: wait for the catalog before naming the page
   useSeo(pathname === '/admin/preview' ? null : catalogReady || /^\/(shop|work|reviews|blog|contact|policies|cart|checkout|login|account|order)(\/|$)/.test(pathname) || pathname === '/' ? pathname.replace(/\/$/, '') || '/' : null, seoData)

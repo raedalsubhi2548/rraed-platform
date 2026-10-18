@@ -141,6 +141,7 @@ const crumbs = (items) => ({
 /** Build the head for a route. data: { products, categories, product, category, faq, reviews } */
 export function seoFor(path, data = {}) {
   const { products = [], categories = [], faq = [], reviews = [] } = data
+  const posts = data.posts || POSTS
   const base = { canonical: abs(path === '/' ? '/' : path), image: abs(SITE.ogImage), robots: 'index,follow', type: 'website', jsonLd: [] }
   // the store name is added only while the whole title still fits in a Google result (~60 characters)
   const t = (s) => (`${s} | ${SITE.name}`.length <= 60 ? `${s} | ${SITE.name}` : s)
@@ -173,13 +174,13 @@ export function seoFor(path, data = {}) {
       jsonLd: [crumbs([['الرئيسية', '/'], ['المدونة', '/blog']]), {
         '@context': 'https://schema.org', '@type': 'Blog', name: `مدونة ${SITE.name}`, url: abs('/blog'), inLanguage: 'ar',
         publisher: { '@id': abs('/#org') },
-        blogPost: POSTS.map((p) => ({ '@type': 'BlogPosting', headline: p.title, url: abs(blogPath(p.slug)), datePublished: p.date })),
+        blogPost: posts.map((p) => ({ '@type': 'BlogPosting', headline: p.title, url: abs(blogPath(p.slug)), datePublished: p.date })),
       }],
     }
   }
   const bm = path.match(/^\/blog\/([a-z0-9-]+)$/)
   if (bm) {
-    const p = POSTS.find((x) => x.slug === bm[1])
+    const p = posts.find((x) => x.slug === bm[1])
     if (!p) return { ...base, title: t('المقال غير موجود'), description: SITE.description, robots: 'noindex' }
     const img = abs(BLOG_ART[p.category] || SITE.ogImage)
     return {

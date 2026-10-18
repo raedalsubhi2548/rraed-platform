@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, Clock } from 'lucide-react'
 import PageIntro from '@/components/site/PageIntro.jsx'
 import Cover from '@/components/blog/Cover.jsx'
-import { POSTS, BLOG_CATEGORIES, blogPath } from '@/data/blog/index.js'
+import { BLOG_CATEGORIES, blogPath } from '@/data/blog/index.js'
+import { useApp } from '@/state.jsx'
 import { cn } from '@/lib/utils'
 
 export const longDate = (d) => new Date(d + 'T12:00:00').toLocaleDateString('ar-SA-u-nu-latn-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -25,8 +26,9 @@ function Card({ post, lead }) {
 }
 
 export default function Blog() {
+  const { posts } = useApp()
   const [cat, setCat] = useState('')
-  const list = POSTS.filter((p) => !cat || p.category === cat)
+  const list = posts.filter((p) => !cat || p.category === cat)
   return (
     <div className="container-w pb-16">
       <PageIntro crumb="المدونة" title="المدونة" lead="مقالات لتجار سلة عن اللي يكبّر متجرك: تصميم يبيع، بكسل وأدوات قوقل تخلي إعلانك يربح، وتوثيق يرفع ثقة عملائك." />

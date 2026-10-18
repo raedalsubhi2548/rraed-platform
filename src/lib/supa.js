@@ -1,6 +1,7 @@
 // Live backend: Supabase (auth + Postgres + storage). Schema in supabase/schema.sql.
 import { createClient } from '@supabase/supabase-js'
 import { coverFor } from './cover.js'
+import { readMinutes } from '../data/blog/index.js'
 
 // accept the URL with or without a trailing /rest/v1/ (common copy-paste from the dashboard)
 const url = (import.meta.env.VITE_SUPABASE_URL || '').trim().replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '')
@@ -48,6 +49,13 @@ const order = (r) => r && ({
 const coupon = (r) => ({ code: r.code, type: r.type, value: Number(r.value), active: r.active, expiresAt: r.expires_at })
 
 // Taken off the store (Oct 2026). Kept hidden here until supabase/options.sql deletes the rows.
+const postOf = (r) => r && ({
+  slug: r.slug, title: r.title, seoTitle: r.seo_title || '', description: r.description || '', keywords: r.keywords || '', category: r.category,
+  body: r.body ?? undefined, faq: Array.isArray(r.faq) ? r.faq : [], services: r.services || [], published: !!r.published,
+  date: r.date, updated: r.updated || r.date, minutes: r.minutes || 3, sources: [], custom: true,
+})
+const POST_LIST = 'slug,title,seo_title,description,keywords,category,faq,services,published,date,updated,minutes'
+
 const REMOVED = { products: ['waarfe-ai-ad-campaigns-guide'], categories: ['digital-products'] }
 
 function check({ data, error }) { if (error) throw new Error(error.message); return data }
@@ -295,11 +303,40 @@ export const supa = {
     if (!res.ok) throw new Error(body.error || 'تعذّر التحميل')
     return body.url
   },
+  // ---- the blog: written in the dashboard, published ones are public ----
+  // the public list has no article text (each article page fetches its own); with `full` the build gets the text too
+  async getPosts({ full = false } = {}) {
+    const { data, error } = await sb.from('blog_posts').select(full ? '*' : POST_LIST).eq('published', true).order('date', { ascending: false })
+    return error ? [] : (data || []).map(postOf) // before supabase/blog-2026-10.sql runs, there is just no table yet
+  },
+  async getPostBody(slug) {
+    const { data } = await sb.from('blog_posts').select('body').eq('slug', slug).eq('published', true).maybeSingle()
+    return data ? data.body : null
+  },
+  async listPosts() {
+    const { data, error } = await sb.from('blog_posts').select('*').order('date', { ascending: false })
+    if (error) throw new Error('شغّل ملف supabase/blog-2026-10.sql في Supabase أولاً')
+    return (data || []).map(postOf)
+  },
+  async savePost(p) {
+    const row = {
+      slug: p.slug, title: String(p.title || '').trim(), seo_title: String(p.seoTitle || '').trim(), description: String(p.description || '').trim(), keywords: String(p.keywords || '').trim(),
+      category: p.category, body: p.body || '', faq: (p.faq || []).filter((f) => f.q?.trim() && f.a?.trim()).map((f) => ({ q: f.q.trim(), a: f.a.trim() })),
+      services: p.services || [], minutes: readMinutes(p.body), published: !!p.published, date: p.date || new Date().toISOString().slice(0, 10), updated: new Date().toISOString().slice(0, 10),
+    }
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(row.slug)) throw new Error('الرابط حروف إنجليزية صغيرة وأرقام وشرطات فقط')
+    if (!row.title) throw new Error('اكتب عنوان المقال')
+    check(await sb.from('blog_posts').upsert(row))
+    republish()
+    return postOf(row)
+  },
+  async deletePost(slug) { check(await sb.from('blog_posts').delete().eq('slug', slug)); republish() },
+
   // ---- the team (staff and permissions) ----
   async myAccess() {
     const { data, error } = await sb.rpc('my_access')
     // before supabase/staff-2026-10.sql runs, the owner still gets everything
-    cachedAccess = !error && data ? data : cachedUser?.role === 'admin' ? { owner: true, role: 'المالك', perms: ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'team'], strong: true } : { owner: false, role: '', perms: [], strong: true }
+    cachedAccess = !error && data ? data : cachedUser?.role === 'admin' ? { owner: true, role: 'المالك', perms: ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog', 'team'], strong: true } : { owner: false, role: '', perms: [], strong: true }
     return cachedAccess
   },
   async listStaff() { return (await staffCall('GET')).staff },

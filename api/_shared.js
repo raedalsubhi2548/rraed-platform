@@ -21,7 +21,7 @@ const signIns = (req) => {
   try { return JSON.parse(Buffer.from((req.headers.authorization || '').split('.')[1] || '', 'base64url').toString()).amr || [] } catch { return [] }
 }
 // The dashboard areas a staff member can be given (same list as public.staff.perms and src/lib/perms.js)
-export const PERMS = ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design']
+export const PERMS = ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog']
 
 /** Who is signed in to the dashboard, only when the session is the code of a two-step sign-in: never a password
  *  session, and the code must follow a correct password that api/login-start.js recorded within the 15 minutes before

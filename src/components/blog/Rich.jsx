@@ -42,6 +42,7 @@ function Inline({ text }) {
   while ((m = re.exec(text))) {
     if (m.index > last) parts.push(text.slice(last, m.index))
     if (m[1]) parts.push(<strong key={k++} className="font-bold text-primary">{m[1]}</strong>)
+    else if (!/^(\/(?!\/)|https?:\/\/)/i.test(m[3])) parts.push(m[2])
     else if (m[3].startsWith('/')) parts.push(<Link key={k++} to={m[3]} className="font-semibold text-primary underline decoration-accent decoration-2 underline-offset-4 hover:decoration-primary">{m[2]}</Link>)
     else parts.push(<a key={k++} href={m[3]} target="_blank" rel="noopener" className="font-semibold text-primary underline decoration-accent decoration-2 underline-offset-4 hover:decoration-primary">{m[2]}</a>)
     last = re.lastIndex

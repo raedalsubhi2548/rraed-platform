@@ -63,7 +63,7 @@ export default function Team() {
 
           <fieldset className="grid gap-2">
             <legend className="mb-2 text-sm font-bold">الدور</legend>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
               {ROLES.map((r) => {
                 const on = f.role === r.name && same(r.perms, f.perms)
                 return (

@@ -10,7 +10,7 @@ import { SITE, seoFor, headHtml } from '../src/lib/seo.js'
 import { productPath, categoryPath, toSlug, RESERVED } from '../src/lib/slug.js'
 import { render, loadCatalog } from '../dist-ssr/entry-server.js'
 import { mergeSettings } from '../src/lib/theme.js'
-import { POSTS, blogPath } from '../src/data/blog/index.js'
+import { mergePosts, blogPath } from '../src/data/blog/index.js'
 import { applyStore } from '../src/lib/store.js'
 
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url))
@@ -19,9 +19,12 @@ const template = readFileSync(join(DIST, 'index.html'), 'utf8').replace(/<link r
 const catalog = await loadCatalog()
 applyStore(mergeSettings(catalog.settings).store) // the owner's store name, phone and email in titles, JSON-LD and links
 const { categories, products } = catalog
-const data = { products, categories, faq: FAQ, reviews: ALL_REVIEWS }
+const posts = mergePosts(catalog.posts) // built-in articles + the ones written in the dashboard
+const data = { products, categories, faq: FAQ, reviews: ALL_REVIEWS, posts }
 // embedded for hydration; `<` escaped so no product text can close the script tag
-const catalogJson = `<script type="application/json" id="__catalog">${JSON.stringify(catalog).replace(/</g, '\\u003c')}</script>`
+// each page carries the catalog without article texts, except its own article (it must match what the server drew)
+const catalogFor = (path) => ({ ...catalog, posts: (catalog.posts || []).map((p) => (blogPath(p.slug) === path ? p : { ...p, body: undefined })) })
+const catalogJson = (c) => `<script type="application/json" id="__catalog">${JSON.stringify(c).replace(/</g, '\\u003c')}</script>`
 // the home hero is the biggest thing on the first screen: start fetching it with the HTML, not after the app runs
 const hero = mergeSettings(catalog.settings).home.find((b) => b.on && b.type === 'hero') || { image: '', imageMobile: '' }
 const attr = (u) => u.replace(/["<>&]/g, encodeURIComponent)
@@ -46,7 +49,7 @@ for (const slug of [...categories.map((c) => c.id), ...products.map((p) => toSlu
 }
 const productSet = new Set(products.filter((p) => p.active !== false).map((p) => productPath(p.id)))
 
-const routes = ['/', '/shop', '/work', '/reviews', '/contact', '/policies', blogPath(), ...POSTS.map((p) => blogPath(p.slug)),
+const routes = ['/', '/shop', '/work', '/reviews', '/contact', '/policies', blogPath(), ...posts.map((p) => blogPath(p.slug)),
   ...categories.map((c) => categoryPath(c.id)), ...products.filter((p) => p.active !== false).map((p) => productPath(p.id))]
 
 const xml = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -61,7 +64,7 @@ for (const path of routes) {
     // page, and the inlined stylesheet would otherwise push them past that point
     .replace(/(<meta name="viewport"[^>]*>\r?\n)/, `$1    ${headHtml(s)}\n    ${EARLY}\n`)
     .replace('</head>', `${path === '/' ? HERO_PRELOAD : ''}  </head>`)
-    .replace('<div id="root"></div>', `<div id="root">${await render(path, catalog)}</div>${catalogJson}`)
+    .replace('<div id="root"></div>', `<div id="root">${await render(path, catalogFor(path))}</div>${catalogJson(catalogFor(path))}`)
   const file = path === '/' ? join(DIST, 'index.html') : join(DIST, path.slice(1) + '.html')
   mkdirSync(dirname(file), { recursive: true })
   writeFileSync(file, html)
@@ -81,7 +84,7 @@ writeFileSync(join(DIST, '404.html'), template
   .replace(/<meta name="robots"[^>]*>\s*/, '')
   .replace(/(<meta name="viewport"[^>]*>\r?\n)/, `$1    ${headHtml({ ...seoFor('/404'), title: `الصفحة غير موجودة | ${SITE.name}`, robots: 'noindex,follow' })}\n`)
   // no embedded catalog: the browser renders this page fresh for whatever address it was served at, instead of hydrating
-  .replace('<div id="root"></div>', `<div id="root">${await render('/404/missing', catalog)}</div>`))
+  .replace('<div id="root"></div>', `<div id="root">${await render('/404/missing', catalogFor('/404/missing'))}</div>`))
 
 const today = new Date().toISOString().slice(0, 10)
 const url = (p) => SITE.url.replace(/\/$/, '') + p

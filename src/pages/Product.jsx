@@ -17,13 +17,13 @@ import NotFound from './NotFound.jsx'
 import Stars from '@/components/brand/Stars.jsx'
 import { SERVICE_RATINGS } from '@/data/reviews.js'
 import { SEO_H1 } from '@/lib/seo.js'
-import { POSTS, blogPath } from '@/data/blog/index.js'
+import { blogPath } from '@/data/blog/index.js'
 
 export default function Product({ slug: fromProps }) {
   const { id: fromUrl } = useParams()
   const slug = fromProps ?? fromUrl
   const id = fromSlug(slug)
-  const { byId, categories, products, addToCart, toggleWish, wishlist, catalogReady } = useApp()
+  const { byId, categories, products, posts, addToCart, toggleWish, wishlist, catalogReady } = useApp()
   const [qty, setQty] = useState(1)
   const [note, setNote] = useState('')
   const [sel, setSel] = useState([]) // chosen options as "optionId:valueId"
@@ -38,7 +38,7 @@ export default function Product({ slug: fromProps }) {
   const cat = categories.find((c) => c.id === p.categoryId)
   const { intro, sections } = parseDescription(p.description)
   const related = products.filter((x) => x.categoryId === p.categoryId && x.id !== p.id).slice(0, 4)
-  const articles = POSTS.filter((a) => a.services?.includes(p.id)).slice(0, 4)
+  const articles = posts.filter((a) => a.services?.includes(p.id)).slice(0, 4)
   const wished = wishlist.includes(p.id)
   const onSale = p.salePrice && p.salePrice < p.price
   const total = unitPrice(p, sel) * qty

@@ -3,6 +3,7 @@ import { api } from './lib/api.js'
 import { unitPrice, chosenOptions, cleanSelection } from './lib/format.js'
 import { mergeSettings } from './lib/theme.js'
 import { applyStore } from './lib/store.js'
+import { mergePosts } from './data/blog/index.js'
 
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
@@ -16,6 +17,8 @@ export function AppProvider({ children, initialCatalog }) {
   const [authReady, setAuthReady] = useState(false)
   const [categories, setCategories] = useState(initialCatalog?.categories || [])
   const [products, setProducts] = useState(initialCatalog?.products || [])
+  const [dbPosts, setDbPosts] = useState(initialCatalog?.posts || [])
+  const posts = useMemo(() => mergePosts(dbPosts), [dbPosts])
   const [catalogReady, setCatalogReady] = useState(!!initialCatalog)
   // the store designer's settings (logo, colours, hero…); `preview` holds an unsaved draft shown in the designer's preview
   const [savedSettings, setSavedSettings] = useState(initialCatalog?.settings || null)
@@ -42,9 +45,9 @@ export function AppProvider({ children, initialCatalog }) {
   }, [])
 
   const refreshCatalog = useCallback(async () => {
-    const [c, p] = await Promise.all([api.getCategories(), api.getProducts()])
+    const [c, p, bp] = await Promise.all([api.getCategories(), api.getProducts(), api.getPosts().catch(() => [])])
     // a transition, like the settings: an update that lands while a lazy page is still hydrating would throw it away
-    startTransition(() => { setCategories(c); setProducts(p.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))); setCatalogReady(true) })
+    startTransition(() => { setCategories(c); setProducts(p.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))); setDbPosts((cur) => { const had = new Map(cur.map((x) => [x.slug, x.body])); return (Array.isArray(bp) ? bp : []).map((x) => ({ ...x, body: x.body ?? had.get(x.slug) })) }); setCatalogReady(true) })
   }, [])
 
   const sameUser = (a, b) => a === b || (!!a && !!b && a.id === b.id && a.role === b.role && a.name === b.name && a.phone === b.phone && a.email === b.email)
@@ -106,7 +109,7 @@ export function AppProvider({ children, initialCatalog }) {
   }
 
   const value = {
-    user, authReady, applyUser, categories, products, byId, catalogReady, refreshCatalog,
+    user, authReady, applyUser, categories, products, posts, byId, catalogReady, refreshCatalog,
     lines, subtotal, count, addToCart, setQty, setNote, clearCart, cartOpen, setCartOpen,
     wishlist, toggleWish, toast, notify,
     settings, savedSettings, refreshSettings, setPreview,

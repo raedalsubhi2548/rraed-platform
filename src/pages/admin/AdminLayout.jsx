@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Navigate, Outlet, Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Receipt, Package, Tags, Users, TicketPercent, ExternalLink, LogOut, Menu, Plus, Palette, ChartColumn, UsersRound } from 'lucide-react'
+import { LayoutDashboard, Receipt, Package, Tags, Users, TicketPercent, ExternalLink, LogOut, Menu, Plus, Palette, ChartColumn, UsersRound, Newspaper } from 'lucide-react'
 import { useApp } from '@/state.jsx'
 import { api, isDemo } from '@/lib/api.js'
 import { cn } from '@/lib/utils'
@@ -19,6 +19,7 @@ const NAV = [
   { to: '/admin/categories', icon: Tags, label: 'التصنيفات', area: 'categories' },
   { to: '/admin/customers', icon: Users, label: 'العملاء', area: 'customers' },
   { to: '/admin/coupons', icon: TicketPercent, label: 'كوبونات الخصم', area: 'coupons' },
+  { to: '/admin/blog', icon: Newspaper, label: 'المدونة', area: 'blog' },
   { to: '/admin/design', icon: Palette, label: 'مصمم المتجر', area: 'design' },
   { to: '/admin/team', icon: UsersRound, label: 'الفريق والصلاحيات', area: 'team' },
 ]
@@ -75,7 +76,7 @@ export default function AdminLayout() {
   useEffect(() => {
     if (!user) { setAccess(null); return }
     let on = true
-    api.myAccess().then((a) => on && setAccess(a)).catch(() => on && setAccess(user.role === 'admin' ? { owner: true, role: 'المالك', perms: ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'team'], strong: true } : { owner: false, role: '', perms: [], strong: true }))
+    api.myAccess().then((a) => on && setAccess(a)).catch(() => on && setAccess(user.role === 'admin' ? { owner: true, role: 'المالك', perms: ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog', 'team'], strong: true } : { owner: false, role: '', perms: [], strong: true }))
     return () => { on = false }
   }, [user?.id, user?.role])
   const isAdmin = !!access && (access.owner || access.perms.length > 0)

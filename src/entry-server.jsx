@@ -7,9 +7,9 @@ import { seedCategories, seedProducts } from './data/seed.js'
 
 /** The live catalog (Supabase) at build time; the demo seed when the store isn't configured. */
 export async function loadCatalog() {
-  if (isDemo) return { categories: seedCategories, products: seedProducts.filter((p) => p.active !== false), settings: null }
-  const [categories, products, settings] = await Promise.all([api.getCategories(), api.getProducts(), api.getSettings().catch(() => null)])
-  return { categories, products: products.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)), settings }
+  if (isDemo) return { categories: seedCategories, products: seedProducts.filter((p) => p.active !== false), settings: null, posts: [] }
+  const [categories, products, settings, posts] = await Promise.all([api.getCategories(), api.getProducts(), api.getSettings().catch(() => null), api.getPosts({ full: true }).catch(() => [])])
+  return { categories, products: products.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)), settings, posts }
 }
 
 // renderToString, not the streaming renderer: React 18's node stream can drop NUL bytes into Arabic text at its

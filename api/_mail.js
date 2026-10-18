@@ -165,7 +165,7 @@ export async function sendLoginCodeEmail(to, code) {
 }
 
 // A new team member: what they were given and how to get in (sign-in is the usual password + emailed code).
-const AREA_NAMES = { orders: 'الطلبات', reports: 'التقارير', products: 'المنتجات', categories: 'التصنيفات', customers: 'العملاء', coupons: 'كوبونات الخصم', design: 'مصمم المتجر' }
+const AREA_NAMES = { orders: 'الطلبات', reports: 'التقارير', products: 'المنتجات', categories: 'التصنيفات', customers: 'العملاء', coupons: 'كوبونات الخصم', design: 'مصمم المتجر', blog: 'المدونة' }
 export async function sendStaffInviteEmail(to, { name, role, perms, isNew }) {
   const t = mailer(); if (!t) throw new Error('smtp-not-configured')
   const s = await loadSeller()
