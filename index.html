@@ -12,11 +12,15 @@
     <!-- the dashboard host never shows the pre-rendered store page while its app loads -->
     <script>if(/^admin\./.test(location.hostname))document.documentElement.className='adm'</script>
     <style>.adm #root>*{display:none}</style>
+    <!-- the Saudi Business Center trust seal belongs to the store, never the dashboard -->
+    <style>html[data-host="admin"] .sbc-seal-frame,body:has([role="dialog"]) .sbc-seal-frame{display:none!important}</style>
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
   <body>
     <div id="root"></div>
+    <div class="sbc-verify-seal" data-token="U05ONkgybnp1WHVmdFZrZEtENy9JQT09" data-position="bottom-left"></div>
+    <script src="https://eauthenticate.saudibusiness.gov.sa/EAuthSealApi/seal.js" async></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

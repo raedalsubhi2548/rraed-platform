@@ -8,6 +8,7 @@ import './index.css'
 
 // Public pages arrive pre-rendered (scripts/prerender.mjs): hydrate them with the same catalog they were built with,
 // then the live catalog replaces it. Other routes (account, checkout…) start empty and render normally.
+if (ADMIN_HOST) document.documentElement.dataset.host = 'admin'
 const root = document.getElementById('root')
 let initialCatalog
 try { initialCatalog = JSON.parse(document.getElementById('__catalog')?.textContent || 'null') || undefined } catch { /* ignore */ }
