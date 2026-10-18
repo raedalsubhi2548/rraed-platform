@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       receipt: { email: true, sms: false },
       customer: { first_name: first, last_name: rest.join(' ') || '-', email: order.customer?.email, phone: { country_code: '966', number: phone } },
       source: { id: 'src_all' },
-      post: { url: `${base}/api/tap-webhook` },
+      post: { url: `${base}/api/tap-verify` },
       redirect: { url: `${base}/order/${order.id}` },
     }),
   })

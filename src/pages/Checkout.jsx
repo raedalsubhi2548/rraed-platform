@@ -18,6 +18,9 @@ export default function Checkout() {
   const nav = useNavigate()
   const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' })
   const [method, setMethod] = useState('card')
+  // Moyasar (api/moyasar.js decides: with test keys only the owner gets it)
+  const [moyasar, setMoyasar] = useState(null)
+  useEffect(() => { if (user) api.moyasarConfig().then(setMoyasar).catch(() => {}) }, [user?.id])
   const tamaraCfg = useTamara()
   const [code, setCode] = useState('')
   const [coupon, setCoupon] = useState(null)
@@ -84,6 +87,8 @@ export default function Checkout() {
       if ((method === 'card' || method === 'tamara') && !isDemo) {
         pending.current = { key, order }
         try { sessionStorage.setItem('raed:pending-order', JSON.stringify({ key, order: { id: order.id, number: order.number } })) } catch { /* private mode */ }
+        // Moyasar's form lives on the order page: go there instead of a hosted payment page
+        if (method === 'card' && total > 0 && moyasar?.enabled) { nav(`/order/${order.id}?new=1&pay=moyasar`, { replace: true }); return }
         // a 100% coupon never goes to Tamara: Tap's path marks it paid without charging
         const { redirect, free } = method === 'tamara' && total > 0 && tamaraSplit(tamaraCfg, total, tamCtx) ? await api.startTamara(order) : await api.startPayment(order)
         if (free) { // a 100% coupon: the order is already paid, no payment page

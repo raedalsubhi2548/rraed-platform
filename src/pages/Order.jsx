@@ -10,6 +10,7 @@ import OptionList from '@/components/OptionList.jsx'
 import { trackPurchase } from '@/lib/analytics.js'
 import { Panel, OrderTracker, StatusPill, statusLabel, Skeleton, Empty } from '@/components/ui/kit.jsx'
 import { useTamara, TamaraBadge, payLabel, tamaraSplit, splitText } from '@/components/brand/Tamara.jsx'
+import MoyasarPay from '@/components/MoyasarPay.jsx'
 
 export { statusLabel }
 export const StatusTrack = OrderTracker
@@ -41,7 +42,9 @@ export default function Order() {
   const [order, setOrder] = useState(undefined)
   const [verifying, setVerifying] = useState(false)
   const tamaraBack = params.get('tamara') // success | failure | cancel, from Tamara's redirect
-  const isNew = params.get('new') || params.get('tap_id') || tamaraBack
+  const moyasarBack = params.get('moyasar') && params.get('id') // Moyasar sends the payment id back
+  const isNew = params.get('new') || params.get('tap_id') || tamaraBack || moyasarBack
+  const [moyasar, setMoyasar] = useState(null)
   const tamaraCfg = useTamara()
   const [tamaraBusy, setTamaraBusy] = useState(false)
 
@@ -65,6 +68,14 @@ export default function Order() {
       }
       tries(4).then(({ paid }) => { if (paid) { paidNow = true; clearCart(); try { sessionStorage.removeItem('raed:pending-order') } catch { /* ignore */ } } })
         .finally(() => { if (alive) setVerifying(false); load() })
+    } else if (moyasarBack && api.verifyMoyasar) {
+      setVerifying(true)
+      api.verifyMoyasar(id, params.get('id')).then((r) => {
+        if (r?.ok) {
+          paidNow = !r.test // a test payment stays out of the Snap purchase data
+          clearCart(); try { sessionStorage.removeItem('raed:pending-order') } catch { /* ignore */ }
+        } else if (params.get('status') === 'failed' || r?.status === 'failed') notify(`ما تمت عملية الدفع${params.get('message') ? `: ${params.get('message')}` : ''}`, 'err')
+      }).finally(() => { if (alive) setVerifying(false); load() })
     } else if (tap && api.verifyPayment) {
       setVerifying(true)
       api.verifyPayment(id, tap).then((r) => {
@@ -73,6 +84,10 @@ export default function Order() {
     } else load()
     return () => { alive = false }
   }, [id, authReady, user?.id, params])
+
+  // the payment form for a pending card order (api/moyasar.js decides who gets it)
+  const pendingCard = order?.status === 'pending' && order?.paymentMethod === 'card'
+  useEffect(() => { if (user && pendingCard) api.moyasarConfig().then(setMoyasar).catch(() => {}) }, [user?.id, pendingCard])
 
   if (order === undefined || verifying) return <div className="container-w grid gap-4 py-14"><p className="text-center text-muted-foreground">{verifying ? 'نتأكد من عملية الدفع…' : 'جاري التحميل…'}</p><Skeleton className="h-72" /></div>
   if (!order) return <div className="container-w py-14"><Empty title="ما لقينا الطلب" action={<Button asChild><Link to="/account">طلباتي</Link></Button>}>تأكد إنك مسجّل دخول بنفس الحساب اللي طلبت فيه.</Empty></div>
@@ -109,7 +124,8 @@ export default function Order() {
           {paid && <div className="mt-5"><InvoiceButton order={order} /></div>}
           {order.status === 'pending' && order.paymentMethod === 'card' && (
             <div className="mt-5 grid gap-3">
-              <Button size="lg" className="sm:justify-self-start" onClick={payNow} disabled={paying || tamaraBusy}><Lock />{paying ? 'نحوّلك لبوابة الدفع…' : `أكمل الدفع ${money(order.total)}`}</Button>
+              {moyasar?.enabled && <MoyasarPay order={order} config={moyasar} />}
+              {!moyasar?.enabled && <Button size="lg" className="sm:justify-self-start" onClick={payNow} disabled={paying || tamaraBusy}><Lock />{paying ? 'نحوّلك لبوابة الدفع…' : `أكمل الدفع ${money(order.total)}`}</Button>}
               {tamaraSplit(tamaraCfg, order.total, tamCtx) && (
                 <button type="button" onClick={payTamara} disabled={paying || tamaraBusy}
                   className="flex items-center gap-3 rounded-lg p-4 text-start ring-1 ring-border transition-shadow hover:ring-primary disabled:opacity-60 sm:max-w-md">

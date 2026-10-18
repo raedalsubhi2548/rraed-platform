@@ -96,3 +96,15 @@
 .no-copy body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .no-copy img { -webkit-user-drag: none; }
 .no-copy :is(input, textarea, select, [contenteditable="true"]) { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+
+/* Moyasar's payment form (src/components/MoyasarPay.jsx) dressed in the store's look.
+   Moyasar's own utilities are all !important under div#mysr, so these carry one more class and !important too. */
+.rr-pay div#mysr { font-family: var(--p-font-text) !important; color: var(--foreground); --apple-pay-button-border-radius: 999px; --apple-pay-button-height: 52px; }
+.rr-pay div#mysr label, .rr-pay div#mysr legend { font-size: 14px !important; font-weight: 700 !important; color: var(--foreground) !important; }
+.rr-pay div#mysr input { height: 48px !important; font-size: 15px !important; background: var(--surface) !important; color: var(--foreground) !important; box-shadow: inset 0 0 0 1.5px var(--border) !important; transition: box-shadow 0.2s; }
+.rr-pay div#mysr input::placeholder { color: var(--muted-foreground) !important; opacity: 0.7; }
+.rr-pay div#mysr input:focus { outline: none !important; z-index: 3; box-shadow: inset 0 0 0 1.5px var(--primary), 0 0 0 3px color-mix(in srgb, var(--ring) 35%, transparent) !important; }
+.rr-pay div#mysr button { height: 52px !important; border-radius: 999px !important; font-family: var(--p-font-display) !important; font-weight: 700 !important; font-size: 16px !important; }
+.rr-pay div#mysr button.bg-primary { background-color: var(--primary) !important; color: var(--primary-foreground) !important; }
+.rr-pay div#mysr button.bg-primary:hover { background-color: var(--primary-hover) !important; }
+.rr-pay div#mysr button.bg-primary img { filter: brightness(0) invert(1); }
