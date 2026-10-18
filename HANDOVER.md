@@ -2,7 +2,7 @@
 
 > **للمالك (رائد):** ارفع هذا الملف في أول رسالة بأي محادثة جديدة، واكتب تحته طلبك. فيه كل شي عن المتجر، فما تحتاج تشرح من جديد.
 >
-> **For the assistant:** this file is the full context of Raed's custom store. Read it fully before doing anything. If you have repo access, `CLAUDE.md` in the repo root is the live, always-updated project memory. Read it too, and if the two disagree, `CLAUDE.md` wins. Last updated: 17 Oct 2026.
+> **For the assistant:** this file is the full context of Raed's custom store. Read it fully before doing anything. If you have repo access, `CLAUDE.md` in the repo root is the live, always-updated project memory. Read it too, and if the two disagree, `CLAUDE.md` wins. Last updated: 19 Oct 2026.
 
 ---
 
@@ -16,6 +16,8 @@
 - He works from an **iPhone**. Give him direct links, short numbered steps, and copy-paste blocks. Send SQL as a GitHub link to the file **or** paste it inline in a ```sql block.
 - Ask before anything irreversible or account-changing. Delete features exist but are owner-only and ask for confirmation.
 - Legal and government content gets a "للتوضيح وليس استشارة قانونية" note.
+- **SEO is his main marketing channel.** Look at every change through an SEO lens (title ≤ 60, description 70–158, one H1 with the keyword, internal links, JSON-LD, real 404s, speed). After a new page or article, offer to request indexing in Search Console (he must approve; Google allows only ~10–12 manual requests a day).
+- Before installing any skill/package he sends: download to an isolated folder, read every file and script, then install. Never run code from a download unread.
 
 ## 1. What it is
 - Custom-coded store selling Raed's services: Salla store design, landing pages, a custom-coded store, ads, pixels and Google tools, government paperwork, and so on.
@@ -39,7 +41,8 @@
   - `art`, `download`, `hit`, `invoice`, `login-start`, `order-email`, `rebuild`
   - `staff` (team, plus customers via `?kind=customer`)
   - `tamara` (`?op=config|start|notify|verify`)
-  - `tap-charge`, `tap-verify`, `tap-webhook`
+  - `moyasar` (GET config, POST verify) — added 19 Oct
+  - `tap-charge`, `tap-verify` (`tap-webhook` was merged into `tap-verify` on 19 Oct; a `vercel.json` rewrite keeps `/api/tap-webhook` working)
   - **Never add a 13th.** Merge new endpoints into an existing function with `?op=` or `?kind=`.
 - Demo mode runs when there is no Supabase env: `src/lib/local.js` (localStorage). Real mode: `src/lib/supa.js`. `src/lib/api.js` picks one. Both must expose the same methods.
 - Email goes through nodemailer SMTP (Hostinger) from `api/_mail.js`. PDF invoices use PDFKit (`api/_invoice.js`).
@@ -48,7 +51,8 @@
 1. `npm run build` must pass.
 2. Commit, push `main` (Vercel auto-deploys `main`), and keep `redesign` equal to `main`: `git branch -f redesign main && git push -f origin redesign`.
 3. Check the deploy status: `gh api repos/raedalsubhi2548/rraed-platform/commits/<sha>/status --jq .state`. If gh says access isn't enabled, call the add_repo tool for `raedalsubhi2548/rraed-platform` with push access.
-4. The cloud container usually **can't reach rraed.com** (egress allowlist). Raed checks the live site from his phone.
+4. As of 19 Oct 2026 `main` is the source of truth (recent work was pushed straight to `main`); `redesign` may lag behind.
+5. The cloud container usually **can't reach rraed.com** (egress allowlist). Raed checks the live site from his phone.
 
 Local testing:
 - **DB:** Postgres 16 at `/usr/lib/postgresql/16/bin`, with a stub `auth` schema (`auth.uid()` reads GUC `test.uid`, `auth.jwt()` reads `test.jwt`) and a stub `storage` schema. Load all SQL files in order, then the new file. Admin RPCs need a `login_checks` row from within 15 minutes and a jwt amr that is not "password".
@@ -60,10 +64,11 @@ Local testing:
 Order:
 1. `schema` → `seed` → `options` → `hardening` → `designer` → `security-2026-10` → `reports`
 2. `login-code-2026-10` → `login-2fa-2026-10` → `staff-2026-10` → `login-grants-2026-10`
-3. `owner-tools-2026-10` → `customers-fix-2026-10` → `customers-all-2026-10` → `custom-store-product-2026-10`
+3. `owner-tools-2026-10` → `customers-fix-2026-10` → `customers-all-2026-10` → `custom-store-product-2026-10` → `custom-store-sale-2026-10`
+4. `freelance-terms-2026-10` (freelance document service text: terms + notes) → `blog-2026-10` (dashboard blog table + `blog` staff area)
 
 Status as of 17 Oct:
-- **Confirmed run:** everything up to `customers-all-2026-10`.
+- **Confirmed run:** everything up to `customers-all-2026-10`, plus `freelance-terms-2026-10` (re-run 18 Oct after the fees card was removed; checked in the DB) and `blog-2026-10` (checked from outside: table readable, anon cannot write).
 - **Probably run, not confirmed:** `custom-store-product-2026-10`. Raed was asked to run it again after the 10–15 day delivery text was added, then Redeploy.
 - **Rules for new SQL:** every DB change is a new file in `supabase/`. Make it idempotent, test it on local Postgres, and give Raed the GitHub link or the inline SQL.
 - **Don't re-run** `schema.sql`. It reopens weaker grants; if it ever is re-run, re-run `security-2026-10.sql` after it.
@@ -77,13 +82,17 @@ Status as of 17 Oct:
 - Tamara: `TAMARA_API_TOKEN`, `TAMARA_NOTIFICATION_TOKEN`, `TAMARA_PUBLIC_KEY`
   - `TAMARA_SANDBOX=1` uses the sandbox API. Remove it for live.
   - `TAMARA_TEAM_ONLY=1` keeps live Tamara visible only to the owner and team. **Remove it to open Tamara to customers.**
+- Moyasar: `MOYASAR_SECRET_KEY`, `MOYASAR_PUBLISHABLE_KEY` — test keys (sk_test/pk_test); as of 19 Oct Raed was asked to add them and Redeploy (not confirmed yet). **Live keys switch every customer from Tap to Moyasar — never without Raed's go-ahead and a webhook.**
 
 ## 6. Features (what exists, and where)
 **Store**
 - Services live at top-level slugs (`/salla-store-design`). Categories: `design-services`, `marketing-services`, `subscriptions`, `government-services`.
 - Cart, checkout, and an order page.
 - Card / Apple Pay through Tap's hosted page. Tap is the only place money is confirmed, by re-fetching the charge. Totals are computed only in the DB (`place_order`).
-- Blog with 6 SEO articles (`src/data/blog/`). Facts come only from help.salla.sa or our own service pages, and the articles sell benefits rather than tutorials.
+- Blog: 16 built-in articles in code (`src/data/blog/`) + articles written in the dashboard (table `blog_posts`). Facts come only from help.salla.sa, official text Raed provides, or our own service pages; articles sell benefits, not tutorials. Service pages list their articles («مقالات تفيدك») and articles link to services and each other.
+- Service FAQ with FAQPage JSON-LD: `src/data/serviceFaq.js` (freelance document has 6 Qs). Keyword H1s per service/section: `SEO_H1` in `src/lib/seo.js` (cards/cart keep the product name).
+- Saudi Business Center trust seal «متجر موثّق» (`index.html`, floating bottom-left; hidden on the dashboard host and while any dialog is open; CSP allows eauthenticate.saudibusiness.gov.sa).
+- Payment badges (`src/components/brand/PayIcons.jsx`): Tamara, Apple Pay, Visa, Mastercard, mada (mada = own file `public/brand/pay/mada.webp`, CC0 from Wikimedia).
 - SEO: titles and descriptions, JSON-LD, sitemap, `llms.txt`.
   - `shippingDetails.deliveryTime` defaults to 2–6 days; the custom store is 10–15 (`DELIVERY_DAYS` in `src/lib/seo.js`).
 - Copy protection on public pages.
@@ -98,7 +107,8 @@ Status as of 17 Oct:
   - Home blocks, brand, header/footer, store info, with a live preview that fits the phone.
   - **Design backups** (owner only): every publish is saved with its date, and restoring takes one click.
   - **Tamara rules** panel (owner only).
-- **Team & permissions:** roles and areas, enforced in the DB with `has_perm` and on the server with `adminFromRequest`.
+- **Team & permissions:** roles and areas, enforced in the DB with `has_perm` and on the server with `adminFromRequest`. Areas include `blog`; ready roles include «كاتب محتوى».
+- **Blog (المدونة):** list + editor (tools, live preview, SEO title/description counters, FAQ, linked services, publish/draft). Built-in articles open in the same editor; saving stores a copy that replaces them; «استرجاع الأصلي» deletes the copy. Saving triggers a site rebuild so the article gets a prerendered page and a sitemap entry.
 - Two-step login: password, then an emailed code. The dashboard only accepts code sessions.
 
 **Analytics**
@@ -150,11 +160,43 @@ Status as of 17 Oct:
 - A luxury "night route" redesign was rejected. It lives on branch `luxury`.
 - Sheets on mobile: the close (X) button sits above sticky headers (z-20). The backups window is a centered dialog.
 
-## 10. Possible next steps (only when Raed asks)
+## 10. SEO work (18–19 Oct 2026)
+- Search Console (sc-domain:rraed.com) is open in the built-in browser with Raed's Google account. Baseline 28 days: 46 impressions, 2 clicks, avg position 22, all branded queries.
+- Done: real 404s (catch-all rewrite removed; dashboard catalog changes rebuild the site), titles ≤ 60 (store name only when it fits), fuller descriptions, keyword H1s, 6 new high-intent articles (store design cost, best platform in Saudi, choosing a Salla designer, custom domain, Snapchat ads for stores, Tabby vs Tamara), two-way internal links, `llms.txt` updated, freelance-document FAQ schema.
+- Indexing requested for all new articles and the freelance page; the quota ran out on the last one (`/blog/freelance-document-vs-commercial-registration`).
+- Google Business Profile «منصة رائد» created and **verified** (category: Website designer, service area: Saudi Arabia); linked in JSON-LD (`sameAs`/`hasMap` = maps?cid=13261550770911996180 in `SITE`). Raed was asked to add logo, photos, services, socials, and to request reviews.
+- Still open: Raed's social profile URLs for `SITE.sameAs`; backlinks (client stores footer credit «تصميم: منصة رائد», LinkedIn/Behance, Saudi directories — never buy links); next articles from the plan (logo design, Salla themes, free vs pro store, opening an e-store in Saudi, TikTok ads, landing page vs store, e-commercial registration, raising Salla sales).
+- The full plan is a page: https://claude.ai/artifact/KMBYnh1evafiRVddSFN9Wk
+- Brand-name note: «منصة رائد» collides with the government freelance platform «رائد» and others in Google; the business profile and long-tail keywords are how we stand apart.
+
+## 11. Moyasar (مُيسّر) trial — 19 Oct 2026, owner only
+- Goal: Raed decides whether to subscribe. Customers still pay with Tap.
+- Code: `src/components/MoyasarPay.jsx` (official moyasar-payment-form 2.3.0, MIT, self-hosted in `public/vendor/moyasar/2.3.0/`, loaded only when shown), brand styles at the end of `src/index.css` (their utilities are `!important` under `div#mysr`, so ours use `.rr-pay div#mysr` + `!important`), `api/moyasar.js` (config + server-side check of status, amount in halalas, currency, `metadata.order_id`; test mode = owner's own orders only, kept out of Snap). Checkout sends the owner's card orders to `/order/<id>?new=1&pay=moyasar`; return URL `/order/<id>?moyasar=1&id=…`.
+- Methods: card (mada/Visa/Mastercard), Apple Pay (web, via Moyasar's own merchant validation — no Apple Developer account), STC Pay. Apple Pay label must be English ("Raed").
+- Apple Pay domain file is live at `/.well-known/apple-developer-merchantid-domain-association` (byte-identical; protected by `.gitattributes`). Raed must click Validate + Register for rraed.com in Moyasar → Settings → Apple Pay Domains.
+- Tested locally end to end with Moyasar's published test card → 3DS emulator → back with status=paid. The server check needs the secret key in Vercel (pending).
+- Test cards: Visa 4111 1111 1111 1111, mada 4201 3201 1111 1010 (any 2-word name, future date, any CVC). Apple Pay test: real card in Wallet, amount 200–300 SAR (other amounts fail in test mode).
+- The form reads expiry/CVC on **keyup** only (automated typing that pastes text fails validation; real typing works).
+- Before going live: webhook endpoint (merge into `api/moyasar.js` with `?op=`), live keys, decide Tap vs Moyasar. Offer (Moyasar Offer V4, preliminary): setup 450 SAR; mada 1% capped at 200 SAR; local cards 2.75%; international cards 3.75%; 1 SAR per successful transaction (fraud management) and per refund; Apple/Samsung Pay priced as the underlying card; tokenization 0.05 SAR; dashboard and payment links free; standard weekly settlement free, on-request transfer 10 SAR, daily settlement 4 SAR each; Amex/STC Pay +250 SAR setup each and % on request; prices exclude VAT; offer valid 30 days; contract via Nafath after final approval; setup fees non-refundable.
+
+## 12. Skills installed globally (~/.claude/skills) for this machine
+- `brag`, `brag-slim` (launch videos; FFmpeg installed via winget)
+- `seo` + 32 `seo-*` sub-skills (claude-seo v2.4.2; `/seo audit https://rraed.com` etc.)
+- `design-dna`, `motion-design`, `gsap-*` (8), `threejs-*` (10), Genjutsu `cast` / `paint` / `bunshin` + `_jutsu`. **Never run `bunshin` on the live store** (it rebuilds whole sites). Heavy animation/3D must not slow the mobile pages (SEO).
+
+## 13. Local helpers (git-ignored)
+- `.tmp-build.sh`: full build against the live catalog (reads the public publishable key from the live bundle). Use it before deploying anything that touches prerender/SEO.
+- `.env.local`: `VITE_MOYASAR_TEST_PK` (public test key) so the demo server can show the Moyasar form.
+- Windows: Python works via `py -3`; edit CRLF files with small node scripts; long paths break `git clone` into the scratch folder (clone to a short path).
+
+## 14. Possible next steps (only when Raed asks)
+- Moyasar: confirm the two Vercel variables + Redeploy, Apple Pay domain Validate/Register, Raed's test; then decide.
+- Request indexing for `/blog/freelance-document-vs-commercial-registration` (quota ran out on 18 Oct).
+- Add Raed's social links to `SITE.sameAs`; write the next planned articles.
 - Open Tamara to everyone after his live test (remove `TAMARA_TEAM_ONLY`).
 - In Search Console, click "Validate fix" for the deliveryTime issue (it's already fixed in code).
 - Upgrade react-router to v7 (moderate advisories; this is a breaking upgrade).
 
-## 11. Tools Raed has (MCP links shared before)
+## 15. Tools Raed has (MCP links shared before)
 - Perplexity, Playwright, Firecrawl and Glyph MCPs were suggested to him.
 - Salla MCP is connected for his other Salla stores. It is **not** related to this custom store.
