@@ -41,7 +41,7 @@ Custom-coded store for Raed's services (Salla store design, landing pages, pixel
 - `public/llms.txt` — keep in sync when adding pages.
 
 ## Database (Supabase) — SQL files, run by Raed in the SQL Editor (never by us)
-Order: `schema.sql` → `seed.sql` → `options.sql` → `hardening.sql` → `designer.sql` → `security-2026-10.sql` → `reports.sql` → `login-code-2026-10.sql` → `login-2fa-2026-10.sql` → `staff-2026-10.sql` → `login-grants-2026-10.sql` → `owner-tools-2026-10.sql` → `customers-fix-2026-10.sql` → `custom-store-product-2026-10.sql` (flagship product row) → `custom-store-sale-2026-10.sql` (flagship 4999 → 3999) → `customers-all-2026-10.sql` (customers page lists every account with kind owner/staff/customer; delete only customers).
+Order: `schema.sql` → `seed.sql` → `options.sql` → `hardening.sql` → `designer.sql` → `security-2026-10.sql` → `reports.sql` → `login-code-2026-10.sql` → `login-2fa-2026-10.sql` → `staff-2026-10.sql` → `login-grants-2026-10.sql` → `owner-tools-2026-10.sql` → `customers-fix-2026-10.sql` → `custom-store-product-2026-10.sql` (flagship product row) → `custom-store-sale-2026-10.sql` (flagship 4999 → 3999) → `freelance-terms-2026-10.sql` (freelance document: fees and terms in the service text) → `customers-all-2026-10.sql` (customers page lists every account with kind owner/staff/customer; delete only customers).
 `reports.sql` is confirmed run on production; `security-2026-10.sql` was handed over but not confirmed — ask Raed before relying on it. Re-running `schema.sql` reopens weaker grants — if it is ever re-run, re-run `security-2026-10.sql` after it.
 New DB changes = a new SQL file in `supabase/` that Raed runs; test it first on a local Postgres 16 (`/usr/lib/postgresql/16/bin`) with stubbed `auth.uid()`.
 
