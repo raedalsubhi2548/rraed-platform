@@ -13,7 +13,7 @@
     <script>if(/^admin\./.test(location.hostname))document.documentElement.className='adm'</script>
     <style>.adm #root>*{display:none}</style>
     <!-- the Saudi Business Center trust seal belongs to the store, never the dashboard -->
-    <style>html[data-host="admin"] .sbc-seal-frame,body:has([role="dialog"]) .sbc-seal-frame{display:none!important}</style>
+    <style>html[data-host="admin"] .sbc-seal-frame,body:has([role="dialog"]) .sbc-seal-frame,html[data-seal-footer] body>.sbc-seal-frame{display:none!important}</style>
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>

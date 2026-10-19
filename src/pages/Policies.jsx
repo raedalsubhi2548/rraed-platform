@@ -4,8 +4,8 @@ import { Check } from 'lucide-react'
 import { PageHead } from '@/components/ui/kit.jsx'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { waLink } from '@/lib/format.js'
-import { POLICY_SECTIONS } from '@/data/terms.js'
+import { waLink, date } from '@/lib/format.js'
+import { POLICY_SECTIONS, POLICY_DATE } from '@/data/terms.js'
 
 const SECTIONS = POLICY_SECTIONS
 
@@ -33,6 +33,7 @@ export default function Policies() {
   return (
     <div className="container-w py-10 sm:py-14">
       <PageHead title="السياسات والشروط" lead="راجعها قبل الطلب. إذا عندك سؤال، كلّمنا على واتساب." />
+      <p className="-mt-6 mb-8 text-center text-sm text-muted-foreground">آخر تحديث للسياسات: <time dateTime={POLICY_DATE}>{date(POLICY_DATE + 'T12:00:00')}</time></p>
       <div className="grid items-start gap-8 lg:grid-cols-[240px_1fr]">
         <nav className="flex gap-2 overflow-x-auto [scrollbar-width:none] lg:sticky lg:top-[calc(var(--header-height)+24px)] lg:grid" aria-label="الأقسام">
           {SECTIONS.map((s, i) => (

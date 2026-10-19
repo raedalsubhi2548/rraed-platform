@@ -125,7 +125,7 @@ const OLD_HEADER = 'كل الخدمات>/shop|أعمالنا>/work|آراء ال
 const OLD_FOOTER = 'كل الخدمات>/shop|أعمالنا>/work|آراء العملاء>/reviews|السياسات والشروط>/policies'
 const sig = (links) => links.map((l) => `${l.label}>${l.to}`).join('|')
 export const DEFAULT_CTA = ['محتار من وين تبدأ؟', 'قل لنا وش نشاطك، ونرتّب لك اللي تحتاجه فعلاً.']
-export const DEFAULT_ABOUT = 'نصمم متجرك ونسوّقه ونجهّز أوراقه الرسمية، من جهة وحدة.'
+export const DEFAULT_ABOUT = 'نصمم متجرك ونجهّز أوراقه الرسمية، من جهة وحدة.'
 
 /** Ready-made palettes the owner can start from. */
 export const PRESETS = [

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { MessageCircle, Mail } from 'lucide-react'
 import Social from '@/components/Social.jsx'
 import PayIcons from '@/components/brand/PayIcons.jsx'
+import VerifiedSeal from '@/components/site/VerifiedSeal.jsx'
 import { useApp } from '@/state.jsx'
 import { cn } from '@/lib/utils'
 import { DEFAULT_FOOTER_LINKS as FOOTER_LINKS } from '@/lib/theme.js'
@@ -39,6 +40,7 @@ export default function SiteFooter() {
               </Link>
               <p className="max-w-[30ch] text-[14.5px] leading-7 text-on-inverse/70">{settings.footer.about}</p>
               <Social className="foot-social" />
+              <VerifiedSeal />
             </div>
 
             {/* links: two tidy columns on phones, four on desktop */}
