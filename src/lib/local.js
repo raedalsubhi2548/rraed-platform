@@ -357,9 +357,6 @@ export const local = {
 
   // ---------- payments ----------
   async startPayment(order) { return { redirect: null, order } },
-  // the demo has no server: the form can be tried with a test publishable key in .env.local, nothing is marked paid
-  async moyasarConfig() { const pk = import.meta.env.VITE_MOYASAR_TEST_PK; return pk && sessionUser()?.role === 'admin' ? { enabled: true, publishableKey: pk, mode: 'test' } : { enabled: false } },
-  async verifyMoyasar() { return { ok: false, status: 'demo' } },
   async startTamara() { throw new Error('تمارا متاحة في المتجر الحقيقي فقط') },
   async verifyTamara() { return { ok: false } },
   async notifyOrder() {},

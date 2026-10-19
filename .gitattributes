@@ -1,3 +1,0 @@
-# files that must stay byte-for-byte as their owners ship them
-public/.well-known/** -text
-public/vendor/** -text

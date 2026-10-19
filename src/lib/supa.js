@@ -380,16 +380,4 @@ export const supa = {
     const res = await fetch(`/api/tap-verify?order=${encodeURIComponent(orderId)}&tap_id=${encodeURIComponent(tapId)}`)
     return res.json().catch(() => ({}))
   },
-  // Moyasar: the payment form inside our order page (api/moyasar.js decides who may use it)
-  async moyasarConfig() {
-    const { data } = await sb.auth.getSession()
-    if (!data.session) return { enabled: false }
-    const r = await fetch('/api/moyasar', { headers: { authorization: 'Bearer ' + data.session.access_token } })
-    return r.ok ? r.json() : { enabled: false }
-  },
-  async verifyMoyasar(orderId, paymentId) {
-    const { data } = await sb.auth.getSession()
-    const r = await fetch('/api/moyasar', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + data.session?.access_token }, body: JSON.stringify({ orderId, paymentId }) })
-    return r.json().catch(() => ({ ok: false }))
-  },
 }

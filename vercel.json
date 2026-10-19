@@ -2,10 +2,6 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/api/tap-webhook",
-      "destination": "/api/tap-verify"
-    },
-    {
       "source": "/(cart|checkout|login|account|admin)",
       "destination": "/200"
     },
@@ -20,7 +16,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'sha256-jlkVcrOSn4aan5p/Wf9P2RYWEul/u0tCfT6jGBPLSss=' https://challenges.cloudflare.com https://www.googletagmanager.com https://sc-static.net https://tr.snapchat.com https://cdn.tamara.co https://eauthenticate.saudibusiness.gov.sa https://applepay.cdn-apple.com; style-src 'self' 'unsafe-inline'; font-src 'self' https://cdn.tamara.co; img-src 'self' data: blob: https:; connect-src 'self' https://dpjobithiiryniconytd.supabase.co wss://dpjobithiiryniconytd.supabase.co https://challenges.cloudflare.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://tr.snapchat.com https://*.snapchat.com https://*.tamara.co https://api.moyasar.com https://appsignal-endpoint.net; frame-src 'self' https://challenges.cloudflare.com https://tr.snapchat.com https://*.tamara.co https://eauthenticate.saudibusiness.gov.sa https://*.moyasar.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://*.tap.company; object-src 'none'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self' 'sha256-jlkVcrOSn4aan5p/Wf9P2RYWEul/u0tCfT6jGBPLSss=' https://challenges.cloudflare.com https://www.googletagmanager.com https://sc-static.net https://tr.snapchat.com https://cdn.tamara.co https://eauthenticate.saudibusiness.gov.sa; style-src 'self' 'unsafe-inline'; font-src 'self' https://cdn.tamara.co; img-src 'self' data: blob: https:; connect-src 'self' https://dpjobithiiryniconytd.supabase.co wss://dpjobithiiryniconytd.supabase.co https://challenges.cloudflare.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://tr.snapchat.com https://*.snapchat.com https://*.tamara.co; frame-src 'self' https://challenges.cloudflare.com https://tr.snapchat.com https://*.tamara.co https://eauthenticate.saudibusiness.gov.sa; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://*.tap.company; object-src 'none'; upgrade-insecure-requests"
         },
         {
           "key": "X-Frame-Options",
