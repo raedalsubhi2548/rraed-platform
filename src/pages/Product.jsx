@@ -19,6 +19,7 @@ import { SERVICE_RATINGS } from '@/data/reviews.js'
 import { SEO_H1 } from '@/lib/seo.js'
 import { blogPath } from '@/data/blog/index.js'
 import { SERVICE_FAQ } from '@/data/serviceFaq.js'
+import OptionNote from '@/components/OptionNote.jsx'
 
 export default function Product({ slug: fromProps }) {
   const { id: fromUrl } = useParams()
@@ -111,6 +112,7 @@ export default function Product({ slug: fromProps }) {
                       )
                     })}
                   </div>
+                  <OptionNote o={o} />
                 </fieldset>
               ))}
               {optErr && <p className="rounded-md bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">{optErr}</p>}

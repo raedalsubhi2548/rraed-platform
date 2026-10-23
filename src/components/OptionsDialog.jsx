@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { money, effectivePrice, optKey, unitPrice, missingOptions } from '@/lib/format.js'
 import { trackAddToCart } from '@/lib/analytics.js'
+import OptionNote from '@/components/OptionNote.jsx'
 
 /** A service with options never goes to the cart blind: the «+» on its card opens this window, the customer picks
  *  (required choices first), sees the total, then adds. Same choices and rules as the service page. */
@@ -62,7 +63,8 @@ export default function OptionsDialog({ p, open, onOpenChange }) {
                     )
                   })}
                 </div>
-              </fieldset>
+              <OptionNote o={o} onGo={() => onOpenChange?.(false)} />
+            </fieldset>
             ))}
           </div>
 
