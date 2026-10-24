@@ -20,12 +20,14 @@ import { SEO_H1 } from '@/lib/seo.js'
 import { blogPath } from '@/data/blog/index.js'
 import { SERVICE_FAQ } from '@/data/serviceFaq.js'
 import OptionNote from '@/components/OptionNote.jsx'
+import ServiceQuestions from '@/components/ServiceQuestions.jsx'
+import { serviceScore } from '@/lib/feedback.js'
 
 export default function Product({ slug: fromProps }) {
   const { id: fromUrl } = useParams()
   const slug = fromProps ?? fromUrl
   const id = fromSlug(slug)
-  const { byId, categories, products, posts, addToCart, toggleWish, wishlist, catalogReady } = useApp()
+  const { byId, categories, products, posts, feedback, addToCart, toggleWish, wishlist, catalogReady } = useApp()
   const [qty, setQty] = useState(1)
   const [note, setNote] = useState('')
   const [sel, setSel] = useState([]) // chosen options as "optionId:valueId"
@@ -45,6 +47,8 @@ export default function Product({ slug: fromProps }) {
   const onSale = p.salePrice && p.salePrice < p.price
   const total = unitPrice(p, sel) * qty
   const rating = SERVICE_RATINGS[p.id]
+  const score = serviceScore(rating, feedback.reviews, p.id) // Salla ratings + published reviews of this service
+  const written = [...(score?.mine || []).filter((r) => r.text).map((r) => ({ key: r.id, name: r.name, text: r.text, stars: r.service })), ...(rating?.reviews || []).map((r) => ({ key: r.name + r.date, name: r.name, text: r.text, stars: 5 }))]
   const pick = (o, v) => {
     const k = optKey(o, v)
     setOptErr('')
@@ -79,9 +83,9 @@ export default function Product({ slug: fromProps }) {
 
         <div>
           <h1 className="text-balance font-display text-display-sm font-semibold leading-tight text-primary sm:text-display-md">{SEO_H1[p.id] || p.name}</h1>
-          {rating && (
-            <a href={rating.reviews.length ? '#reviews' : undefined} className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground">
-              <Stars size={15} /><span className="tabular font-semibold text-foreground">5.0</span><span>({rating.count} تقييم)</span>
+          {score && (
+            <a href={written.length ? '#reviews' : undefined} className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground">
+              <Stars size={15} value={score.avg} /><span className="tabular font-semibold text-foreground">{score.avg.toFixed(1)}</span><span>({score.count} تقييم)</span>
             </a>
           )}
           <p className="mt-3 text-[17px] leading-8 text-muted-foreground">{p.summary}</p>
@@ -173,14 +177,14 @@ export default function Product({ slug: fromProps }) {
         </section>
       )}
 
-      {rating?.reviews.length > 0 && (
+      {written.length > 0 && (
         <section id="reviews" className="mt-16 scroll-mt-28">
           <h2 className="font-display text-2xl font-semibold text-primary">آراء العملاء عن الخدمة</h2>
-          <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><Stars size={14} />5.0 من {rating.count} تقييم في متجرنا على سلة</p>
+          <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><Stars size={14} value={score.avg} />{score.avg.toFixed(1)} من {score.count} تقييم</p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {rating.reviews.map((r) => (
-              <figure key={r.name + r.date} className="grid content-start gap-3 rounded-lg bg-surface p-5 shadow-hairline ring-1 ring-border">
-                <Stars size={13} />
+            {written.map((r) => (
+              <figure key={r.key} className="grid content-start gap-3 rounded-lg bg-surface p-5 shadow-hairline ring-1 ring-border">
+                <Stars size={13} value={r.stars} />
                 <blockquote className="text-[15px] leading-7">{r.text}</blockquote>
                 <figcaption className="text-sm font-semibold text-primary">{r.name}</figcaption>
               </figure>
@@ -188,6 +192,8 @@ export default function Product({ slug: fromProps }) {
           </div>
         </section>
       )}
+
+      <ServiceQuestions productId={p.id} questions={feedback.questions} />
 
       {articles.length > 0 && (
         <section className="mt-16">

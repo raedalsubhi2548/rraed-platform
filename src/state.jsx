@@ -9,6 +9,7 @@ const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
 
 const CART_KEY = 'raed:cart'
+const NO_FEEDBACK = { reviews: [], questions: [] }
 const loadCart = () => { try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]') } catch { return [] } }
 
 // initialCatalog: the catalog baked into the page at build time, so the first render already has products
@@ -19,6 +20,8 @@ export function AppProvider({ children, initialCatalog }) {
   const [products, setProducts] = useState(initialCatalog?.products || [])
   const [dbPosts, setDbPosts] = useState(initialCatalog?.posts || [])
   const posts = useMemo(() => mergePosts(dbPosts), [dbPosts])
+  // published reviews and answered questions (supabase/reviews-2026-10.sql)
+  const [feedback, setFeedback] = useState(initialCatalog?.feedback || NO_FEEDBACK)
   const [catalogReady, setCatalogReady] = useState(!!initialCatalog)
   // the store designer's settings (logo, colours, hero…); `preview` holds an unsaved draft shown in the designer's preview
   const [savedSettings, setSavedSettings] = useState(initialCatalog?.settings || null)
@@ -45,9 +48,9 @@ export function AppProvider({ children, initialCatalog }) {
   }, [])
 
   const refreshCatalog = useCallback(async () => {
-    const [c, p, bp] = await Promise.all([api.getCategories(), api.getProducts(), api.getPosts().catch(() => [])])
+    const [c, p, bp, fb] = await Promise.all([api.getCategories(), api.getProducts(), api.getPosts().catch(() => []), api.getFeedback().catch(() => null)])
     // a transition, like the settings: an update that lands while a lazy page is still hydrating would throw it away
-    startTransition(() => { setCategories(c); setProducts(p.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))); setDbPosts((cur) => { const had = new Map(cur.map((x) => [x.slug, x.body])); return (Array.isArray(bp) ? bp : []).map((x) => ({ ...x, body: x.body ?? had.get(x.slug) })) }); setCatalogReady(true) })
+    startTransition(() => { setCategories(c); setProducts(p.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))); setDbPosts((cur) => { const had = new Map(cur.map((x) => [x.slug, x.body])); return (Array.isArray(bp) ? bp : []).map((x) => ({ ...x, body: x.body ?? had.get(x.slug) })) }); if (fb) setFeedback((cur) => (JSON.stringify(cur) === JSON.stringify(fb) ? cur : fb)); setCatalogReady(true) })
   }, [])
 
   const sameUser = (a, b) => a === b || (!!a && !!b && a.id === b.id && a.role === b.role && a.name === b.name && a.phone === b.phone && a.email === b.email)
@@ -109,7 +112,7 @@ export function AppProvider({ children, initialCatalog }) {
   }
 
   const value = {
-    user, authReady, applyUser, categories, products, posts, byId, catalogReady, refreshCatalog,
+    user, authReady, applyUser, categories, products, posts, feedback, byId, catalogReady, refreshCatalog,
     lines, subtotal, count, addToCart, setQty, setNote, clearCart, cartOpen, setCartOpen,
     wishlist, toggleWish, toast, notify,
     settings, savedSettings, refreshSettings, setPreview,

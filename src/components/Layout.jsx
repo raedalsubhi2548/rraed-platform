@@ -10,6 +10,7 @@ import { useApp } from '../state.jsx'
 import { useSeo } from '../lib/useSeo.js'
 import { FAQ } from '../data/content.js'
 import { ALL_REVIEWS } from '../data/reviews.js'
+import { testimonials } from '../lib/feedback.js'
 
 export function PageFallback() {
   return <div className="container-w py-16"><div className="h-80 animate-pulse rounded-xl bg-sunken" /></div>
@@ -20,7 +21,7 @@ export default function Layout() {
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
   // content protection on the public pages: no selecting, copying, right-click or dragging images.
   // Forms and the customer's own pages (cart, checkout, order, account, login) stay copyable.
-  const guarded = !/^\/(cart|checkout|order|account|login)(\/|$)/.test(pathname)
+  const guarded = !/^\/(cart|checkout|order|review|account|login)(\/|$)/.test(pathname)
   useEffect(() => {
     if (!guarded) return
     const root = document.documentElement
@@ -37,9 +38,9 @@ export default function Layout() {
       document.removeEventListener('keydown', keys)
     }
   }, [guarded])
-  const { products, categories, posts, catalogReady, settings } = useApp()
+  const { products, categories, posts, feedback, catalogReady, settings } = useApp()
   // the store name/description (store designer) is part of every title, so a change re-applies the head
-  const seoData = useMemo(() => ({ products, categories, posts, faq: FAQ, reviews: ALL_REVIEWS, store: settings.store }), [products, categories, posts, settings.store])
+  const seoData = useMemo(() => ({ products, categories, posts, feedback, faq: FAQ, reviews: testimonials(ALL_REVIEWS, feedback.reviews), store: settings.store }), [products, categories, posts, feedback, settings.store])
   const home = pathname === '/' || pathname === '/admin/preview' // the store designer previews the home page there
   // single-segment paths may be a category or a service: wait for the catalog before naming the page
   useSeo(pathname === '/admin/preview' ? null : catalogReady || /^\/(shop|work|reviews|blog|contact|policies|cart|checkout|login|account|order)(\/|$)/.test(pathname) || pathname === '/' ? pathname.replace(/\/$/, '') || '/' : null, seoData)

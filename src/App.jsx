@@ -28,6 +28,7 @@ import Product from './pages/Product.jsx'
 const Cart = lazy(() => import('./pages/Cart.jsx'))
 const Checkout = lazy(() => import('./pages/Checkout.jsx'))
 const Order = lazy(() => import('./pages/Order.jsx'))
+const Review = lazy(() => import('./pages/Review.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
 const Contact = lazy(() => import('./pages/Contact.jsx'))
 const Policies = lazy(() => import('./pages/Policies.jsx'))
@@ -54,6 +55,7 @@ const Designer = lazy(() => import('./pages/admin/Designer.jsx'))
 const Team = lazy(() => import('./pages/admin/Team.jsx'))
 const AdminBlog = lazy(() => import('./pages/admin/Blog.jsx'))
 const BlogEditor = lazy(() => import('./pages/admin/BlogEditor.jsx'))
+const Feedback = lazy(() => import('./pages/admin/Feedback.jsx'))
 const DesignPreview = lazy(() => import('./pages/admin/DesignPreview.jsx'))
 
 function PageViews() { usePageViews(); return null }
@@ -101,6 +103,7 @@ export default function App({ Router, routerProps = {}, initialCatalog }) {
             <Route path="cart" element={<Cart />} />
             <Route path="checkout" element={<Checkout />} />
             <Route path="order/:id" element={<Order />} />
+            <Route path="review/:id" element={<Review />} />
             <Route path="login" element={<Login />} />
             <Route path="contact" element={<Contact />} />
             <Route path="policies" element={<Policies />} />
@@ -131,6 +134,7 @@ export default function App({ Router, routerProps = {}, initialCatalog }) {
             <Route path="design" element={<Designer />} />
             <Route path="blog" element={<AdminBlog />} />
             <Route path="blog/:slug" element={<BlogEditor />} />
+            <Route path="feedback" element={<Feedback />} />
             <Route path="team" element={<Team />} />
           </Route>
         </Routes>

@@ -3,6 +3,7 @@
 import nodemailer from 'nodemailer'
 import { admin, siteUrl } from './_shared.js'
 import { invoicePdf, money } from './_invoice.js'
+import { GOOGLE_REVIEW_URL, reviewPath } from '../src/lib/feedback.js'
 
 export const SELLER = () => ({
   name: 'منصة رائد',
@@ -81,6 +82,11 @@ ${bank ? `<div style="margin:18px 0 0;padding:14px 16px;background:#f3f6fa;borde
 <tr><td style="padding:18px 28px 6px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}
 ${Number(order.discount) > 0 ? `<tr><td style="padding:8px 0;font-size:13px;color:#6b7686">الخصم</td><td style="padding:8px 0;font-size:13px;color:#6b7686;text-align:left" dir="ltr">${money(order.discount)} ر.س</td></tr>` : ''}
 <tr><td style="padding:12px 0;font-size:16px;font-weight:bold;color:#1b2b44">الإجمالي</td><td style="padding:12px 0;font-size:16px;font-weight:bold;color:#1b2b44;text-align:left" dir="ltr">${money(order.total)} ر.س</td></tr></table></td></tr>
+${ev === 'completed' && order.review_token ? `<tr><td style="padding:14px 28px 4px" align="center"><div style="padding:20px 18px;background:#f8f4ea;border-radius:14px">
+<p style="margin:0 0 6px;font-size:17px;font-weight:bold;color:#1b2b44">كيف كانت تجربتك معنا؟</p>
+<p style="margin:0 0 14px;font-size:14px;line-height:1.8;color:#3a4352">قيّم الخدمة والمتجر في أقل من دقيقة، رأيك يهمنا ويساعد غيرك يختار.</p>
+<a href="${base}${reviewPath(order.id, order.review_token)}" style="display:inline-block;background:#c9a24a;color:#1b2b44;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px">⭐ قيّم طلبك</a>
+<p style="margin:12px 0 0;font-size:13px;color:#6b7686">وإذا حاب، <a href="${GOOGLE_REVIEW_URL}" style="color:#1b2b44;font-weight:bold">قيّمنا على قوقل</a></p></div></td></tr>` : ''}
 <tr><td style="padding:10px 28px 30px" align="center"><a href="${base}/order/${order.id}" style="display:inline-block;background:#1b2b44;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:13px 30px;border-radius:999px">تابع طلبك</a></td></tr>
 <tr><td style="padding:18px 28px;background:#f8fafc;border-top:1px solid #e9edf3;font-size:12px;line-height:1.8;color:#6b7686" align="center">
 ${esc(s.name)} · <a href="mailto:${s.email}" style="color:#6b7686">${s.email}</a>${s.phone ? ` · <span dir="ltr">${esc(s.phone)}</span>` : ''}<br>وصلك هذا الإيميل لأن عندك طلب في ${esc(s.name)}.</td></tr>

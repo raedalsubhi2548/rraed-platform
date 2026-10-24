@@ -51,7 +51,7 @@ function sessionUser() {
 }
 const uid = (p) => p + Math.random().toString(36).slice(2, 10)
 function requireUser() { const u = sessionUser(); if (!u) throw new Error('سجّل دخولك أولاً'); return u }
-const ALL = ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog']
+const ALL = ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog', 'reviews']
 function accessOf(u) {
   if (!u) return { owner: false, role: '', perms: [], strong: true }
   if (u.role === 'admin') return { owner: true, role: 'المالك', perms: [...ALL, 'team'], strong: true }
@@ -98,6 +98,56 @@ export const local = {
     write('blog_posts', list); return row
   },
   async deletePost(slug) { requireAdmin('blog'); write('blog_posts', read('blog_posts', []).filter((p) => p.slug !== slug)) },
+
+  // ---------- reviews and questions (same rules as supabase/reviews-2026-10.sql) ----------
+  async getFeedback() {
+    await this.ready
+    return {
+      reviews: read('reviews', []).filter((r) => r.status === 'published').map((r) => ({ id: r.id, name: r.name, products: r.products, service: r.service, store: r.store, text: r.text, date: (r.publishedAt || r.createdAt).slice(0, 10) })),
+      questions: read('questions', []).filter((q) => q.status === 'published' && q.answer).map((q) => ({ id: q.id, productId: q.productId, name: q.name, question: q.question, answer: q.answer, date: (q.answeredAt || q.createdAt).slice(0, 10) })),
+    }
+  },
+  async reviewForm(orderId, token) {
+    await this.ready
+    const o = read('orders', []).find((x) => x.id === orderId && x.reviewToken === token)
+    if (!o) return { ok: false, reason: 'not-found' }
+    if (o.status !== 'completed') return { ok: false, reason: 'not-completed' }
+    return { ok: true, number: o.number, name: String(o.customer?.name || '').split(' ')[0], items: (o.items || []).map((it) => ({ productId: it.productId, name: it.name })), done: read('reviews', []).some((r) => r.orderId === o.id) }
+  },
+  async submitReview({ orderId, token, name, service, store, text }) {
+    const f = await this.reviewForm(orderId, token)
+    if (!f.ok) throw new Error(f.reason === 'not-completed' ? 'التقييم يفتح بعد اكتمال الطلب' : 'رابط التقييم غير صالح')
+    if (f.done) throw new Error('قيّمت هذا الطلب من قبل، شكراً لك')
+    if (!(service >= 1 && service <= 5 && store >= 1 && store <= 5)) throw new Error('اختر التقييم من 1 إلى 5')
+    const status = service >= 4 && store >= 4 ? 'published' : 'pending', now = new Date().toISOString()
+    const all = read('reviews', [])
+    all.unshift({ id: uid('r_'), orderId, products: [...new Set(f.items.map((i) => i.productId).filter(Boolean))], name: String(name || '').trim().slice(0, 60) || f.name || 'عميل', service, store, text: String(text || '').trim().slice(0, 1000), status, createdAt: now, publishedAt: status === 'published' ? now : null })
+    write('reviews', all)
+    return status
+  },
+  async askQuestion({ productId, name, contact, question }) {
+    await this.ready
+    if (!read('products', []).some((p) => p.id === productId && p.active !== false)) throw new Error('الخدمة غير موجودة')
+    if (String(question || '').trim().length < 3) throw new Error('اكتب سؤالك')
+    if (!String(name || '').trim()) throw new Error('اكتب اسمك')
+    const all = read('questions', [])
+    all.unshift({ id: uid('q_'), productId, name: String(name).trim().slice(0, 60), contact: String(contact || '').trim().slice(0, 120), question: String(question).trim().slice(0, 600), answer: '', status: 'pending', createdAt: new Date().toISOString() })
+    write('questions', all)
+  },
+  async listReviews() { requireAdmin('reviews'); return read('reviews', []) },
+  async setReviewStatus(id, status) {
+    requireAdmin('reviews')
+    write('reviews', read('reviews', []).map((r) => (r.id === id ? { ...r, status, publishedAt: status === 'published' ? new Date().toISOString() : r.publishedAt } : r)))
+  },
+  async deleteReview(id) { requireAdmin('reviews'); write('reviews', read('reviews', []).filter((r) => r.id !== id)) },
+  async listQuestions() { requireAdmin('reviews'); return read('questions', []) },
+  async saveQuestion(id, { answer, status }) {
+    requireAdmin('reviews')
+    const a = String(answer || '').trim()
+    if (status === 'published' && !a) throw new Error('اكتب الجواب قبل النشر')
+    write('questions', read('questions', []).map((q) => (q.id === id ? { ...q, answer: a, status, answeredAt: a ? new Date().toISOString() : q.answeredAt } : q)))
+  },
+  async deleteQuestion(id) { requireAdmin('reviews'); write('questions', read('questions', []).filter((q) => q.id !== id)) },
 
   // ---------- the team ----------
   async myAccess() { await this.ready; return accessOf(sessionUser()) },
@@ -195,7 +245,7 @@ export const local = {
     const orders = read('orders', [])
     const now = new Date().toISOString()
     const o = {
-      ...order, id: uid('o_'), number: 10000 + orders.length + 1, userId: me?.id || null,
+      ...order, id: uid('o_'), reviewToken: crypto.randomUUID(), number: 10000 + orders.length + 1, userId: me?.id || null,
       status: order.paymentMethod !== 'bank' ? 'paid' : 'pending', createdAt: now,
       history: order.paymentMethod !== 'bank'
         ? [{ status: 'pending', at: now }, { status: 'paid', at: now, note: 'دفع تجريبي في وضع العرض' }]

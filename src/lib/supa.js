@@ -45,6 +45,7 @@ const order = (r) => r && ({
   id: r.id, number: r.number, userId: r.user_id, customer: r.customer, items: (r.items || []).map((it) => ({ ...it, image: itemImage(it) })),
   subtotal: Number(r.subtotal), discount: Number(r.discount), coupon: r.coupon, total: Number(r.total),
   status: r.status, notes: r.notes, paymentMethod: r.payment_method, paymentRef: r.payment_ref || null, history: r.history || [], createdAt: r.created_at,
+  reviewToken: r.review_token || null,
 })
 const coupon = (r) => ({ code: r.code, type: r.type, value: Number(r.value), active: r.active, expiresAt: r.expires_at })
 
@@ -332,11 +333,48 @@ export const supa = {
   },
   async deletePost(slug) { check(await sb.from('blog_posts').delete().eq('slug', slug)); republish() },
 
+  // ---- reviews and questions (supabase/reviews-2026-10.sql) ----
+  async getFeedback() {
+    const { data, error } = await sb.rpc('public_feedback')
+    return error || !data ? { reviews: [], questions: [] } : { reviews: data.reviews || [], questions: data.questions || [] } // no function yet before the SQL runs
+  },
+  async reviewForm(orderId, token) {
+    if (!/^[0-9a-f-]{36}$/i.test(orderId || '') || !/^[0-9a-f-]{36}$/i.test(token || '')) return { ok: false, reason: 'not-found' }
+    const { data, error } = await sb.rpc('review_form', { p_order: orderId, p_token: token })
+    return error || !data ? { ok: false, reason: 'not-found' } : data
+  },
+  async submitReview({ orderId, token, name, service, store, text }) {
+    return check(await sb.rpc('submit_review', { p_order: orderId, p_token: token, p_name: name || '', p_service: service, p_store: store, p_body: text || '' }))
+  },
+  async askQuestion({ productId, name, contact, question }) {
+    check(await sb.rpc('ask_question', { p_product: productId, p_name: name || '', p_contact: contact || '', p_question: question || '' }))
+  },
+  async listReviews() {
+    return check(await sb.from('reviews').select('*').order('created_at', { ascending: false })).map((r) => ({
+      id: r.id, orderId: r.order_id, products: r.products || [], name: r.name, service: r.service_rating, store: r.store_rating, text: r.body, status: r.status, createdAt: r.created_at,
+    }))
+  },
+  async setReviewStatus(id, status) {
+    check(await sb.from('reviews').update({ status, ...(status === 'published' && { published_at: new Date().toISOString() }) }).eq('id', id)); republish()
+  },
+  async deleteReview(id) { check(await sb.from('reviews').delete().eq('id', id)); republish() },
+  async listQuestions() {
+    return check(await sb.from('questions').select('*').order('created_at', { ascending: false })).map((q) => ({
+      id: q.id, productId: q.product_id, name: q.name, contact: q.contact, question: q.question, answer: q.answer, status: q.status, createdAt: q.created_at,
+    }))
+  },
+  async saveQuestion(id, { answer, status }) {
+    const a = String(answer || '').trim()
+    if (status === 'published' && !a) throw new Error('اكتب الجواب قبل النشر')
+    check(await sb.from('questions').update({ answer: a, status, ...(a && { answered_at: new Date().toISOString() }) }).eq('id', id)); republish()
+  },
+  async deleteQuestion(id) { check(await sb.from('questions').delete().eq('id', id)); republish() },
+
   // ---- the team (staff and permissions) ----
   async myAccess() {
     const { data, error } = await sb.rpc('my_access')
     // before supabase/staff-2026-10.sql runs, the owner still gets everything
-    cachedAccess = !error && data ? data : cachedUser?.role === 'admin' ? { owner: true, role: 'المالك', perms: ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog', 'team'], strong: true } : { owner: false, role: '', perms: [], strong: true }
+    cachedAccess = !error && data ? data : cachedUser?.role === 'admin' ? { owner: true, role: 'المالك', perms: ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog', 'reviews', 'team'], strong: true } : { owner: false, role: '', perms: [], strong: true }
     return cachedAccess
   },
   async listStaff() { return (await staffCall('GET')).staff },

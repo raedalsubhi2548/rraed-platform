@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { FAQ } from '../src/data/content.js'
 import { ALL_REVIEWS } from '../src/data/reviews.js'
+import { testimonials } from '../src/lib/feedback.js'
 import { SITE, seoFor, headHtml } from '../src/lib/seo.js'
 import { productPath, categoryPath, toSlug, RESERVED } from '../src/lib/slug.js'
 import { render, loadCatalog } from '../dist-ssr/entry-server.js'
@@ -20,7 +21,8 @@ const catalog = await loadCatalog()
 applyStore(mergeSettings(catalog.settings).store) // the owner's store name, phone and email in titles, JSON-LD and links
 const { categories, products } = catalog
 const posts = mergePosts(catalog.posts) // built-in articles + the ones written in the dashboard
-const data = { products, categories, faq: FAQ, reviews: ALL_REVIEWS, posts }
+const feedback = catalog.feedback || { reviews: [], questions: [] }
+const data = { products, categories, faq: FAQ, reviews: testimonials(ALL_REVIEWS, feedback.reviews), feedback, posts }
 // embedded for hydration; `<` escaped so no product text can close the script tag
 // each page carries the catalog without article texts, except its own article (it must match what the server drew)
 const catalogFor = (path) => ({ ...catalog, posts: (catalog.posts || []).map((p) => (blogPath(p.slug) === path ? p : { ...p, body: undefined })) })

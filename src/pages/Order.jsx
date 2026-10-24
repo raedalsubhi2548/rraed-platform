@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { Check, Clock, Download, MessageCircle, FileText, Lock } from 'lucide-react'
+import { Check, Clock, Download, MessageCircle, FileText, Lock, Star } from 'lucide-react'
+import { reviewPath } from '@/lib/feedback.js'
 import { api } from '@/lib/api.js'
 import { useApp } from '@/state.jsx'
 import { cn } from '@/lib/utils'
@@ -106,7 +107,7 @@ export default function Order() {
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_400px]">
         <Panel title="حالة الطلب" action={<StatusPill status={order.status} />}>
           <OrderTracker status={order.status} />
-          {paid && <div className="mt-5"><InvoiceButton order={order} /></div>}
+          {(paid || (order.status === 'completed' && order.reviewToken)) && <div className="mt-5 flex flex-wrap gap-2">{paid && <InvoiceButton order={order} />}{order.status === 'completed' && order.reviewToken && <Button asChild variant="accent"><Link to={reviewPath(order.id, order.reviewToken)}><Star />قيّم طلبك</Link></Button>}</div>}
           {order.status === 'pending' && order.paymentMethod === 'card' && (
             <div className="mt-5 grid gap-3">
               <Button size="lg" className="sm:justify-self-start" onClick={payNow} disabled={paying || tamaraBusy}><Lock />{paying ? 'نحوّلك لبوابة الدفع…' : `أكمل الدفع ${money(order.total)}`}</Button>

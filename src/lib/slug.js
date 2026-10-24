@@ -14,4 +14,4 @@ export const productPath = (id) => `/${toSlug(id)}`
 // Categories and services live at the top level (rraed.com/salla-store-design), next to the fixed pages; these names
 // are taken by those pages, so no category or service may use them.
 export const categoryPath = (id) => `/${id}`
-export const RESERVED = ['shop', 'cart', 'checkout', 'order', 'login', 'contact', 'policies', 'work', 'reviews', 'blog', 'account', 'admin', 'api', 'assets', 'brand', 'c', 'p']
+export const RESERVED = ['shop', 'cart', 'checkout', 'order', 'review', 'login', 'contact', 'policies', 'work', 'reviews', 'blog', 'account', 'admin', 'api', 'assets', 'brand', 'c', 'p']

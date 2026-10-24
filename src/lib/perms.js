@@ -9,13 +9,14 @@ export const AREAS = [
   { key: 'coupons', label: 'كوبونات الخصم', hint: 'ينشئ ويوقف أكواد الخصم' },
   { key: 'design', label: 'مصمم المتجر', hint: 'الألوان والشعار والواجهة' },
   { key: 'blog', label: 'المدونة', hint: 'يكتب المقالات وينشرها' },
+  { key: 'reviews', label: 'التقييمات والأسئلة', hint: 'ينشر التقييمات ويحذفها ويرد على الأسئلة' },
 ]
 export const AREA_LABEL = Object.fromEntries(AREAS.map((a) => [a.key, a.label]))
 
 export const ROLES = [
   { name: 'مدير عام', perms: AREAS.map((a) => a.key) },
   { name: 'مصمم', perms: ['products', 'categories', 'design'] },
-  { name: 'مسؤول الطلبات', perms: ['orders', 'customers'] },
+  { name: 'مسؤول الطلبات', perms: ['orders', 'customers', 'reviews'] },
   { name: 'مسوّق', perms: ['coupons', 'reports', 'products', 'blog'] },
   { name: 'كاتب محتوى', perms: ['blog'] },
 ]
@@ -23,7 +24,7 @@ export const ROLES = [
 // which area each dashboard page belongs to ('' = always open, 'team' = owner only)
 export function areaOf(pathname) {
   const p = pathname.replace(/^\/admin\/?/, '').split('/')[0]
-  return { '': 'overview', orders: 'orders', reports: 'reports', products: 'products', categories: 'categories', customers: 'customers', coupons: 'coupons', design: 'design', blog: 'blog', team: 'team' }[p] ?? ''
+  return { '': 'overview', orders: 'orders', reports: 'reports', products: 'products', categories: 'categories', customers: 'customers', coupons: 'coupons', design: 'design', blog: 'blog', feedback: 'reviews', team: 'team' }[p] ?? ''
 }
 // the overview is built from the orders, so it opens with that area
 export const can = (access, area) => !!access && (access.owner || area === '' || (area === 'overview' ? access.perms.includes('orders') : access.perms.includes(area)))

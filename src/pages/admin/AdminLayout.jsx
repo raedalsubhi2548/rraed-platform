@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Navigate, Outlet, Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Receipt, Package, Tags, Users, TicketPercent, ExternalLink, LogOut, Menu, Plus, Palette, ChartColumn, UsersRound, Newspaper } from 'lucide-react'
+import { LayoutDashboard, Receipt, Package, Tags, Users, TicketPercent, ExternalLink, LogOut, Menu, Plus, Palette, ChartColumn, UsersRound, Newspaper, MessageSquareText } from 'lucide-react'
 import { useApp } from '@/state.jsx'
 import { api, isDemo } from '@/lib/api.js'
 import { cn } from '@/lib/utils'
@@ -20,6 +20,7 @@ const NAV = [
   { to: '/admin/customers', icon: Users, label: 'العملاء', area: 'customers' },
   { to: '/admin/coupons', icon: TicketPercent, label: 'كوبونات الخصم', area: 'coupons' },
   { to: '/admin/blog', icon: Newspaper, label: 'المدونة', area: 'blog' },
+  { to: '/admin/feedback', icon: MessageSquareText, label: 'التقييمات والأسئلة', badge: 'feedback', area: 'reviews' },
   { to: '/admin/design', icon: Palette, label: 'مصمم المتجر', area: 'design' },
   { to: '/admin/team', icon: UsersRound, label: 'الفريق والصلاحيات', area: 'team' },
 ]
@@ -35,7 +36,7 @@ function Nav({ pending, onNavigate, dark, access }) {
           {({ isActive }) => (<>
             <I className={cn('size-[18px]', dark ? (isActive ? 'text-primary' : 'text-white/50 group-hover:text-white') : (isActive ? 'text-accent' : 'text-muted-foreground group-hover:text-primary'))} />
             <span className="flex-1">{label}</span>
-            {badge && pending > 0 && <span className={cn('tabular min-w-6 rounded-full px-1.5 text-center text-xs font-bold leading-6', isActive ? 'bg-primary text-primary-foreground' : dark ? 'bg-white/15 text-white' : 'bg-accent/30 text-accent-text')}>{pending}</span>}
+            {badge && pending[badge] > 0 && <span className={cn('tabular min-w-6 rounded-full px-1.5 text-center text-xs font-bold leading-6', isActive ? 'bg-primary text-primary-foreground' : dark ? 'bg-white/15 text-white' : 'bg-accent/30 text-accent-text')}>{pending[badge]}</span>}
           </>)}
         </NavLink>
       ))}
@@ -71,20 +72,21 @@ export default function AdminLayout() {
   const { user, authReady } = useApp()
   const { pathname } = useLocation()
   const [menu, setMenu] = useState(false)
-  const [pending, setPending] = useState(0)
+  const [pending, setPending] = useState({ orders: 0, feedback: 0 })
   const [access, setAccess] = useState(null) // { owner, role, perms, strong } from my_access
   useEffect(() => {
     if (!user) { setAccess(null); return }
     let on = true
-    api.myAccess().then((a) => on && setAccess(a)).catch(() => on && setAccess(user.role === 'admin' ? { owner: true, role: 'المالك', perms: ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog', 'team'], strong: true } : { owner: false, role: '', perms: [], strong: true }))
+    api.myAccess().then((a) => on && setAccess(a)).catch(() => on && setAccess(user.role === 'admin' ? { owner: true, role: 'المالك', perms: ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog', 'reviews', 'team'], strong: true } : { owner: false, role: '', perms: [], strong: true }))
     return () => { on = false }
   }, [user?.id, user?.role])
   const isAdmin = !!access && (access.owner || access.perms.length > 0)
   const area = areaOf(pathname)
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
   useEffect(() => {
-    if (!isAdmin || !can(access, 'orders')) return
-    api.allOrders().then((o) => setPending(o.filter((x) => ['paid', 'in_progress', 'review'].includes(x.status)).length)).catch(() => {})
+    if (!isAdmin) return
+    if (can(access, 'orders')) api.allOrders().then((o) => setPending((p) => ({ ...p, orders: o.filter((x) => ['paid', 'in_progress', 'review'].includes(x.status)).length }))).catch(() => {})
+    if (can(access, 'reviews')) Promise.all([api.listReviews(), api.listQuestions()]).then(([r, q]) => setPending((p) => ({ ...p, feedback: r.filter((x) => x.status === 'pending').length + q.filter((x) => x.status === 'pending').length }))).catch(() => {})
   }, [isAdmin, access, pathname])
 
   if (!authReady || (user && !access)) return <div className="p-8"><Skeleton className="h-96" /></div>

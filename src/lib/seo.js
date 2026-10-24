@@ -2,6 +2,7 @@ import { fromSlug, toSlug, productPath } from './slug.js'
 import { POSTS, BLOG_CATEGORIES, blogPath } from '../data/blog/index.js'
 import { SERVICE_FAQ } from '../data/serviceFaq.js'
 import { SERVICE_RATINGS } from '../data/reviews.js'
+import { serviceScore } from './feedback.js'
 // One source of truth for titles, descriptions, canonical links, social cards and structured
 // data. Used at runtime (useSeo) and at build time (scripts/prerender.mjs) so crawlers that do
 // not run JavaScript still get the full head for every public page.
@@ -250,11 +251,14 @@ export function seoFor(path, data = {}) {
           image: [img],
           sku: toSlug(p.id),
           brand: { '@type': 'Brand', name: SITE.name },
-          // ratings imported from the Salla store, also shown on the page (src/data/reviews.js)
-          ...(SERVICE_RATINGS[p.id] && {
-            aggregateRating: { '@type': 'AggregateRating', ratingValue: '5', bestRating: '5', worstRating: '1', ratingCount: SERVICE_RATINGS[p.id].count },
-            ...(SERVICE_RATINGS[p.id].reviews.length && { review: SERVICE_RATINGS[p.id].reviews.map((r) => ({ '@type': 'Review', author: { '@type': 'Person', name: r.name }, datePublished: r.date, reviewBody: r.text, reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' } })) }),
-          }),
+          // ratings imported from the Salla store plus the published reviews, as shown on the page
+          ...((sc) => sc && {
+            aggregateRating: { '@type': 'AggregateRating', ratingValue: String(sc.avg), bestRating: '5', worstRating: '1', ratingCount: sc.count },
+            ...((rv) => rv.length && { review: rv.slice(0, 10) })([
+              ...sc.mine.filter((r) => r.text).map((r) => ({ '@type': 'Review', author: { '@type': 'Person', name: r.name }, datePublished: r.date, reviewBody: r.text, reviewRating: { '@type': 'Rating', ratingValue: String(r.service), bestRating: '5' } })),
+              ...(SERVICE_RATINGS[p.id]?.reviews || []).map((r) => ({ '@type': 'Review', author: { '@type': 'Person', name: r.name }, datePublished: r.date, reviewBody: r.text, reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' } })),
+            ]),
+          })(serviceScore(SERVICE_RATINGS[p.id], data.feedback?.reviews, p.id)),
           offers: {
             '@type': 'Offer', url: abs(productPath(p.id)), priceCurrency: 'SAR', price: String(price(p)), availability: 'https://schema.org/InStock', itemCondition: 'https://schema.org/NewCondition', seller: { '@id': abs('/#org') },
             // services are delivered online: nothing is shipped, and nothing comes back once delivered (see /policies)
@@ -275,7 +279,7 @@ export function seoFor(path, data = {}) {
     }
   }
   if (path === '/work') return { ...base, title: t('أعمالنا: متاجر سلة صممناها وتصاميم سوشال ميديا'), description: clip(`نماذج من أعمال ${SITE.name}: 13 متجر سلة صممناها كاملة، وبنرات وتصاميم سوشال ميديا لعملائنا. شوف شغلنا قبل ما تطلب.`), jsonLd: [crumbs([['الرئيسية', '/'], ['أعمالنا', '/work']])] }
-  if (path === '/reviews') return { ...base, title: t('آراء العملاء في تصميم متاجر سلة'), description: clip(`${reviews.length} رأي مكتوب من عملاء ${SITE.name} عن تصميم متاجر سلة والخدمات، وكلها بتقييم 5 من 5.`), jsonLd: [crumbs([['الرئيسية', '/'], ['آراء العملاء', '/reviews']])] }
+  if (path === '/reviews') return { ...base, title: t('آراء العملاء في تصميم متاجر سلة'), description: clip(`${reviews.length} رأي مكتوب من عملاء ${SITE.name} عن تصميم متاجر سلة والخدمات${reviews.every((r) => (r.stars ?? 5) === 5) ? '، وكلها بتقييم 5 من 5' : ''}.`), jsonLd: [crumbs([['الرئيسية', '/'], ['آراء العملاء', '/reviews']])] }
   if (path === '/contact') return { ...base, title: t('تواصل معنا'), description: clip(`تواصل مع ${SITE.name} على واتساب ${WA_LOCAL} أو على البريد ${SITE.email}، ونرد عليك بنفس اليوم.`), jsonLd: [ORG(), crumbs([['الرئيسية', '/'], ['تواصل معنا', '/contact']])] }
   if (path === '/policies') return { ...base, title: t('السياسات والشروط'), description: clip(`سياسة الاستخدام والإلغاء والاسترجاع والخصوصية في ${SITE.name}: طريقة الدفع، مدة التنفيذ، التعديلات، وحماية بياناتك.`) }
   // private or transactional pages

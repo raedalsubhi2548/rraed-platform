@@ -4,6 +4,7 @@ import { ArrowLeft, Quote } from 'lucide-react'
 import { useApp } from '@/state.jsx'
 import { FAQ } from '@/data/content.js'
 import { ALL_REVIEWS } from '@/data/reviews.js'
+import { testimonials } from '@/lib/feedback.js'
 import { money, effectivePrice, liveWa } from '@/lib/format.js'
 import { cn } from '@/lib/utils'
 import StarsSvg from '@/components/brand/Stars.jsx'
@@ -275,7 +276,7 @@ function ReviewRow({ items, reverse }) {
         {row.map((r, i) => (
           <li key={i} aria-hidden={i >= items.length || undefined} className="w-[280px] shrink-0 sm:w-[340px]">
             <figure className="flex h-full flex-col rounded-xl bg-surface p-5 shadow-[0_16px_40px_-30px_color-mix(in_srgb,var(--p-green-900)_50%,transparent)] ring-1 ring-accent/30">
-              <div className="flex items-center justify-between"><Stars className="text-[var(--p-gold-500)]" /><Quote className="size-5 text-primary/20" strokeWidth={1.4} /></div>
+              <div className="flex items-center justify-between"><Stars value={r.stars ?? 5} className="text-[var(--p-gold-500)]" /><Quote className="size-5 text-primary/20" strokeWidth={1.4} /></div>
               <blockquote className="mt-3 line-clamp-4 flex-1 text-[14px] leading-7">{r.text}</blockquote>
               <figcaption className="mt-4 flex items-center gap-2.5 border-t border-border pt-3 text-xs">
                 <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary font-semibold text-on-inverse">{r.name.charAt(0)}</span>
@@ -290,7 +291,9 @@ function ReviewRow({ items, reverse }) {
 }
 
 function Reviews({ b }) {
-  const short = ALL_REVIEWS.filter((r) => r.text.length < 170).slice(0, 20)
+  const { feedback } = useApp()
+  const all = testimonials(ALL_REVIEWS, feedback.reviews)
+  const short = all.filter((r) => r.text.length < 170).slice(0, 20)
   const half = Math.ceil(short.length / 2)
   return (
     <section className="cv-auto py-12 sm:py-16">
@@ -299,7 +302,7 @@ function Reviews({ b }) {
         <ReviewRow items={short.slice(0, half)} />
         <ReviewRow items={short.slice(half)} reverse />
       </div>
-      <ViewAll to="/reviews">كل الآراء ({ALL_REVIEWS.length})</ViewAll>
+      <ViewAll to="/reviews">كل الآراء ({all.length})</ViewAll>
     </section>
   )
 }

@@ -6,7 +6,7 @@
       "destination": "/200"
     },
     {
-      "source": "/(order|account|admin)/:path*",
+      "source": "/(order|review|account|admin)/:path*",
       "destination": "/200"
     }
   ],
