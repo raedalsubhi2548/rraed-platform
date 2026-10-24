@@ -36,6 +36,12 @@ export default function TapApplePay({ amount, customer, onToken, onError }) {
     const el = document.getElementById(id)
     if (el) el.innerHTML = ''
     setState('loading')
+    // Tap draws its button inside our box but doesn't always call onReady: treat "something appeared" as ready,
+    // and give up after a few seconds instead of leaving an empty grey box
+    const seen = () => { if (!gone && el && el.childElementCount > 0) { setState('ready'); return true } return false }
+    const mo = el ? new MutationObserver(seen) : null
+    mo?.observe(el, { childList: true, subtree: true })
+    const giveUp = setTimeout(() => { if (!seen() && !gone) setState('failed') }, 9000)
     loadSdk().then((A) => {
       if (gone) return
       const phone = String(customer?.phone || '').replace(/\D/g, '').replace(/^(966|0)/, '')
@@ -60,18 +66,18 @@ export default function TapApplePay({ amount, customer, onToken, onError }) {
           if (/^tok_/.test(tok)) cb.current.onToken?.(tok)
           else cb.current.onError?.('ما اكتمل الدفع بـ Apple Pay، حاول مرة ثانية')
         },
-        onError: () => cb.current.onError?.('ما اكتمل الدفع بـ Apple Pay، حاول مرة ثانية أو ادفع بالبطاقة'),
+        onError: (e) => { console.warn('apple pay', e); cb.current.onError?.('ما اكتمل الدفع بـ Apple Pay، حاول مرة ثانية أو ادفع بالبطاقة') },
         onCancel: () => {},
       }, id)
-    }).catch(() => !gone && setState('failed'))
-    return () => { gone = true }
+    }).catch((e) => { console.warn('apple pay sdk', e); if (!gone) setState('failed') })
+    return () => { gone = true; mo?.disconnect(); clearTimeout(giveUp) }
     // drawn again only when the total changes; the charged amount always comes from the order on the server
   }, [amount]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="relative min-h-12">
-      {state === 'loading' && <div className="absolute inset-0 animate-pulse rounded-full bg-sunken" aria-hidden="true" />}
-      {state === 'failed' && <p className="text-sm text-danger" role="alert">تعذّر تحميل زر Apple Pay. ادفع بالبطاقة أو حدّث الصفحة.</p>}
+      {state === 'loading' && <div className="pointer-events-none absolute inset-0 animate-pulse rounded-full bg-sunken" aria-hidden="true" />}
+      {state === 'failed' && <p className="rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">زر Apple Pay ما ظهر. ادفع بالبطاقة، أو اختر «صفحة الدفع من Tap» وفيها Apple Pay.</p>}
       <div id={id} />
     </div>
   )
