@@ -45,7 +45,7 @@ export default function TapApplePay({ amount, customer, onToken, onError }) {
               name: [{ lang: 'ar', first: first || 'عميل', last: rest.join(' ') || '-' }],
               contact: { email: customer?.email || '', phone: { countryCode: '966', number: phone } },
             }}
-            interface={{ locale: 'ar', theme: 'dark', type: 'buy', edges: 'curved' }}
+            interface={{ locale: 'ar', theme: 'dark', type: 'buy', edges: 'circular' }}
             onReady={() => setState('ready')}
             onSuccess={async (data) => {
               const tok = data?.id || data?.token?.id || ''

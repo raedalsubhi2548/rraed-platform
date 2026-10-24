@@ -11,6 +11,8 @@ import OptionList from '@/components/OptionList.jsx'
 import { trackPurchase } from '@/lib/analytics.js'
 import { Panel, OrderTracker, StatusPill, statusLabel, Skeleton, Empty } from '@/components/ui/kit.jsx'
 import { useTamara, TamaraBadge, payLabel, tamaraSplit, splitText } from '@/components/brand/Tamara.jsx'
+import PaymentForm from '@/components/PaymentForm.jsx'
+import { canApplePay } from '@/components/TapApplePay.jsx'
 
 export { statusLabel }
 export const StatusTrack = OrderTracker
@@ -45,6 +47,9 @@ export default function Order() {
   const isNew = params.get('new') || params.get('tap_id') || tamaraBack
   const tamaraCfg = useTamara()
   const [tamaraBusy, setTamaraBusy] = useState(false)
+  const [method, setMethod] = useState('card')
+  const [apple, setApple] = useState(false) // known only in the browser, after hydration
+  useEffect(() => { setApple(canApplePay()) }, [])
 
   useEffect(() => {
     if (!authReady) return
@@ -80,13 +85,19 @@ export default function Order() {
 
   const paid = order.status !== 'pending' && order.status !== 'cancelled'
   const tamCtx = { coupon: order.coupon, categories: order.items.map((it) => byId?.[it.productId]?.categoryId) }
+  const payWith = method === 'tamara' && !tamaraSplit(tamaraCfg, order.total, tamCtx) ? 'card' : method
   const payTamara = async () => {
     setTamaraBusy(true)
-    try { const { redirect } = await api.startTamara(order); window.location.href = redirect } catch (e) { notify(e.message, 'err'); setTamaraBusy(false) }
+    try { const { redirect } = await api.startTamara(order); window.location.href = redirect } catch (e) { setTamaraBusy(false); throw e }
   }
-  const payNow = async () => {
+  // the card fields or Apple Pay give a token; paid on the spot, or the bank's 3-D Secure page first
+  const payNow = async ({ token }) => {
     setPaying(true)
-    try { const { redirect, free } = await api.startPayment(order); if (free) { setOrder(await api.getOrder(order.id)); setPaying(false); return } window.location.href = redirect } catch (e) { notify(e.message, 'err'); setPaying(false) }
+    try {
+      const { redirect, free, paid } = await api.startPayment(order, token)
+      if (free || paid) { clearCart(); try { sessionStorage.removeItem('raed:pending-order') } catch { /* ignore */ } trackPurchase(order); setOrder(await api.getOrder(order.id)); setPaying(false); return }
+      window.location.href = redirect
+    } catch (e) { setPaying(false); throw e }
   }
   return (
     <div className="container-w py-10 sm:py-14">
@@ -109,18 +120,13 @@ export default function Order() {
           <OrderTracker status={order.status} />
           {(paid || (order.status === 'completed' && order.reviewToken)) && <div className="mt-5 flex flex-wrap gap-2">{paid && <InvoiceButton order={order} />}{order.status === 'completed' && order.reviewToken && <Button asChild variant="accent"><Link to={reviewPath(order.id, order.reviewToken)}><Star />قيّم طلبك</Link></Button>}</div>}
           {order.status === 'pending' && order.paymentMethod === 'card' && (
-            <div className="mt-5 grid gap-3">
-              <Button size="lg" className="sm:justify-self-start" onClick={payNow} disabled={paying || tamaraBusy}><Lock />{paying ? 'نحوّلك لبوابة الدفع…' : `أكمل الدفع ${money(order.total)}`}</Button>
-              {tamaraSplit(tamaraCfg, order.total, tamCtx) && (
-                <button type="button" onClick={payTamara} disabled={paying || tamaraBusy}
-                  className="flex items-center gap-3 rounded-lg p-4 text-start ring-1 ring-border transition-shadow hover:ring-primary disabled:opacity-60 sm:max-w-md">
-                  <TamaraBadge className="h-7 shrink-0" />
-                  <span className="grid">
-                    <b>{tamaraBusy ? 'نحوّلك لتمارا…' : <>أو قسّمها على {splitText(tamaraSplit(tamaraCfg, order.total, tamCtx))}</>}</b>
-                    <small className="text-muted-foreground">بدون فوائد ولا رسوم إضافية</small>
-                  </span>
-                </button>
-              )}
+            <div className="mt-6 rounded-2xl bg-sunken/60 p-4 ring-1 ring-border sm:p-5">
+              <h3 className="mb-4 font-display text-lg font-semibold text-primary">أكمل الدفع</h3>
+              <PaymentForm
+                amount={order.total} customer={order.customer || {}} apple={apple} method={payWith} setMethod={setMethod}
+                tamara={tamaraCfg?.enabled ? (tamaraSplit(tamaraCfg, order.total, tamCtx) ? { split: tamaraSplit(tamaraCfg, order.total, tamCtx) } : null) : null}
+                validate={() => true} ready onPay={payNow} onTamara={payTamara} busy={paying || tamaraBusy}
+              />
             </div>
           )}
           <h3 className="mt-8 mb-3 font-display font-semibold text-primary">السجل</h3>
