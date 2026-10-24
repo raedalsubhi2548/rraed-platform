@@ -344,7 +344,10 @@ export const supa = {
     return error || !data ? { ok: false, reason: 'not-found' } : data
   },
   async submitReview({ orderId, token, name, service, store, text }) {
-    return check(await sb.rpc('submit_review', { p_order: orderId, p_token: token, p_name: name || '', p_service: service, p_store: store, p_body: text || '' }))
+    const status = check(await sb.rpc('submit_review', { p_order: orderId, p_token: token, p_name: name || '', p_service: service, p_store: store, p_body: text || '' }))
+    // published on its own: rebuild so the pre-rendered pages carry it too (the server checks the token and the time)
+    if (status === 'published') fetch('/api/rebuild', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ order: orderId, token }) }).catch(() => {})
+    return status
   },
   async askQuestion({ productId, name, contact, question }) {
     check(await sb.rpc('ask_question', { p_product: productId, p_name: name || '', p_contact: contact || '', p_question: question || '' }))

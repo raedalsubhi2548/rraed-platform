@@ -48,7 +48,7 @@ export default function Product({ slug: fromProps }) {
   const total = unitPrice(p, sel) * qty
   const rating = SERVICE_RATINGS[p.id]
   const score = serviceScore(rating, feedback.reviews, p.id) // Salla ratings + published reviews of this service
-  const written = [...(score?.mine || []).filter((r) => r.text).map((r) => ({ key: r.id, name: r.name, text: r.text, stars: r.service })), ...(rating?.reviews || []).map((r) => ({ key: r.name + r.date, name: r.name, text: r.text, stars: 5 }))]
+  const written = [...(score?.mine || []).map((r) => ({ key: r.id, name: r.name, text: r.text, stars: r.service })), ...(rating?.reviews || []).map((r) => ({ key: r.name + r.date, name: r.name, text: r.text, stars: 5 }))]
   const pick = (o, v) => {
     const k = optKey(o, v)
     setOptErr('')
@@ -185,7 +185,7 @@ export default function Product({ slug: fromProps }) {
             {written.map((r) => (
               <figure key={r.key} className="grid content-start gap-3 rounded-lg bg-surface p-5 shadow-hairline ring-1 ring-border">
                 <Stars size={13} value={r.stars} />
-                <blockquote className="text-[15px] leading-7">{r.text}</blockquote>
+                {r.text && <blockquote className="text-[15px] leading-7">{r.text}</blockquote>}
                 <figcaption className="text-sm font-semibold text-primary">{r.name}</figcaption>
               </figure>
             ))}
