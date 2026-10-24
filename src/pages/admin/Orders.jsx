@@ -119,6 +119,10 @@ function OrderDetail({ order, onSaved, owner, onDeleted }) {
 export default function Orders() {
   const { notify } = useApp()
   const access = useOutletContext()
+  const confirm = useConfirm()
+  const owner = !!access?.owner
+  const [picked, setPicked] = useState(() => new Set()) // owner only: orders ticked for deleting together
+  const [deleting, setDeleting] = useState(false)
   const [orders, setOrders] = useState(null)
   const [params, setParams] = useSearchParams()
   const [q, setQ] = useState('')
@@ -131,6 +135,20 @@ export default function Orders() {
   const setParam = (k, v) => { const n = new URLSearchParams(params); v ? n.set(k, v) : n.delete(k); setParams(n) }
   const shown = useMemo(() => (orders || []).filter((o) => (!filter || o.status === filter) && (!q || String(o.number).includes(q) || (o.customer?.name || '').includes(q) || (o.customer?.phone || '').includes(q) || (o.customer?.email || '').includes(q))), [orders, filter, q])
   const count = (id) => (orders || []).filter((o) => o.status === id).length
+  const allPicked = shown.length > 0 && shown.every((o) => picked.has(o.id))
+  const toggle = (id) => setPicked((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const toggleAll = () => setPicked(allPicked ? new Set() : new Set(shown.map((o) => o.id)))
+  const removePicked = async () => {
+    const ids = [...picked].filter((id) => (orders || []).some((o) => o.id === id))
+    if (!ids.length || !(await confirm({ title: `حذف ${ids.length} طلب نهائياً؟`, body: 'ما تقدر ترجعها بعد الحذف.' }))) return
+    setDeleting(true)
+    const gone = [], failed = []
+    for (const id of ids) { try { await api.deleteOrder(id); gone.push(id) } catch { failed.push(id) } }
+    setOrders((l) => (l || []).filter((o) => !gone.includes(o.id)))
+    setPicked(new Set(failed)); setDeleting(false)
+    notify(failed.length ? `حُذف ${gone.length}، وما انحذف ${failed.length}` : `حُذف ${gone.length} طلب`, failed.length ? 'err' : 'ok')
+  }
+  const Tick = ({ on, onChange, label }) => <input type="checkbox" checked={on} onChange={onChange} onClick={(e) => e.stopPropagation()} aria-label={label} className="size-[18px] cursor-pointer accent-[var(--primary)]" />
   const copyCsv = async () => {
     const rows = [['رقم', 'العميل', 'الجوال', 'الحالة', 'الإجمالي', 'التاريخ'], ...shown.map((o) => [o.number, o.customer?.name, o.customer?.phone, statusLabel(o.status), o.total, o.createdAt])]
     try { await navigator.clipboard.writeText(rows.map((r) => r.join('\t')).join('\n')); notify('نُسخت الطلبات، الصقها في Excel') } catch { notify('ما قدرنا ننسخ', 'err') }
@@ -147,6 +165,12 @@ export default function Orders() {
       <div className="mb-4 grid gap-3">
         <Segments value={filter} onChange={(v) => setParam('status', v)} options={[{ id: '', label: 'الكل', count: orders?.length || 0 }, ...ORDER_STATUSES.map((s) => ({ id: s.id, label: s.label, count: count(s.id) }))]} />
         <SearchBox value={q} onChange={setQ} placeholder="رقم الطلب، اسم العميل، الجوال أو البريد" className="max-w-md" />
+        {owner && shown.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold"><Tick on={allPicked} onChange={toggleAll} label="تحديد الكل" />تحديد الكل ({shown.length})</label>
+            {picked.size > 0 && <Button size="sm" variant="ghost" className="text-danger hover:bg-danger-soft hover:text-danger" disabled={deleting} onClick={removePicked}><Trash2 className="size-4" />{deleting ? 'جاري الحذف…' : `حذف المحدد (${picked.size})`}</Button>}
+          </div>
+        )}
       </div>
 
       {!orders ? <Skeleton className="h-96" /> : shown.length === 0 ? (
@@ -155,8 +179,9 @@ export default function Orders() {
         <>
           <ul className="grid gap-2 md:hidden">
             {shown.map((o) => (
-              <li key={o.id}>
-                <button onClick={() => setParam('open', o.id)} className="grid w-full grid-cols-[1fr_auto] items-center gap-2 rounded-lg bg-surface p-4 text-start shadow-hairline ring-1 ring-border">
+              <li key={o.id} className="flex items-center gap-2">
+                {owner && <Tick on={picked.has(o.id)} onChange={() => toggle(o.id)} label={`تحديد الطلب ${o.number}`} />}
+                <button onClick={() => setParam('open', o.id)} className="grid min-w-0 flex-1 grid-cols-[1fr_auto] items-center gap-2 rounded-lg bg-surface p-4 text-start shadow-hairline ring-1 ring-border">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2"><strong className="tabular text-primary">#{o.number}</strong><StatusPill status={o.status} /></div>
                     <p className="mt-1 truncate text-sm">{o.customer?.name} · <span className="text-muted-foreground">{dateTime(o.createdAt)}</span></p>
@@ -168,9 +193,10 @@ export default function Orders() {
           </ul>
           <TableCard className="hidden md:block">
             <Table>
-              <thead><tr><Th>الطلب</Th><Th>العميل</Th><Th>الخدمات</Th><Th>الدفع</Th><Th>الحالة</Th><Th>الإجمالي</Th><Th>التاريخ</Th></tr></thead>
+              <thead><tr>{owner && <Th className="w-10"><Tick on={allPicked} onChange={toggleAll} label="تحديد الكل" /></Th>}<Th>الطلب</Th><Th>العميل</Th><Th>الخدمات</Th><Th>الدفع</Th><Th>الحالة</Th><Th>الإجمالي</Th><Th>التاريخ</Th></tr></thead>
               <tbody>{shown.map((o) => (
                 <tr key={o.id} className="cursor-pointer hover:bg-sunken/50 focus-visible:bg-sunken" onClick={() => setParam('open', o.id)} tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setParam('open', o.id)}>
+                  {owner && <Td className="w-10"><Tick on={picked.has(o.id)} onChange={() => toggle(o.id)} label={`تحديد الطلب ${o.number}`} /></Td>}
                   <Td><strong className="tabular text-primary">#{o.number}</strong></Td>
                   <Td><p className="font-semibold">{o.customer?.name}</p><p className="text-xs text-muted-foreground" dir="ltr">{o.customer?.phone}</p></Td>
                   <Td className="max-w-56"><p className="truncate">{o.items.map((i) => i.name).join('، ')}</p></Td>
@@ -193,7 +219,7 @@ export default function Orders() {
                 <SheetTitle className="tabular font-display text-xl font-semibold text-primary">طلب #{open.number}</SheetTitle>
                 <SheetDescription className="text-sm text-muted-foreground">{dateTime(open.createdAt)}</SheetDescription>
               </div>
-              <div className="p-5"><OrderDetail key={open.id + open.status} order={open} onSaved={load} owner={!!access?.owner} onDeleted={() => { setOrders((l) => l.filter((x) => x.id !== open.id)); setParam('open', '') }} /></div>
+              <div className="p-5"><OrderDetail key={open.id + open.status} order={open} onSaved={load} owner={owner} onDeleted={() => { setOrders((l) => l.filter((x) => x.id !== open.id)); setPicked((p) => { const n = new Set(p); n.delete(open.id); return n }); setParam('open', '') }} /></div>
             </>
           )}
         </SheetContent>
