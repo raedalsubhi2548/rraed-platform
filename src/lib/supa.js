@@ -284,16 +284,16 @@ export const supa = {
   },
 
   // Card / Apple Pay / mada through Tap — the charge is created server-side (api/tap-charge.js).
-  async startPayment(o) {
+  async startPayment(o, token) {
     const { data } = await sb.auth.getSession()
     const res = await fetch('/api/tap-charge', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: 'Bearer ' + data.session?.access_token },
-      body: JSON.stringify({ orderId: o.id }),
+      body: JSON.stringify({ orderId: o.id, ...(token ? { token } : {}) }),
     })
     const body = await res.json().catch(() => ({}))
     if (!res.ok) throw new Error(body.error || 'تعذّر بدء الدفع، حاول مرة ثانية')
-    return { redirect: body.url, free: !!body.free, order: o }
+    return { redirect: body.url, free: !!body.free, paid: !!body.paid, order: o }
   },
   async downloadUrl(orderId, productId) {
     const { data } = await sb.auth.getSession()

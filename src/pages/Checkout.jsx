@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { CreditCard, Lock, ChevronDown } from 'lucide-react'
+import { CreditCard, Lock, ChevronDown, Wallet } from 'lucide-react'
+import TapCard, { TAP_PUBLIC_KEY } from '@/components/TapCard.jsx'
+import TapApplePay, { canApplePay } from '@/components/TapApplePay.jsx'
 import { useTamara, TamaraBadge, tamaraSplit, tamaraWhy, splitText } from '@/components/brand/Tamara.jsx'
 import { DECLARATION } from '@/data/terms.js'
 import { useApp } from '@/state.jsx'
@@ -12,6 +14,11 @@ import { trackBeginCheckout } from '@/lib/analytics.js'
 import { Button } from '@/components/ui/button'
 import { PageHead, Panel, Field, Input, Textarea, Skeleton } from '@/components/ui/kit.jsx'
 
+
+// Tap's card fields and Apple Pay inside our checkout (once VITE_TAP_PUBLIC_KEY is set). Until VITE_TAP_EMBED=all,
+// only the owner sees them (to try a real payment first); everyone else keeps Tap's hosted page as before.
+const EMBED_ALL = import.meta.env.VITE_TAP_EMBED === 'all'
+const PHONE_OK = (p) => /^0?5\d{8}$|^\+?9665\d{8}$/.test(String(p || '').replace(/\s/g, ''))
 
 export default function Checkout() {
   const { user, authReady, lines, subtotal, clearCart, notify } = useApp()
@@ -27,6 +34,11 @@ export default function Checkout() {
   const [agreed, setAgreed] = useState(false) // the declaration must be accepted for every order
   const [leaving, setLeaving] = useState(false) // on the way to Tap: keep this screen, don't bounce to the empty cart
   const [phoneErr, setPhoneErr] = useState('') // every hook sits above the early returns below, so each render runs the same hooks
+  const card = useRef(null)
+  const [cardOk, setCardOk] = useState(false)
+  const [cardState, setCardState] = useState('loading')
+  const [apple, setApple] = useState(false) // Apple Pay is known only in the browser, after hydration
+  useEffect(() => { setApple(canApplePay()) }, [])
   // a card order whose payment didn't finish (failed to start, or the customer came back from Tap) is reused, not duplicated
   const pending = useRef(null)
   if (pending.current === null) { try { pending.current = JSON.parse(sessionStorage.getItem('raed:pending-order') || 'false') || undefined } catch { pending.current = undefined } }
@@ -48,7 +60,7 @@ export default function Checkout() {
       <div className="grid justify-items-center gap-5 text-center">
         {method === 'tamara' ? <TamaraBadge className="h-10" /> : <Lock className="size-9 text-primary" />}
         <span className="size-9 animate-spin rounded-full border-[3px] border-primary/15 border-t-primary" aria-hidden="true" />
-        <p className="text-lg font-semibold text-primary">{method === 'tamara' ? 'نحوّلك لتمارا…' : 'نحوّلك لبوابة الدفع الآمنة…'}</p>
+        <p className="text-lg font-semibold text-primary">{method === 'tamara' ? 'نحوّلك لتمارا…' : leaving === 'bank' ? 'نحوّلك لبنكك لتأكيد الدفع…' : 'نحوّلك لبوابة الدفع الآمنة…'}</p>
       </div>
     </div>
   )
@@ -59,21 +71,28 @@ export default function Checkout() {
   const discount = coupon ? Math.min(subtotal, coupon.type === 'percent' ? (subtotal * coupon.value) / 100 : coupon.value) : 0
   const total = Math.max(0, subtotal - discount)
   const tamCtx = { coupon: coupon?.code || null, categories: lines.map((l) => l.product?.categoryId) }
+  const embed = !!TAP_PUBLIC_KEY && !isDemo && (EMBED_ALL || user.role === 'admin')
 
   const applyCoupon = async () => {
     setCouponErr('')
     try { setCoupon(await api.validateCoupon(code)); notify('تم تطبيق الخصم') } catch (e) { setCoupon(null); setCouponErr(e.message) }
   }
 
-  const submit = async (e) => {
-    e.preventDefault()
+  const submit = (e) => { e.preventDefault(); run() }
+  // appleToken: Apple Pay already approved in Apple's sheet; otherwise the card fields are read here (or Tap's page / Tamara)
+  const run = async (appleToken) => {
     setErr('')
-    if (!/^0?5\d{8}$|^\+?9665\d{8}$/.test(form.phone.replace(/\s/g, ''))) { setPhoneErr('اكتب رقم جوال سعودي صحيح، مثل 05xxxxxxxx'); document.getElementById('checkout-phone')?.focus(); return }
+    if (!PHONE_OK(form.phone)) { setPhoneErr('اكتب رقم جوال سعودي صحيح، مثل 05xxxxxxxx'); document.getElementById('checkout-phone')?.focus(); return }
     setPhoneErr('')
     if (method === 'tamara' && total > 0 && !tamaraSplit(tamaraCfg, total, tamCtx)) { setErr(`${tamaraWhy(tamaraCfg, total, tamCtx) || 'التقسيط غير متاح'}، اختر الدفع بالبطاقة`); return }
     if (!agreed) { setErr('لازم توافق على السياسات والشروط والإقرار والتعهد قبل إتمام الطلب'); return }
+    if (method === 'applepay' && total > 0 && !appleToken) return // paid only from Apple's own button
+    const embeddedCard = embed && method === 'card' && total > 0
+    if (embeddedCard && !cardOk) { setErr(cardState === 'failed' ? 'نموذج البطاقة ما تحمّل، اختر «صفحة الدفع من Tap»' : 'اكتب بيانات البطاقة كاملة'); return }
     setBusy(true)
     try {
+      // the card is read first (a one-time token from Tap), so a typo in it never creates an order
+      const token = total > 0 ? appleToken || (embeddedCard ? await card.current.tokenize() : null) : null
       const items = lines.map(({ product: p, qty, note, options, chosen, unit }) => ({ productId: p.id, name: p.name, price: unit, qty, note: note || '', image: p.image, digital: !!p.digital, optionKeys: options, options: chosen }))
       // if paying failed a moment ago, retry the same order instead of creating a duplicate
       const key = `${total}|${coupon?.code || ''}|${lines.map((l) => l.key + 'x' + l.qty).join(',')}`
@@ -81,17 +100,17 @@ export default function Checkout() {
         items, customer: { name: form.name, phone: form.phone, email: form.email },
         notes: form.notes, coupon: coupon?.code || null, subtotal, discount, total, paymentMethod: 'card',
       })
-      if ((method === 'card' || method === 'tamara') && !isDemo) {
+      if (['card', 'tap', 'applepay', 'tamara'].includes(method) && !isDemo) {
         pending.current = { key, order }
         try { sessionStorage.setItem('raed:pending-order', JSON.stringify({ key, order: { id: order.id, number: order.number } })) } catch { /* private mode */ }
         // a 100% coupon never goes to Tamara: Tap's path marks it paid without charging
-        const { redirect, free } = method === 'tamara' && total > 0 && tamaraSplit(tamaraCfg, total, tamCtx) ? await api.startTamara(order) : await api.startPayment(order)
-        if (free) { // a 100% coupon: the order is already paid, no payment page
+        const { redirect, free, paid } = method === 'tamara' && total > 0 && tamaraSplit(tamaraCfg, total, tamCtx) ? await api.startTamara(order) : await api.startPayment(order, token)
+        if (free || paid) { // paid on the spot (no 3-D Secure step), or a 100% coupon: no payment page
           pending.current = undefined; try { sessionStorage.removeItem('raed:pending-order') } catch { /* ignore */ }
           clearCart(); nav(`/order/${order.id}?new=1`, { replace: true }); return
         }
         // the cart is emptied only after Tap confirms the payment (on the order page), so a cancelled payment keeps it
-        setLeaving(true)
+        setLeaving(token ? 'bank' : true)
         window.location.href = redirect
         return
       }
@@ -99,6 +118,7 @@ export default function Checkout() {
       nav(`/order/${order.id}?new=1`, { replace: true })
     } catch (e2) {
       // a remembered order that's already paid or gone can't be reused; the next try starts a fresh one
+      if (embed && method === 'card') card.current?.reset?.()
       if (/مدفوع|غير موجود/.test(e2.message)) { pending.current = undefined; try { sessionStorage.removeItem('raed:pending-order') } catch { /* ignore */ } }
       setErr(e2.message); setBusy(false)
     }
@@ -122,11 +142,36 @@ export default function Checkout() {
           </Panel>
           <Panel title="طريقة الدفع">
             <div className="grid gap-3">
+              {embed ? <>
+                <div className={cn(pay('card'), 'cursor-default flex-col items-stretch gap-4')}>
+                  <label className="flex cursor-pointer items-center gap-3">
+                    <input type="radio" name="pay" checked={method === 'card'} onChange={() => setMethod('card')} className="size-5 shrink-0 accent-[var(--primary)]" />
+                    <span className="grid h-9 w-16 shrink-0 place-items-center"><CreditCard className="size-6 text-primary" /></span>
+                    <span className="grid min-w-0"><b className="truncate">بطاقة</b><small className="truncate text-muted-foreground">مدى، فيزا، ماستركارد</small></span>
+                  </label>
+                  <div className={cn((method !== 'card' || total === 0) && 'hidden')}>
+                    <TapCard ref={card} amount={total} customer={form} onValid={setCardOk} onState={setCardState} />
+                  </div>
+                </div>
+                {apple && total > 0 && (
+                  <label className={pay('applepay')}>
+                    <input type="radio" name="pay" checked={method === 'applepay'} onChange={() => setMethod('applepay')} className="size-5 shrink-0 accent-[var(--primary)]" />
+                    <span className="grid h-9 w-16 shrink-0 place-items-center"><span className="rounded-md bg-black px-2 py-1 text-[13px] font-semibold text-white"> Pay</span></span>
+                    <span className="grid min-w-0"><b className="truncate">Apple Pay</b><small className="truncate text-muted-foreground">ادفع بلمسة من جهازك</small></span>
+                  </label>
+                )}
+                <label className={pay('tap')}>
+                  <input type="radio" name="pay" checked={method === 'tap'} onChange={() => setMethod('tap')} className="size-5 shrink-0 accent-[var(--primary)]" />
+                  <span className="grid h-9 w-16 shrink-0 place-items-center"><Wallet className="size-6 text-primary" /></span>
+                  <span className="grid min-w-0"><b className="truncate">صفحة الدفع من Tap</b><small className="truncate text-muted-foreground">بطاقة أو Apple Pay عبر صفحة Tap</small></span>
+                </label>
+              </> : (
               <label className={pay('card')}>
                 <input type="radio" name="pay" checked={method === 'card'} onChange={() => setMethod('card')} className="size-5 shrink-0 accent-[var(--primary)]" />
                 <span className="grid h-9 w-16 shrink-0 place-items-center"><CreditCard className="size-6 text-primary" /></span>
                 <span className="grid min-w-0"><b className="truncate">بطاقة أو Apple Pay</b><small className="truncate text-muted-foreground">مدى، فيزا، ماستركارد عبر Tap</small></span>
               </label>
+              )}
               {tamaraCfg?.enabled && total > 0 && (() => {
                 const sp = tamaraSplit(tamaraCfg, total, tamCtx)
                 return (
@@ -178,7 +223,15 @@ export default function Checkout() {
             </div>
           </details>
           {!agreed && <p className="mt-3 text-center text-[13px] text-muted-foreground">علّم على الموافقة فوق عشان يتفعّل زر الدفع</p>}
-          <Button size="lg" className="mt-4 w-full" disabled={busy || !agreed}><Lock />{busy ? 'جاري تأكيد الطلب…' : total === 0 ? 'أكمل الطلب' : method === 'tamara' && total > 0 ? 'أكمل مع تمارا' : method === 'card' ? `ادفع ${money(total)}` : 'أكّد الطلب'}</Button>
+          {embed && method === 'applepay' && total > 0 ? (
+            <div className="mt-4">
+              {busy ? <Button size="lg" className="w-full" disabled><Lock />جاري تأكيد الطلب…</Button>
+                : agreed && PHONE_OK(form.phone) ? <TapApplePay amount={total} customer={form} onToken={(t) => run(t)} onError={setErr} />
+                : <Button size="lg" className="w-full" type="submit"><Lock />ادفع بـ Apple Pay</Button>}
+            </div>
+          ) : (
+          <Button size="lg" className="mt-4 w-full" disabled={busy || !agreed}><Lock />{busy ? 'جاري تأكيد الطلب…' : total === 0 ? 'أكمل الطلب' : method === 'tamara' && total > 0 ? 'أكمل مع تمارا' : ['card', 'tap'].includes(method) ? `ادفع ${money(total)}` : 'أكّد الطلب'}</Button>
+          )}
 
         </Panel>
       </form>
