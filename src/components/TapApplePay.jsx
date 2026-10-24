@@ -16,7 +16,7 @@ export const canApplePay = () => {
  * amount: the order total shown in Apple's sheet (the server charges the order's own total).
  * onToken(tokenId) is called after the customer approves; onError(message) on failure.
  */
-export default function TapApplePay({ amount, customer, onToken, onError }) {
+export default function TapApplePay({ amount, customer, onToken, onError, ready = true, onBlocked }) {
   const [state, setState] = useState('loading') // loading | ready | failed
   const cb = useRef({ onToken, onError })
   cb.current = { onToken, onError }
@@ -26,11 +26,20 @@ export default function TapApplePay({ amount, customer, onToken, onError }) {
   const phone = String(customer?.phone || '').replace(/\D/g, '').replace(/^(966|0)/, '')
   const [first, ...rest] = String(customer?.name || 'عميل').trim().split(/\s+/)
 
+  // Tap's button loads in the background; until it's ready the same black pill stands in its place, so the
+  // button never disappears. While the page checks (name, phone, agreement) don't pass, a clear layer over it
+  // catches the tap and shows what's missing instead of opening Apple's sheet.
+  const stand = (
+    <button type="button" onClick={() => onBlocked?.()} aria-label="شراء باستخدام Apple Pay"
+      className="flex h-12 w-full items-center justify-center gap-1.5 rounded-full bg-black text-[19px] font-medium text-white">
+      شراء باستخدام <span dir="ltr" className="font-semibold"> Pay</span>
+    </button>
+  )
+  if (state === 'failed') return <p className="rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">زر Apple Pay ما اشتغل الحين. تقدر تدفع بالبطاقة تحت.</p>
   return (
-    <div className="relative min-h-12">
-      {state === 'loading' && <div className="pointer-events-none absolute inset-0 animate-pulse rounded-full bg-sunken" aria-hidden="true" />}
-      {state === 'failed' && <p className="rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">زر Apple Pay ما ظهر. ادفع بالبطاقة، أو اختر «صفحة الدفع من Tap» وفيها Apple Pay.</p>}
-      <div className={state === 'failed' ? 'hidden' : ''}>
+    <div className="relative h-12">
+      {state !== 'ready' && stand}
+      <div className={state === 'ready' ? '' : 'invisible absolute inset-0'} aria-hidden={state !== 'ready' || undefined}>
         <Suspense fallback={null}>
           <Button
             key={amount}
@@ -57,6 +66,7 @@ export default function TapApplePay({ amount, customer, onToken, onError }) {
           />
         </Suspense>
       </div>
+      {state === 'ready' && !ready && <button type="button" onClick={() => onBlocked?.()} aria-label="شراء باستخدام Apple Pay" className="absolute inset-0 z-10 rounded-full" />}
     </div>
   )
 }

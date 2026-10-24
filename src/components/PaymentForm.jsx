@@ -83,8 +83,7 @@ export default function PaymentForm({ amount, customer, apple, tamara, method, s
         <div className={cn('grid gap-4', method === 'tamara' && tamara?.split && 'hidden')}>
           {apple && EMBED && (
             <>
-              {ready ? <TapApplePay amount={amount} customer={customer} onToken={payApple} onError={setLocalErr} />
-                : <button type="button" onClick={() => validate()} aria-label="شراء باستخدام Apple Pay" className="flex h-12 w-full items-center justify-center gap-1.5 rounded-full bg-black text-[19px] font-medium text-white">شراء باستخدام <span dir="ltr" className="font-semibold"> Pay</span></button>}
+              <TapApplePay amount={amount} customer={customer} ready={ready} onBlocked={validate} onToken={payApple} onError={setLocalErr} />
               <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />أو ادفع بالبطاقة<span className="h-px flex-1 bg-border" /></div>
             </>
           )}

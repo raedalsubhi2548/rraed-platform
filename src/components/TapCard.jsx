@@ -51,7 +51,7 @@ const TapCard = forwardRef(function TapCard({ amount, customer, onValid, onState
         },
         acceptance: { supportedBrands: ['MADA', 'VISA', 'MASTERCARD', 'AMERICAN_EXPRESS'], supportedCards: 'ALL' },
         fields: { cardHolder: true },
-        addons: { displayPaymentBrands: true, loader: true, saveCard: false },
+        addons: { displayPaymentBrands: false, loader: true, saveCard: false },
         interface: { locale: C.Locale.AR, theme: C.Theme.LIGHT, edges: C.Edges.CURVED, direction: C.Direction.RTL },
         onReady: () => setState('ready'),
         // both report a boolean: onValidInput(true) when the card is complete, onInvalidInput(true) when it isn't
@@ -71,7 +71,7 @@ const TapCard = forwardRef(function TapCard({ amount, customer, onValid, onState
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="relative min-h-[120px]">
+    <div className="relative min-h-[60px]">
       {state === 'loading' && <div className="absolute inset-0 animate-pulse rounded-md bg-sunken" aria-hidden="true" />}
       {state === 'failed' && <p className="text-sm text-danger" role="alert">تعذّر تحميل نموذج البطاقة. حدّث الصفحة أو اختر «صفحة الدفع من Tap».</p>}
       <div id={id} />

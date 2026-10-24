@@ -8,6 +8,7 @@ import { DECLARATION } from '@/data/terms.js'
 import { useApp } from '@/state.jsx'
 import { api, isDemo } from '@/lib/api.js'
 import { money } from '@/lib/format.js'
+import { cn } from '@/lib/utils'
 import OptionList from '@/components/OptionList.jsx'
 import { trackBeginCheckout } from '@/lib/analytics.js'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,7 @@ export default function Checkout() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [agreed, setAgreed] = useState(false) // the declaration must be accepted for every order
+  const [agreeErr, setAgreeErr] = useState(false)
   const [leaving, setLeaving] = useState(false) // on the way to the bank / Tamara: keep this screen, don't bounce to the empty cart
   const [phoneErr, setPhoneErr] = useState('') // every hook sits above the early returns below, so each render runs the same hooks
   const [apple, setApple] = useState(false) // Apple Pay is known only in the browser, after hydration
@@ -79,7 +81,7 @@ export default function Checkout() {
     if (!form.name.trim()) { setErr('اكتب اسمك'); return false }
     if (!PHONE_OK(form.phone)) { setPhoneErr('اكتب رقم جوال سعودي صحيح، مثل 05xxxxxxxx'); document.getElementById('checkout-phone')?.focus(); return false }
     setPhoneErr('')
-    if (!agreed) { setErr('لازم توافق على السياسات والشروط والإقرار والتعهد قبل إتمام الطلب'); return false }
+    if (!agreed) { setAgreeErr(true); document.getElementById('checkout-agree')?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return false }
     return true
   }
 
@@ -158,10 +160,11 @@ export default function Checkout() {
             validate={validate} ready={ready} onPay={onPay} onTamara={onTamara} busy={busy} error={err}
             above={(
               <div className="grid gap-2">
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sunken p-3.5 text-sm leading-6">
-                  <input type="checkbox" checked={agreed} onChange={(e) => { setAgreed(e.target.checked); setErr('') }} className="mt-1 size-4 shrink-0 accent-[var(--primary)]" />
+                <label id="checkout-agree" className={cn('flex cursor-pointer items-start gap-3 rounded-xl bg-sunken p-3.5 text-sm leading-6 ring-1 transition-colors', agreeErr && !agreed ? 'bg-danger-soft ring-danger' : 'ring-transparent')}>
+                  <input type="checkbox" checked={agreed} onChange={(e) => { setAgreed(e.target.checked); setAgreeErr(false); setErr('') }} aria-invalid={(agreeErr && !agreed) || undefined} className="mt-1 size-4 shrink-0 accent-[var(--primary)]" />
                   <span>أوافق على <Link to="/policies" target="_blank" className="font-semibold text-primary underline">السياسات والشروط</Link> وعلى الإقرار والتعهد التالي.</span>
                 </label>
+                {agreeErr && !agreed && <p className="-mt-1 px-1 text-[13px] font-semibold text-danger" role="alert">لازم توافق على السياسات والشروط قبل الدفع</p>}
                 <details className="group rounded-xl ring-1 ring-border">
                   <summary className="flex cursor-pointer list-none items-center justify-between px-3.5 py-2.5 text-sm font-semibold text-primary">{DECLARATION.h}<ChevronDown className="size-4 transition-transform group-open:rotate-180" /></summary>
                   <div className="border-t border-border px-3.5 py-3 text-[13px] leading-6 text-muted-foreground">
