@@ -61,6 +61,11 @@ The owner's order copies go to ORDER_NOTIFY_TO, else every admin account's email
 2. Commit on `redesign`, push, merge into `main`, push, back to `redesign`.
 3. Wait for Vercel (`gh api repos/raedalsubhi2548/rraed-platform/commits/main/status`), then check the live page.
 
+## Google Ads and Merchant Center (7 Nov 2026)
+- Google Ads account 853-507-2266 (info@rraed.com), set up as "account only" (no auto campaign). Conversions in `src/lib/analytics.js` on the same gtag as GA: `AW-18561774390` config, purchase (`/jQ5ZCL-Z87MdELbm-JJF`, value = order total, from `trackPurchase`) and WhatsApp tap (`/aMcaCLqa87MdELbm-JJF`, any wa.me / api.whatsapp.com link). Enhanced conversions left OFF (needs Raed's consent). GA, Business Profile and Merchant Center are NOT linked to Ads yet (ask Raed). CSP allows googleadservices, googleads.g.doubleclick.net, *.doubleclick.net, www.google.com.
+- The search campaign is planned in `google-ads-plan.md` and NOT created: Raed reviews and launches it himself.
+- Merchant Center feed: `https://rraed.com/merchant-feed.xml`, written by `scripts/prerender.mjs` on every build (dashboard saves rebuild), g:id = slug, image = `shareImage` (service's own JPEG). The old auto-crawled "rraed.com" source showed section images.
+
 ## Decisions (Oct 2026)
 - Snap Pixel `affec170-…` is in `src/lib/analytics.js` (PAGE_VIEW, VIEW_CONTENT, ADD_CART, START_CHECKOUT, PURCHASE) and the Conversions API in `api/_snap.js` (PURCHASE when an order is marked paid, deduplicated by order id). Token only in Vercel: `SNAP_CAPI_TOKEN` (Raed added it). CSP allows sc-static.net and tr.snapchat.com. Never remove these.
 - A full "night route" luxury redesign was built and rejected by Raed on 16 Oct 2026; it lives on branch `luxury` only. The live design is the earlier one (backup tag `backup-2026-10-16-before-luxury`).
