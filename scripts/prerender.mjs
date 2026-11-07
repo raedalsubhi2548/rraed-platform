@@ -3,6 +3,7 @@
 // robots.txt. The browser hydrates that HTML with the same catalog, so the first paint needs no JavaScript.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { FAQ } from '../src/data/content.js'
 import { ALL_REVIEWS } from '../src/data/reviews.js'
@@ -55,6 +56,7 @@ const routes = ['/', '/shop', '/work', '/reviews', '/contact', '/policies', blog
   ...categories.map((c) => categoryPath(c.id)), ...products.filter((p) => p.active !== false).map((p) => productPath(p.id))]
 
 const xml = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+const pageHash = {}
 for (const path of routes) {
   // ids come from the database: only plain slugs may become file names (no "../", no slashes)
   if (path !== '/' && !/^\/[\p{L}\p{N}_-]+$/u.test(path) && !['/shop', '/work', '/reviews', '/contact', '/policies', '/blog'].includes(path) && !/^\/blog\/[a-z0-9-]+$/.test(path)) throw new Error(`bad page address: ${path}`)
@@ -66,11 +68,16 @@ for (const path of routes) {
     // page, and the inlined stylesheet would otherwise push them past that point
     .replace(/(<meta name="viewport"[^>]*>\r?\n)/, `$1    ${headHtml(s)}\n    ${EARLY}\n`)
     .replace('</head>', `${path === '/' ? HERO_PRELOAD : ''}  </head>`)
-    .replace('<div id="root"></div>', `<div id="root">${await render(path, catalogFor(path))}</div>${catalogJson(catalogFor(path))}`)
+  const body = await render(path, catalogFor(path))
+  html = html.replace('<div id="root"></div>', `<div id="root">${body}</div>${catalogJson(catalogFor(path))}`)
   const file = path === '/' ? join(DIST, 'index.html') : join(DIST, path.slice(1) + '.html')
   mkdirSync(dirname(file), { recursive: true })
   writeFileSync(file, html)
+  pageHash[path] = createHash('sha1').update(headHtml(s) + body).digest('hex').slice(0, 16) // what a visitor or crawler sees
 }
+// IndexNow (Bing, and through it ChatGPT): after each production deploy, scripts/indexnow.mjs (GitHub Actions)
+// compares this list with the previous one and sends Bing only the pages whose content changed.
+writeFileSync(join(DIST, 'indexnow.json'), JSON.stringify({ host: new URL(SITE.url).host, pages: pageHash }))
 
 // The SPA fallback for every other route keeps a neutral, crawlable head.
 writeFileSync(join(DIST, '200.html'), SITE.name === 'منصة رائد' ? template : template

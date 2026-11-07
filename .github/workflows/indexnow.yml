@@ -1,0 +1,38 @@
+# Sends Bing (IndexNow) the pages that changed, after each production deploy on Vercel and once a day
+# (rebuilds from the dashboard go through a deploy hook). See scripts/indexnow.mjs.
+name: IndexNow
+
+on:
+  deployment_status:
+  schedule:
+    - cron: '30 3 * * *' # 06:30 Saudi time
+  workflow_dispatch:
+
+concurrency:
+  group: indexnow
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    if: github.event_name != 'deployment_status' || (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/indexnow.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # the page list from the previous run (one cache entry per run; the newest one is restored)
+      - uses: actions/cache/restore@v4
+        with:
+          path: .indexnow-last.json
+          key: indexnow-${{ github.run_id }}
+          restore-keys: indexnow-
+      - run: node scripts/indexnow.mjs .indexnow-last.json
+      - uses: actions/cache/save@v4
+        with:
+          path: .indexnow-last.json
+          key: indexnow-${{ github.run_id }}
