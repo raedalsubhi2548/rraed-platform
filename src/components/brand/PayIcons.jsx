@@ -3,7 +3,9 @@ import { cn } from '@/lib/utils'
 
 // Official badges served by each provider / Salla's CDN (not redrawn).
 export const PAY_METHODS = [
-  { name: 'تمارا', src: 'https://cdn.tamara.co/assets/svg/tamara-logo-badge-ar.svg' },
+  // Tamara's official badge (cdn.tamara.co/assets/svg/tamara-logo-badge-ar.svg) is a 388 KB SVG wrapping a huge PNG;
+  // the same badge rendered to a 2.6 KB WebP and served from our own files
+  { name: 'تمارا', src: '/brand/pay/tamara.webp' },
   // Apple's file is a white mark: shown inverted (black) so it matches the other white badges
   { name: 'Apple Pay', src: 'https://cdn.salla.network/images/payment/applepay.png', invert: true },
   { name: 'Visa', src: 'https://cdn.salla.network/images/payment/visa.png' },

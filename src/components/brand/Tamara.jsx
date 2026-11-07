@@ -77,8 +77,8 @@ export function TamaraMini({ amount, categoryId, className }) {
   )
 }
 
-/** The badge itself, for the checkout option. */
-export const TamaraBadge = ({ className }) => <img src="https://cdn.tamara.co/assets/svg/tamara-logo-badge-ar.svg" alt="تمارا" className={cn('h-7 w-auto', className)} />
+/** The badge itself, for the checkout option (light copy of Tamara's badge, see PayIcons.jsx). */
+export const TamaraBadge = ({ className }) => <img src="/brand/pay/tamara.webp" alt="تمارا" width="85" height="28" className={cn('h-7 w-auto', className)} />
 
 /** How an order was paid, for labels. */
 export const payLabel = (o) => (String(o?.paymentRef || '').startsWith('tamara:') ? 'تمارا (تقسيط)' : o?.paymentMethod === 'bank' ? 'تحويل بنكي' : 'بطاقة / Apple Pay')

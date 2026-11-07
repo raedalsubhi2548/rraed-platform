@@ -12,8 +12,12 @@ if (on) {
   window.gtag = function gtag() { window.dataLayer.push(arguments) } // eslint-disable-line prefer-rest-params
   window.gtag('js', new Date())
   window.gtag('config', GA_ID, { send_page_view: false })
-  const s = Object.assign(document.createElement('script'), { async: true, src: `https://www.googletagmanager.com/gtag/js?id=${GA_ID}` })
-  document.head.appendChild(s)
+  // gtag.js (~180 KB) waits until the page has shown and the browser is idle, so it never competes with the page's
+  // own images; calls made before then wait in dataLayer and are sent once it loads, so no visit or event is lost
+  const load = () => document.head.appendChild(Object.assign(document.createElement('script'), { async: true, src: `https://www.googletagmanager.com/gtag/js?id=${GA_ID}` }))
+  const idle = () => (window.requestIdleCallback ? requestIdleCallback(load, { timeout: 4000 }) : setTimeout(load, 1500))
+  if (document.readyState === 'complete') idle()
+  else window.addEventListener('load', idle, { once: true })
 }
 
 export const track = (name, params = {}) => { if (on) window.gtag('event', name, params) }
