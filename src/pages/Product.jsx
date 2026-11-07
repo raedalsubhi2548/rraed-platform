@@ -22,6 +22,14 @@ import { SERVICE_FAQ } from '@/data/serviceFaq.js'
 import OptionNote from '@/components/OptionNote.jsx'
 import ServiceQuestions from '@/components/ServiceQuestions.jsx'
 import { serviceScore } from '@/lib/feedback.js'
+import { WorkGallery } from '@/components/home/WorkGallery.jsx'
+import { FEATURED, STORE_PDFS, pdfView, pdfThumb } from '@/data/work.js'
+
+// Real work shown on the services it proves: delivered Salla stores, and banners/social designs.
+const SHOW_STORES = ['salla-store-design', 'salla-theme', 'add-products', 'add-product-options']
+const SHOW_DESIGNS = ['salla-store-design', 'banner-design']
+// shorter wording where the page heading has a colon and would read awkwardly inside a sentence
+const TOPIC = { 'salla-theme': 'ثيمات سلة', 'tabby-registration': 'التسجيل في تابي', 'tmara-registration': 'التسجيل في تمارا' }
 
 export default function Product({ slug: fromProps }) {
   const { id: fromUrl } = useParams()
@@ -40,6 +48,7 @@ export default function Product({ slug: fromProps }) {
   if (!p) return catalogReady ? <NotFound /> : <div className="container-w py-14"><Skeleton className="h-[480px]" /></div>
 
   const cat = categories.find((c) => c.id === p.categoryId)
+  const topic = TOPIC[p.id] || SEO_H1[p.id] || p.name // section headings carry the words people search for
   const { intro, sections } = parseDescription(p.description)
   const related = products.filter((x) => x.categoryId === p.categoryId && x.id !== p.id).slice(0, 4)
   const articles = posts.filter((a) => a.services?.includes(p.id)).slice(0, 4)
@@ -148,7 +157,7 @@ export default function Product({ slug: fromProps }) {
 
       <section className="mt-16 grid gap-8 border-t-2 border-primary pt-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-14">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-primary">عن الخدمة</h2>
+          <h2 className="font-display text-2xl font-semibold text-primary">عن خدمة {topic}</h2>
           <p className="mt-3 max-w-[60ch] text-[17px] leading-9">{intro}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -163,9 +172,33 @@ export default function Product({ slug: fromProps }) {
         </div>
       </section>
 
+      {(SHOW_STORES.includes(p.id) || SHOW_DESIGNS.includes(p.id)) && (
+        <section className="mt-16" aria-labelledby="work">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <h2 id="work" className="font-display text-2xl font-semibold text-primary">نماذج من أعمالنا في {topic}</h2>
+            <Link to="/work" className="text-sm font-semibold text-primary underline underline-offset-4">كل أعمالنا</Link>
+          </div>
+          {SHOW_STORES.includes(p.id) && (
+            <ul className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+              {STORE_PDFS.slice(0, 6).map((s) => (
+                <li key={s.id}>
+                  <a href={pdfView(s.id)} target="_blank" rel="noreferrer" className="group block overflow-hidden rounded-[14px] bg-surface shadow-hairline ring-1 ring-border transition-colors hover:ring-primary">
+                    <span className="block aspect-[4/3] overflow-hidden bg-[linear-gradient(165deg,#fbfcfe,#e6ecf4)]">
+                      <img src={pdfThumb(s.id, 600)} alt={`تصميم متجر سلة: متجر ${s.name} من أعمال منصة رائد`} loading="lazy" decoding="async" className="w-full transition-transform duration-700 group-hover:scale-[1.03]" />
+                    </span>
+                    <b className="block truncate p-3 text-sm font-semibold text-primary">متجر {s.name}</b>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+          {SHOW_DESIGNS.includes(p.id) && <WorkGallery items={FEATURED.slice(0, 6)} grid className={SHOW_STORES.includes(p.id) ? 'mt-6' : ''} />}
+        </section>
+      )}
+
       {SERVICE_FAQ[p.id]?.length > 0 && (
         <section className="mt-16" aria-labelledby="faq">
-          <h2 id="faq" className="mb-5 font-display text-2xl font-semibold text-primary">أسئلة شائعة</h2>
+          <h2 id="faq" className="mb-5 font-display text-2xl font-semibold text-primary">أسئلة شائعة عن {topic}</h2>
           <div className="grid max-w-[860px] gap-2.5">
             {SERVICE_FAQ[p.id].map((f) => (
               <details key={f.q} className="group rounded-lg bg-surface shadow-hairline ring-1 ring-border open:ring-primary/30">
@@ -179,7 +212,7 @@ export default function Product({ slug: fromProps }) {
 
       {written.length > 0 && (
         <section id="reviews" className="mt-16 scroll-mt-28">
-          <h2 className="font-display text-2xl font-semibold text-primary">آراء العملاء عن الخدمة</h2>
+          <h2 className="font-display text-2xl font-semibold text-primary">آراء العملاء عن {topic}</h2>
           <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><Stars size={14} value={score.avg} />{score.avg.toFixed(1)} من {score.count} تقييم</p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {written.map((r) => (
