@@ -27,7 +27,9 @@ const isBg = (r, g, b) => {
 const MAX_BYTES = 8e6
 export default async function handler(req, res) {
   // only the known parameters, so random query strings can't bypass the edge cache and burn compute
-  if (Object.keys(req.query).some((k) => !['f', 'id', 'v', 'w'].includes(k))) return res.status(400).end('bad query')
+  if (Object.keys(req.query).some((k) => !['f', 'id', 'v', 'w', 'o'].includes(k))) return res.status(400).end('bad query')
+  // o=jpg: the same picture as a JPEG, for link previews (WhatsApp and others don't all show WebP)
+  if (req.query.o !== undefined && req.query.o !== 'jpg') return res.status(400).end('bad format')
   if (req.query.v !== undefined && req.query.v !== '6') return res.status(400).end('bad version')
   if (req.query.id !== undefined && !/^[\w-]{1,80}$/.test(String(req.query.id))) return res.status(400).end('bad id')
   const w = req.query.w === undefined ? SIZE : Number(req.query.w)
@@ -42,13 +44,13 @@ export default async function handler(req, res) {
     if (raw.length > MAX_BYTES) return res.status(413).end('too large')
     // cap the working size so a huge image can't exhaust memory
     const src = await sharp(raw, { limitInputPixels: 2.5e7 }).resize(1600, 1600, { fit: 'inside', withoutEnlargement: true }).png().toBuffer()
-    return await render(src, res, w)
+    return await render(src, res, w, req.query.o === 'jpg')
   } catch {
     return res.status(422).end('could not process')
   }
 }
 
-async function render(src, res, w = SIZE) {
+async function render(src, res, w = SIZE, jpg = false) {
   const { data, info } = await sharp(src).removeAlpha().raw().toBuffer({ resolveWithObject: true })
   const { width: W, height: H, channels: C } = info
 
@@ -102,9 +104,11 @@ async function render(src, res, w = SIZE) {
   const out = await sharp(Buffer.from(backdrop))
     .composite([{ input: rounded, left: ax, top: ay }])
     .png().toBuffer()
-  const out2 = await sharp(out).resize(w, w).webp({ quality: w < SIZE ? 82 : 88 }).toBuffer()
+  const out2 = jpg
+    ? await sharp(out).resize(w, w).jpeg({ quality: 86, mozjpeg: true }).toBuffer()
+    : await sharp(out).resize(w, w).webp({ quality: w < SIZE ? 82 : 88 }).toBuffer()
 
-  res.setHeader('Content-Type', 'image/webp')
+  res.setHeader('Content-Type', jpg ? 'image/jpeg' : 'image/webp')
   res.setHeader('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable')
   res.end(out2)
 }

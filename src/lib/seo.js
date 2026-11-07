@@ -41,6 +41,16 @@ const CAT_ART = {
   'government-services': '/brand/og/raed-government.jpg',
 }
 
+// A service's own picture for its link preview, as a JPEG or PNG (not every app shows WebP).
+// null when it has none (drawn covers): the page then falls back to its section's picture.
+const shareImage = (p) => {
+  const i = p.image || ''
+  if (i.startsWith('/api/art?')) return { url: `${i}&o=jpg`, size: [600, 600] }
+  if (/^\/brand\/products\/[\w-]+\.webp$/.test(i)) return { url: i.replace(/\.webp$/, '.jpg'), size: [600, 600] } // a .jpg copy sits next to it
+  if (/^https:\/\/[^?#]+\.(jpe?g|png)([?#]|$)/i.test(i)) return { url: i }
+  return null
+}
+
 // Search titles/descriptions per service and section: the words people actually search in Saudi.
 const SEO_CAT = {
   'design-services': ['تصميم متاجر سلة وصفحات هبوط وشعارات', 'تصميم متجر سلة احترافي، صفحات هبوط مبرمجة بدون اشتراك شهري، تصميم شعار وبنرات إعلانية، وإضافة المنتجات. أسعار ثابتة وتنفيذ سريع من منصة رائد.'],
@@ -233,10 +243,12 @@ export function seoFor(path, data = {}) {
     const p = pm
     if (!p) return { ...base, title: t('الخدمة غير موجودة'), description: SITE.description, robots: 'noindex' }
     const c = categories.find((x) => x.id === p.categoryId)
-    const img = abs(CAT_ART[p.categoryId] || SITE.ogImage)
+    const own = shareImage(p)
+    const img = abs(own?.url || CAT_ART[p.categoryId] || SITE.ogImage)
     return {
       ...base,
       type: 'product',
+      imageSize: own?.size,
       title: t(SEO_PRODUCT[p.id]?.[0] || p.name),
       description: clip(SEO_PRODUCT[p.id]?.[1] || p.summary || p.description || `${p.name} من ${SITE.name}.`),
       image: img,
@@ -314,7 +326,7 @@ export function headHtml(s) {
     `<meta property="og:url" content="${e(s.canonical)}" />`,
     `<meta property="og:image" content="${e(s.image)}" />`,
     `<meta property="og:image:secure_url" content="${e(s.image)}" />`,
-    ...(/\/og-v2\.jpg$|\/brand\/og\//.test(s.image) ? [`<meta property="og:image:type" content="image/jpeg" />`, `<meta property="og:image:width" content="1200" />`, `<meta property="og:image:height" content="630" />`] : []),
+    ...(s.imageSize ? [`<meta property="og:image:type" content="image/${/\.png([?#]|$)/i.test(s.image) ? 'png' : 'jpeg'}" />`, `<meta property="og:image:width" content="${s.imageSize[0]}" />`, `<meta property="og:image:height" content="${s.imageSize[1]}" />`] : /\/og-v2\.jpg$|\/brand\/og\//.test(s.image) ? [`<meta property="og:image:type" content="image/jpeg" />`, `<meta property="og:image:width" content="1200" />`, `<meta property="og:image:height" content="630" />`] : []),
     `<meta property="og:image:alt" content="${e(s.title)}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${e(s.title)}" />`,
