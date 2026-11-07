@@ -22,6 +22,22 @@ if (on) {
 
 export const track = (name, params = {}) => { if (on) window.gtag('event', name, params) }
 
+// ---- Google Ads conversions (account 853-507-2266) -----------------------------------------------------------------
+// Same gtag.js as GA (one script, two destinations). Two conversion actions made in Google Ads on 7 Nov 2026:
+// a purchase (value = order total) and a tap on any WhatsApp link (counted once per visit by Google Ads itself).
+export const ADS_ID = 'AW-18561774390'
+const ADS_PURCHASE = ADS_ID + '/jQ5ZCL-Z87MdELbm-JJF'
+const ADS_WHATSAPP = ADS_ID + '/aMcaCLqa87MdELbm-JJF'
+const adsOn = on && !location.pathname.startsWith('/admin')
+if (adsOn) {
+  window.gtag('config', ADS_ID)
+  // every wa.me / api.whatsapp.com link on the store, wherever it sits (header, service pages, footer, floating button)
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest?.('a[href*="wa.me/"], a[href*="api.whatsapp.com/"]')
+    if (a && !location.pathname.startsWith('/admin')) window.gtag('event', 'conversion', { send_to: ADS_WHATSAPP, value: 1.0, currency: 'SAR' })
+  }, true)
+}
+
 // ---- Snap Pixel (affec170-…) --------------------------------------------------------------------------------------
 // Same rule as GA: a file loaded from sc-static.net (allowed in vercel.json's CSP), only on the real store, never on admin.
 // Purchases are also sent server side (api/_snap.js, Conversions API) with the same id, so Snap counts each order once.
@@ -105,6 +121,7 @@ export const trackPurchase = (order) => {
   const k = 'raed:ga-purchase:' + order.id
   try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1') } catch { /* ignore */ }
   track('purchase', { transaction_id: String(order.number), currency: 'SAR', value: Number(order.total) || 0, items: (order.items || []).map(item) })
+  if (adsOn) window.gtag('event', 'conversion', { send_to: ADS_PURCHASE, value: Number(order.total) || 0, currency: 'SAR', transaction_id: String(order.number) })
   // client_dedup_id = the order id, the same event_id the server sends to the Conversions API
   snap('PURCHASE', { transaction_id: String(order.number), client_dedup_id: String(order.id), price: Number(order.total) || 0, currency: 'SAR', item_ids: (order.items || []).map((l) => l.productId), number_items: (order.items || []).reduce((n, l) => n + (l.qty || 1), 0) })
 }

@@ -43,7 +43,8 @@ const CAT_ART = {
 
 // A service's own picture for its link preview, as a JPEG or PNG (not every app shows WebP).
 // null when it has none (drawn covers): the page then falls back to its section's picture.
-const shareImage = (p) => {
+// Also the image in the Google Merchant Center feed (scripts/prerender.mjs), so Shopping shows the same picture.
+export const shareImage = (p) => {
   const i = p.image || ''
   if (i.startsWith('/api/art?')) return { url: `${i}&o=jpg`, size: [600, 600] }
   if (/^\/brand\/products\/[\w-]+\.webp$/.test(i)) return { url: i.replace(/\.webp$/, '.jpg'), size: [600, 600] } // a .jpg copy sits next to it

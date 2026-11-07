@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { FAQ } from '../src/data/content.js'
 import { ALL_REVIEWS } from '../src/data/reviews.js'
 import { testimonials } from '../src/lib/feedback.js'
-import { SITE, seoFor, headHtml } from '../src/lib/seo.js'
+import { SITE, seoFor, headHtml, shareImage } from '../src/lib/seo.js'
 import { productPath, categoryPath, toSlug, RESERVED } from '../src/lib/slug.js'
 import { render, loadCatalog } from '../dist-ssr/entry-server.js'
 import { mergeSettings } from '../src/lib/theme.js'
@@ -108,5 +108,35 @@ Allow: /api/art
 
 Sitemap: ${url('/sitemap.xml')}
 `)
-console.log(`prerendered ${routes.length} pages (${products.length} products), sitemap.xml, robots.txt`)
+// Google Merchant Center product feed (RSS 2.0 with g: fields), added in Merchant Center as a scheduled fetch of
+// https://rraed.com/merchant-feed.xml. Rebuilt with the site, so every service saved in the dashboard reaches it.
+// g:id = the same slug the page's Product JSON-LD uses as sku; the image is the service's own (seo.js shareImage).
+const plain = (s) => String(s || '').replace(/^#+\s*/gm, '').replace(/^-\s+/gm, '• ').replace(/\*\*/g, '').replace(/\s*\n+\s*/g, ' ').trim()
+const sar = (n) => `${Number(n).toFixed(2)} SAR`
+writeFileSync(join(DIST, 'merchant-feed.xml'), `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+<channel>
+<title>${xml(SITE.name)}</title>
+<link>${xml(url('/'))}</link>
+<description>${xml(SITE.description)}</description>
+${products.filter((p) => p.active !== false).map((p) => {
+  const img = shareImage(p)?.url || seoFor(productPath(p.id), { product: p, products, categories, posts }).image
+  const onSale = p.salePrice && p.salePrice < p.price
+  return `<item>
+  <g:id>${xml(toSlug(p.id))}</g:id>
+  <g:title>${xml(p.name)}</g:title>
+  <g:description>${xml(plain(`${p.summary || ''}\n${p.description || ''}`).slice(0, 4900))}</g:description>
+  <g:link>${xml(url(productPath(p.id)))}</g:link>
+  <g:image_link>${xml(img.startsWith('http') ? img : url(img))}</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>${sar(p.price)}</g:price>${onSale ? `\n  <g:sale_price>${sar(p.salePrice)}</g:sale_price>` : ''}
+  <g:condition>new</g:condition>
+  <g:brand>${xml(SITE.name)}</g:brand>
+  <g:identifier_exists>no</g:identifier_exists>${categories.find((c) => c.id === p.categoryId) ? `\n  <g:product_type>${xml(categories.find((c) => c.id === p.categoryId).name)}</g:product_type>` : ''}
+</item>`
+}).join('\n')}
+</channel>
+</rss>
+`)
+console.log(`prerendered ${routes.length} pages (${products.length} products), sitemap.xml, robots.txt, merchant-feed.xml`)
 process.exit(0) // the Supabase client keeps timers alive
