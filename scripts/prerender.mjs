@@ -138,5 +138,17 @@ ${products.filter((p) => p.active !== false).map((p) => {
 </channel>
 </rss>
 `)
-console.log(`prerendered ${routes.length} pages (${products.length} products), sitemap.xml, robots.txt, merchant-feed.xml`)
+// llms.txt (what ChatGPT and other assistants read): the hand-written file from public/, plus every live service with
+// its current price and summary, rebuilt with the site so an assistant never quotes an old price.
+const llmsFile = join(DIST, 'llms.txt')
+const llmsServices = `## الخدمات والأسعار (تتحدّث تلقائياً مع الموقع)
+
+${products.filter((p) => p.active !== false).map((p) => {
+  const now = p.salePrice && p.salePrice < p.price ? `${p.salePrice} ر.س بدل ${p.price}` : `${p.price} ر.س`
+  return `- [${p.name}](${url(productPath(p.id))}): ${now}${p.perUnit ? ` ${p.perUnit}` : ''}. ${plain(p.summary || '').slice(0, 220)}`
+}).join('\n')}
+
+`
+writeFileSync(llmsFile, readFileSync(llmsFile, 'utf8').replace(/\n## المدونة/, `\n${llmsServices}## المدونة`))
+console.log(`prerendered ${routes.length} pages (${products.length} products), sitemap.xml, robots.txt, merchant-feed.xml, llms.txt`)
 process.exit(0) // the Supabase client keeps timers alive

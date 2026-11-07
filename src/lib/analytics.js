@@ -6,12 +6,15 @@ import { isDemo, api } from './api.js'
 
 export const GA_ID = 'G-CX5HXTP046'
 const on = typeof window !== 'undefined' && location.hostname === 'rraed.com'
+const PAY_RETURN = typeof document !== 'undefined' && /(^|\.)(tap\.company|gotapnow\.com|tamara\.co|tabby\.(ai|sa)|moyasar\.com)$/.test((() => { try { return new URL(document.referrer).hostname } catch { return '' } })())
 
 if (on) {
   window.dataLayer = window.dataLayer || []
   window.gtag = function gtag() { window.dataLayer.push(arguments) } // eslint-disable-line prefer-rest-params
   window.gtag('js', new Date())
-  window.gtag('config', GA_ID, { send_page_view: false })
+  // coming back from a payment page (Tap, Tamara, Tabby, Moyasar) is the same visit, not a new source: without this,
+  // GA credited paid orders to sa1.payments.tap.company instead of where the customer really came from (ChatGPT, ads…)
+  window.gtag('config', GA_ID, { send_page_view: false, ...(PAY_RETURN && { ignore_referrer: 'true' }) })
   // gtag.js (~180 KB) waits until the page has shown and the browser is idle, so it never competes with the page's
   // own images; calls made before then wait in dataLayer and are sent once it loads, so no visit or event is lost
   const load = () => document.head.appendChild(Object.assign(document.createElement('script'), { async: true, src: `https://www.googletagmanager.com/gtag/js?id=${GA_ID}` }))
@@ -30,7 +33,7 @@ const ADS_PURCHASE = ADS_ID + '/jQ5ZCL-Z87MdELbm-JJF'
 const ADS_WHATSAPP = ADS_ID + '/aMcaCLqa87MdELbm-JJF'
 const adsOn = on && !location.pathname.startsWith('/admin')
 if (adsOn) {
-  window.gtag('config', ADS_ID)
+  window.gtag('config', ADS_ID, PAY_RETURN ? { ignore_referrer: 'true' } : {})
   // every wa.me / api.whatsapp.com link on the store, wherever it sits (header, service pages, footer, floating button)
   document.addEventListener('click', (e) => {
     const a = e.target.closest?.('a[href*="wa.me/"], a[href*="api.whatsapp.com/"]')
@@ -92,7 +95,7 @@ if (typeof document !== 'undefined') {
     if (document.visibilityState === 'hidden') { current.ms = shown(); current.since = 0; leave() } else current.since = Date.now()
   })
 }
-let firstRef = typeof document !== 'undefined' ? document.referrer : ''
+let firstRef = typeof document !== 'undefined' && !PAY_RETURN ? document.referrer : '' // a payment page is not where a visitor came from
 export function hit(kind, path) {
   if (!counting()) return
   const id = uid()
