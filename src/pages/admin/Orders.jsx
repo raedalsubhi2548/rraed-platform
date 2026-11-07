@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useOutletContext, useSearchParams } from 'react-router-dom'
-import { MessageCircle, Mail, Phone, CreditCard, Landmark, Inbox, ChevronLeft, Copy, FileText, Link2, Plus, Trash2 } from 'lucide-react'
+import { MessageCircle, Mail, Phone, CreditCard, Landmark, Inbox, ChevronLeft, Copy, FileText, Link2, Plus, Trash2, Compass } from 'lucide-react'
+import { heardLabel } from '@/data/heardFrom.js'
 import { api } from '@/lib/api.js'
 import { useApp } from '@/state.jsx'
 import { ORDER_STATUSES } from '@/data/seed.js'
@@ -46,6 +47,7 @@ function OrderDetail({ order, onSaved, owner, onDeleted }) {
         <div className="mt-2 grid gap-1.5 text-sm">
           {order.customer?.email && <a href={`mailto:${order.customer.email}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary"><Mail className="size-4" /><span dir="ltr">{order.customer.email}</span></a>}
           {order.customer?.phone && <a href={`tel:${order.customer.phone}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary"><Phone className="size-4" /><span dir="ltr">{order.customer.phone}</span></a>}
+          {heardLabel(order.customer?.heard) && <p className="flex items-center gap-2 text-muted-foreground"><Compass className="size-4" />عرفنا من: <b className="font-semibold text-foreground">{heardLabel(order.customer.heard)}</b></p>}
         </div>
         {phone && (
           <Button asChild variant="outline" size="sm" className="mt-3 w-full">

@@ -12,14 +12,15 @@ import { cn } from '@/lib/utils'
 import OptionList from '@/components/OptionList.jsx'
 import { trackBeginCheckout } from '@/lib/analytics.js'
 import { Button } from '@/components/ui/button'
-import { PageHead, Panel, Field, Input, Textarea, Skeleton } from '@/components/ui/kit.jsx'
+import { PageHead, Panel, Field, Input, Textarea, Select, Skeleton } from '@/components/ui/kit.jsx'
+import { HEARD_FROM } from '@/data/heardFrom.js'
 
 const PHONE_OK = (p) => /^0?5\d{8}$|^\+?9665\d{8}$/.test(String(p || '').replace(/\s/g, ''))
 
 export default function Checkout() {
   const { user, authReady, lines, subtotal, clearCart, notify } = useApp()
   const nav = useNavigate()
-  const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' })
+  const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '', heard: '' })
   const [method, setMethod] = useState('card') // card (card fields or Apple Pay) | tamara
   const tamaraCfg = useTamara()
   const [code, setCode] = useState('')
@@ -92,7 +93,8 @@ export default function Checkout() {
       const items = lines.map(({ product: p, qty, note, options, chosen, unit }) => ({ productId: p.id, name: p.name, price: unit, qty, note: note || '', image: p.image, digital: !!p.digital, optionKeys: options, options: chosen }))
       const key = `${total}|${coupon?.code || ''}|${lines.map((l) => l.key + 'x' + l.qty).join(',')}`
       const order = (pending.current?.key === key && pending.current.order) || await api.createOrder({
-        items, customer: { name: form.name, phone: form.phone, email: form.email },
+        // «كيف عرفتنا؟» rides in the customer json (stored as sent by place_order), so no SQL change is needed
+        items, customer: { name: form.name, phone: form.phone, email: form.email, ...(HEARD_FROM.some((h) => h.id === form.heard) && { heard: form.heard }) },
         notes: form.notes, coupon: coupon?.code || null, subtotal, discount, total, paymentMethod: 'card',
       })
       if (isDemo) { clearCart(); nav(`/order/${order.id}?new=1`, { replace: true }); return }
@@ -127,6 +129,12 @@ export default function Checkout() {
             <Field label="الاسم"><Input required {...f('name')} autoComplete="name" /></Field>
             <Field label="رقم الجوال" error={phoneErr}><Input id="checkout-phone" required {...f('phone')} type="tel" name="tel" inputMode="tel" dir="ltr" placeholder="05xxxxxxxx" autoComplete="tel" aria-invalid={!!phoneErr || undefined} className="text-end" /></Field>
             <Field label="البريد الإلكتروني" className="sm:col-span-2"><Input type="email" required {...f('email')} dir="ltr" readOnly className="text-end" /></Field>
+            <Field label="كيف عرفتنا؟ (اختياري)" className="sm:col-span-2">
+              <Select {...f('heard')}>
+                <option value="">اختر</option>
+                {HEARD_FROM.map((h) => <option key={h.id} value={h.id}>{h.label}</option>)}
+              </Select>
+            </Field>
             <Field label="ملاحظات للطلب (اختياري)" className="sm:col-span-2"><Textarea rows={3} {...f('notes')} placeholder="رابط متجرك، أفضل وقت للتواصل، أو أي تفاصيل" /></Field>
           </div>
         </Panel>

@@ -132,6 +132,11 @@ const ORG = () => ({
   contactPoint: [{ '@type': 'ContactPoint', telephone: SITE.phone, email: SITE.email, contactType: 'customer service', availableLanguage: ['ar', 'en'] }],
   sameAs: SITE.sameAs,
   hasMap: SITE.map,
+  // the same official numbers as the «بيانات مقدّم الخدمة» section of the policies (src/data/terms.js)
+  identifier: [
+    { '@type': 'PropertyValue', propertyID: 'وثيقة العمل الحر', value: 'FL-297134646' },
+    { '@type': 'PropertyValue', propertyID: 'توثيق منصة الأعمال (المركز السعودي للأعمال)', value: '0000335905' },
+  ],
 })
 
 const WEBSITE = () => ({
