@@ -57,14 +57,15 @@ export const WORK = [
 // A curated first look for the homepage (indexes into WORK, 1-based like the file names)
 export const FEATURED = [8, 2, 20, 36, 32, 16, 23, 40, 1, 17, 34, 22].map((n) => WORK[n - 1])
 
-// Full store designs delivered, as PDF case files
+// Full store designs delivered, as PDF case files.
+// thumb: the top of the store's first page, cut small (public/brand/work) for service pages
 export const STORE_PDFS = [
-  { name: 'Private Blend', id: '1vXeAoyhaAITP19LyPsUDg3fhOgC9aymj' },
-  { name: 'خزاز', id: '11Bozp1a0TgropGnoocTMXnzVEUWhmH7C' },
-  { name: 'حَلَه', id: '17mllE6_pcsWx_rpbRFKVbjqgEnExqBNd' },
-  { name: 'مُتّسع البن', id: '1xzOcEr2vPTmzx1Pfjj-Rkyg2VyDqEik2' },
-  { name: 'رونق للعبايات', id: '1DJXDNHzxVT_ORVNaaB86idxcddQC4Pnp' },
-  { name: 'Rozona', id: '1qAga030xlNkFpsll8hksrSlYr4zxKTAV' },
+  { name: 'Private Blend', id: '1vXeAoyhaAITP19LyPsUDg3fhOgC9aymj', thumb: '/brand/work/store-private-blend.webp' },
+  { name: 'خزاز', id: '11Bozp1a0TgropGnoocTMXnzVEUWhmH7C', thumb: '/brand/work/store-khazzaz.webp' },
+  { name: 'حَلَه', id: '17mllE6_pcsWx_rpbRFKVbjqgEnExqBNd', thumb: '/brand/work/store-hala.webp' },
+  { name: 'مُتّسع البن', id: '1xzOcEr2vPTmzx1Pfjj-Rkyg2VyDqEik2', thumb: '/brand/work/store-muttasa-albunn.webp' },
+  { name: 'رونق للعبايات', id: '1DJXDNHzxVT_ORVNaaB86idxcddQC4Pnp', thumb: '/brand/work/store-rawnaq.webp' },
+  { name: 'Rozona', id: '1qAga030xlNkFpsll8hksrSlYr4zxKTAV', thumb: '/brand/work/store-rozona.webp' },
   { name: 'Glisten', id: '1nXfSIksTDs8b5YN3tqIBcdI_0-sZGccj' },
   { name: 'Velvet', id: '1qLce40-i8rLBo7Af7iFJvgN-BU4tI6RF' },
   { name: 'كيان بوتيك', id: '1WORrpts1Ly63PM_ybz4NVwc7Orx5Y4kT' },

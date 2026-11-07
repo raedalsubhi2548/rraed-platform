@@ -23,7 +23,7 @@ import OptionNote from '@/components/OptionNote.jsx'
 import ServiceQuestions from '@/components/ServiceQuestions.jsx'
 import { serviceScore } from '@/lib/feedback.js'
 import { WorkGallery } from '@/components/home/WorkGallery.jsx'
-import { FEATURED, STORE_PDFS, pdfView, pdfThumb } from '@/data/work.js'
+import { FEATURED, STORE_PDFS, pdfView } from '@/data/work.js'
 
 // Real work shown on the services it proves: delivered Salla stores, and banners/social designs.
 const SHOW_STORES = ['salla-store-design', 'salla-theme', 'add-products', 'add-product-options']
@@ -85,7 +85,7 @@ export default function Product({ slug: fromProps }) {
       <div className="grid items-start gap-8 lg:grid-cols-[1fr_1.05fr] lg:gap-14">
         <div className="lg:sticky lg:top-[calc(var(--header-height)+24px)]">
           <div className="relative overflow-hidden rounded-xl bg-sunken shadow-card">
-            <img src={p.image} alt={p.name} width="500" height="500" onError={(e) => { if (!e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = 1; e.currentTarget.src = coverFor(p) } }} className="aspect-square w-full object-cover" />
+            <img src={p.image} alt={p.name} width="500" height="500" fetchpriority="high" onError={(e) => { if (!e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = 1; e.currentTarget.src = coverFor(p) } }} className="aspect-square w-full object-cover" />
             {p.badge && <Badge variant="green" className="absolute top-4 start-4 text-sm">{p.badge}</Badge>}
           </div>
         </div>
@@ -180,11 +180,11 @@ export default function Product({ slug: fromProps }) {
           </div>
           {SHOW_STORES.includes(p.id) && (
             <ul className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
-              {STORE_PDFS.slice(0, 6).map((s) => (
+              {STORE_PDFS.filter((s) => s.thumb).map((s) => (
                 <li key={s.id}>
                   <a href={pdfView(s.id)} target="_blank" rel="noreferrer" className="group block overflow-hidden rounded-[14px] bg-surface shadow-hairline ring-1 ring-border transition-colors hover:ring-primary">
                     <span className="block aspect-[4/3] overflow-hidden bg-[linear-gradient(165deg,#fbfcfe,#e6ecf4)]">
-                      <img src={pdfThumb(s.id, 600)} alt={`تصميم متجر سلة: متجر ${s.name} من أعمال منصة رائد`} loading="lazy" decoding="async" className="w-full transition-transform duration-700 group-hover:scale-[1.03]" />
+                      <img src={s.thumb} alt={`تصميم متجر سلة: متجر ${s.name} من أعمال منصة رائد`} width="480" height="360" loading="lazy" decoding="async" className="size-full object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
                     </span>
                     <b className="block truncate p-3 text-sm font-semibold text-primary">متجر {s.name}</b>
                   </a>
@@ -192,7 +192,7 @@ export default function Product({ slug: fromProps }) {
               ))}
             </ul>
           )}
-          {SHOW_DESIGNS.includes(p.id) && <WorkGallery items={FEATURED.slice(0, 6)} grid className={SHOW_STORES.includes(p.id) ? 'mt-6' : ''} />}
+          {SHOW_DESIGNS.includes(p.id) && <WorkGallery items={FEATURED.slice(0, 6)} grid thumb="400-rw" className={SHOW_STORES.includes(p.id) ? 'mt-6' : ''} />}
         </section>
       )}
 

@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils'
 import { img } from '@/data/work.js'
 
 /** Masonry of portfolio images (natural ratios) with a keyboard/swipe lightbox. */
-export function WorkGallery({ items, className, grid = false }) {
+// thumb: grid thumbnail size passed to Google's image CDN ('400-rw' = 400px WebP, a fraction of the PNG)
+export function WorkGallery({ items, className, grid = false, thumb = 600 }) {
   const [open, setOpen] = useState(-1)
   const go = useCallback((d) => setOpen((i) => (i + d + items.length) % items.length), [items.length])
 
@@ -28,7 +29,7 @@ export function WorkGallery({ items, className, grid = false }) {
               <button type="button" onClick={() => setOpen(i)} aria-label={`عرض التصميم ${i + 1} بحجم كبير`}
                 className="group relative grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-[14px] bg-[linear-gradient(165deg,#fbfcfe,#e6ecf4)] p-2.5 ring-1 ring-primary/[0.07] transition-[translate,box-shadow] duration-500 ease-[cubic-bezier(.16,1,.3,1)] hover:-translate-y-1 hover:shadow-[0_24px_40px_-26px_color-mix(in_srgb,var(--p-green-900)_60%,transparent)] sm:p-3.5">
                 <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-[radial-gradient(60%_80%_at_50%_100%,color-mix(in_srgb,var(--p-green-900)_8%,transparent),transparent)]" aria-hidden="true" />
-                <img src={img(id, 600)} alt={`تصميم ${i + 1} من أعمال منصة رائد`} loading="lazy" decoding="async"
+                <img src={img(id, thumb)} alt={`تصميم ${i + 1} من أعمال منصة رائد`} loading="lazy" decoding="async"
                   className="relative max-h-full max-w-full rounded-[8px] object-contain shadow-[0_14px_28px_-14px_color-mix(in_srgb,var(--p-green-900)_55%,transparent)] ring-[3px] ring-white transition-transform duration-700 ease-emphasized group-hover:scale-[1.03]" />
                 <span className="tabular absolute bottom-2 end-2 rounded-full bg-white/85 px-2 py-0.5 text-[10.5px] font-semibold text-primary/70 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">{i + 1}</span>
               </button>
