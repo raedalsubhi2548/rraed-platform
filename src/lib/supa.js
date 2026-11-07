@@ -263,6 +263,10 @@ export const supa = {
   async listCustomers() { return check(await sb.rpc('admin_customers')) },
   async addCustomer(c) { return (await staffCall('POST', '?kind=customer', c)).customer },
   async deleteCustomer(id) { await staffCall('DELETE', '?kind=customer&id=' + encodeURIComponent(id)) },
+  // customers of the old Salla store (supabase/salla-customers-2026-11.sql): contacts only, no site accounts
+  async listSallaCustomers() { return check(await sb.rpc('admin_salla_customers')) },
+  async importSallaCustomers(rows) { return check(await sb.rpc('owner_import_salla_customers', { p_rows: rows })) },
+  async setSallaOptOut(id, out) { check(await sb.rpc('admin_salla_opt_out', { p_id: id, p_out: !!out })) },
   // a new order from the dashboard: prices of store services are taken by the database, like checkout
   async adminCreateOrder({ userId, items, status, notes, discount }) {
     const id = check(await sb.rpc('admin_create_order', { p_user: userId, p_items: items, p_status: status, p_notes: notes || '', p_discount: Number(discount) || 0 }))

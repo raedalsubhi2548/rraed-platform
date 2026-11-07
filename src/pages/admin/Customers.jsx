@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/
 import { Skeleton } from '@/components/ui/kit.jsx'
 import { AdminHead, IconBtn, SearchBox, TableCard, Table, Th, Td, useConfirm } from '@/components/admin/ui.jsx'
 import NewCustomer from '@/components/admin/NewCustomer.jsx'
+import SallaCustomers from '@/components/admin/SallaCustomers.jsx'
 
 const SORTS = [['recent', 'الأحدث'], ['spent', 'الأعلى شراءً'], ['orders', 'الأكثر طلبات']]
 const kindLabel = (c) => (c.kind === 'owner' ? 'المالك' : c.kind === 'staff' ? c.staffRole || 'الفريق' : '')
@@ -22,6 +23,7 @@ export default function Customers() {
   const [sort, setSort] = useState('recent')
   const [adding, setAdding] = useState(false)
   const [loadErr, setLoadErr] = useState('')
+  const [tab, setTab] = useState('site') // site accounts | customers of the old Salla store
   const access = useOutletContext()
   const owner = !!access?.owner
   const { notify } = useApp()
@@ -41,7 +43,11 @@ export default function Customers() {
 
   return (
     <>
-      <AdminHead title="العملاء" lead={list ? `${list.length} حساب · ${buyers} اشتروا` : undefined} action={<Button size="sm" onClick={() => setAdding(true)}><UserPlus className="size-4" />عميل جديد</Button>} />
+      <AdminHead title="العملاء" lead={tab === 'site' && list ? `${list.length} حساب · ${buyers} اشتروا` : undefined} action={tab === 'site' ? <Button size="sm" onClick={() => setAdding(true)}><UserPlus className="size-4" />عميل جديد</Button> : undefined} />
+      <div className="mb-5 flex w-fit rounded-full bg-sunken p-1" role="tablist" aria-label="نوع العملاء">
+        {[['site', 'حسابات الموقع'], ['salla', 'عملاء سلة']].map(([id, l]) => <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={cn('h-10 rounded-full px-4 text-sm font-bold', tab === id ? 'bg-surface text-primary shadow-hairline' : 'text-muted-foreground')}>{l}</button>)}
+      </div>
+      {tab === 'salla' ? <SallaCustomers owner={owner} /> : <>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <SearchBox value={q} onChange={setQ} placeholder="الاسم، البريد، أو الجوال" className="w-full max-w-md" />
         <div className="flex rounded-full bg-sunken p-1" role="tablist" aria-label="الترتيب">
@@ -84,6 +90,7 @@ export default function Customers() {
           </TableCard>
         </>
       )}
+      </>}
 
       <Sheet open={adding} onOpenChange={setAdding}>
         <SheetContent side="end" className="w-[min(460px,100vw)] overflow-y-auto">

@@ -390,6 +390,27 @@ export const local = {
     write('users', users.filter((x) => x.id !== id))
     write('orders', read('orders', []).map((o) => (o.userId === id ? { ...o, userId: null } : o)))
   },
+  // customers of the old Salla store: contacts only (same shape as admin_salla_customers)
+  async listSallaCustomers() {
+    requireAdmin('customers')
+    return read('salla', []).sort((a, b) => b.spent - a.spent)
+  },
+  async importSallaCustomers(rows) {
+    requireAdmin()
+    const byId = new Map(read('salla', []).map((c) => [c.id, c]))
+    let n = 0
+    for (const r of rows) {
+      if (!/^[A-Za-z0-9_-]{1,40}$/.test(String(r.id || ''))) continue
+      byId.set(r.id, { ...r, optedOut: byId.get(r.id)?.optedOut || false })
+      n++
+    }
+    write('salla', [...byId.values()])
+    return n
+  },
+  async setSallaOptOut(id, out) {
+    requireAdmin('customers')
+    write('salla', read('salla', []).map((c) => (c.id === id ? { ...c, optedOut: !!out } : c)))
+  },
   async listCoupons() { requireAdmin('coupons'); return read('coupons', []) },
   async saveCoupon(c) {
     requireAdmin('coupons')
