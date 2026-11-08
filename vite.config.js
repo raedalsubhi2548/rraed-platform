@@ -11,7 +11,7 @@ export default defineConfig(({ isSsrBuild }) => ({
   build: {
     rollupOptions: {
       output: {
-        ...(isSsrBuild ? {} : { manualChunks: { react: ['react', 'react-dom', 'react-router-dom'] } }), // Supabase loads on demand (src/lib/api.js)
+        ...(isSsrBuild ? {} : { manualChunks: { react: ['react', 'react-dom', 'react-router', 'react-router-dom'] } }), // Supabase loads on demand (src/lib/api.js)
       },
     },
   },

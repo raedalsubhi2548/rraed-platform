@@ -1,6 +1,6 @@
 // Build-time renderer for the public pages (used by scripts/prerender.mjs, never shipped to the browser).
 import { renderToString } from 'react-dom/server'
-import { StaticRouter } from 'react-router-dom/server'
+import { StaticRouter } from 'react-router-dom' // React Router 7: no separate /server entry
 import App from './App.jsx'
 import { api, isDemo } from './lib/api.js'
 import { seedCategories, seedProducts } from './data/seed.js'

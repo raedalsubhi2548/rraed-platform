@@ -36,6 +36,7 @@ export default function Checkout() {
   useEffect(() => { setApple(canApplePay()) }, [])
   // an order whose payment didn't finish (failed to start, or the customer came back from the bank) is reused, not duplicated
   const pending = useRef(null)
+  const placed = useRef('') // id of the order just paid here, so the emptied cart leads to it
   if (pending.current === null) { try { pending.current = JSON.parse(sessionStorage.getItem('raed:pending-order') || 'false') || undefined } catch { pending.current = undefined } }
 
   // back button from the bank / Tamara restores this page from the cache with the old "leaving" state
@@ -61,7 +62,9 @@ export default function Checkout() {
   )
   if (!authReady) return <div className="container-w py-14"><Skeleton className="h-96" /></div>
   if (!user) return <Navigate to="/login?next=/checkout" replace />
-  if (lines.length === 0) return <Navigate to="/cart" replace />
+  // just paid: the emptied cart re-renders this page before the navigation to the order lands (React Router 7 runs
+  // navigations in a transition), so go to the order from here too instead of bouncing to the empty cart
+  if (lines.length === 0) return <Navigate to={placed.current ? `/order/${placed.current}?new=1` : '/cart'} replace />
 
   const discount = coupon ? Math.min(subtotal, coupon.type === 'percent' ? (subtotal * coupon.value) / 100 : coupon.value) : 0
   const total = Math.max(0, subtotal - discount)
@@ -97,13 +100,13 @@ export default function Checkout() {
         items, customer: { name: form.name, phone: form.phone, email: form.email, ...(HEARD_FROM.some((h) => h.id === form.heard) && { heard: form.heard }) },
         notes: form.notes, coupon: coupon?.code || null, subtotal, discount, total, paymentMethod: 'card',
       })
-      if (isDemo) { clearCart(); nav(`/order/${order.id}?new=1`, { replace: true }); return }
+      if (isDemo) { placed.current = order.id; clearCart(); nav(`/order/${order.id}?new=1`, { replace: true }); return }
       pending.current = { key, order }
       try { sessionStorage.setItem('raed:pending-order', JSON.stringify({ key, order: { id: order.id, number: order.number } })) } catch { /* private mode */ }
       const { redirect, free, paid, kind } = await start(order)
       if (free || paid) { // paid on the spot (no 3-D Secure step), or a 100% coupon
         pending.current = undefined; try { sessionStorage.removeItem('raed:pending-order') } catch { /* ignore */ }
-        clearCart(); nav(`/order/${order.id}?new=1`, { replace: true }); return
+        placed.current = order.id; clearCart(); nav(`/order/${order.id}?new=1`, { replace: true }); return
       }
       // the cart is emptied only after the payment is confirmed (on the order page), so a cancelled payment keeps it
       setLeaving(kind)
