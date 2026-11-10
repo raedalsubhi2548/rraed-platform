@@ -173,7 +173,7 @@ export default function Checkout() {
               <div className="grid gap-2">
                 <label id="checkout-agree" className={cn('flex cursor-pointer items-start gap-3 rounded-xl bg-sunken p-3.5 text-sm leading-6 ring-1 transition-colors', agreeErr && !agreed ? 'bg-danger-soft ring-danger' : 'ring-transparent')}>
                   <input type="checkbox" checked={agreed} onChange={(e) => { setAgreed(e.target.checked); setAgreeErr(false); setErr('') }} aria-invalid={(agreeErr && !agreed) || undefined} className="mt-1 size-4 shrink-0 accent-[var(--primary)]" />
-                  <span>أوافق على <Link to="/policies" target="_blank" className="font-semibold text-primary underline">السياسات والشروط</Link> وعلى الإقرار والتعهد التالي.</span>
+                  <span>أوافق على <Link to="/policies" target="_blank" rel="noopener" className="font-semibold text-primary underline">السياسات والشروط</Link> وعلى الإقرار والتعهد التالي.</span>
                 </label>
                 {agreeErr && !agreed && <p className="-mt-1 px-1 text-[13px] font-semibold text-danger" role="alert">لازم توافق على السياسات والشروط قبل الدفع</p>}
                 <details className="group rounded-xl ring-1 ring-border">

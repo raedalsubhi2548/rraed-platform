@@ -85,7 +85,7 @@ export default function Product({ slug: fromProps }) {
       <div className="grid items-start gap-8 lg:grid-cols-[1fr_1.05fr] lg:gap-14">
         <div className="lg:sticky lg:top-[calc(var(--header-height)+24px)]">
           <div className="relative overflow-hidden rounded-xl bg-sunken shadow-card">
-            <img src={p.image} alt={p.name} width="500" height="500" fetchpriority="high" onError={(e) => { if (!e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = 1; e.currentTarget.src = coverFor(p) } }} className="aspect-square w-full object-cover" />
+            <img src={p.image} alt={p.name} width="500" height="500" fetchPriority="high" onError={(e) => { if (!e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = 1; e.currentTarget.src = coverFor(p) } }} className="aspect-square w-full object-cover" />
             {p.badge && <Badge variant="green" className="absolute top-4 start-4 text-sm">{p.badge}</Badge>}
           </div>
         </div>

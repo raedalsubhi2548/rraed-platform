@@ -70,6 +70,6 @@ export default async function handler(req, res) {
     return res.status(402).json({ error: 'البنك رفض العملية. جرّب بطاقة ثانية أو تواصل مع بنكك' })
   }
   if (!r.ok || !charge.transaction?.url) return res.status(502).json({ error: charge.errors?.[0]?.description || 'تعذّر إنشاء عملية الدفع' })
-  await admin.from('orders').update({ payment_ref: charge.id }).eq('id', order.id)
+  await admin.from('orders').update({ payment_ref: charge.id }).eq('id', order.id).eq('status', 'pending')
   return res.status(200).json({ url: charge.transaction.url })
 }

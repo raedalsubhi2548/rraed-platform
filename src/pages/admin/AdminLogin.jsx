@@ -72,7 +72,7 @@ export default function AdminLogin() {
           </>}
           {sent && <label className="grid gap-1.5">
             <span className="text-sm font-semibold text-white/80">رمز التحقق</span>
-            <input required dir="ltr" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={8} autoFocus value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.replace(/D/g, '').slice(0, 8) })} className={field.replace('pl-11', 'pl-4') + ' text-center text-2xl tracking-[0.5em]'} placeholder="••••••" />
+            <input required dir="ltr" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={8} autoFocus value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.replace(/\D/g, '').slice(0, 8) })} className={field.replace('pl-11', 'pl-4') + ' text-center text-2xl tracking-[0.5em]'} placeholder="••••••" />
           </label>}
 
           {TURNSTILE_KEY && <div className="rounded-xl bg-white p-1 text-foreground"><HumanCheck ref={human} onToken={setCaptcha} /></div>}

@@ -4,7 +4,7 @@
 // password is recorded in login_checks, and the owner's dashboard accepts a code session only when it follows one
 // (public.is_admin(), adminFromRequest), so the code alone, requested straight from Supabase, never opens it.
 import { createClient } from '@supabase/supabase-js'
-import { admin } from './_shared.js'
+import { admin, rateOk } from './_shared.js'
 import { sendLoginCodeEmail } from './_mail.js'
 
 const URL_ = (process.env.VITE_SUPABASE_URL || '').trim().replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '')
@@ -23,6 +23,8 @@ export default async function handler(req, res) {
   const { email, password, captchaToken } = req.body || {}
   if (typeof email !== 'string' || !EMAIL.test(email.trim()) || typeof password !== 'string' || password.length < 6 || password.length > 128) return res.status(400).json({ error: BAD })
   const mail = email.trim().toLowerCase()
+  // the same limits across all server instances: 10 tries a minute from one address, 15 per quarter hour on one account
+  if (!(await rateOk('login-ip:' + ip, 10, 60)) || !(await rateOk('login-mail:' + mail, 15, 900))) return res.status(429).json({ error: 'محاولات كثيرة، انتظر شوي وحاول مرة ثانية' })
 
   // 1) the password, checked by Supabase itself (with the human check when Turnstile is on)
   const anon = createClient(URL_, process.env.VITE_SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } })

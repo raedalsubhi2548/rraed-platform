@@ -97,12 +97,40 @@ writeFileSync(join(DIST, '404.html'), template
 
 const today = new Date().toISOString().slice(0, 10)
 const url = (p) => SITE.url.replace(/\/$/, '') + p
+// lastmod tells crawlers what really changed: a page whose content is the same as on the live site keeps the date the
+// live sitemap already gives it; only new or changed pages get today's date. If the live site can't be read, all get today.
+const live = async (p) => { try { const r = await fetch(url(p), { signal: AbortSignal.timeout(6000) }); return r.ok ? await r.text() : '' } catch { return '' } }
+const lastmod = {}
+try {
+  const [oldHash, oldMap] = await Promise.all([live('/indexnow.json'), live('/sitemap.xml')])
+  const was = JSON.parse(oldHash || '{}').pages || {}
+  const dates = Object.fromEntries([...oldMap.matchAll(/<loc>([^<]+)<\/loc><lastmod>(\d{4}-\d{2}-\d{2})<\/lastmod>/g)].map((m) => [m[1], m[2]]))
+  for (const r of routes) {
+    const d = dates[xml(url(r))]
+    if (d && d <= today && was[r] && was[r] === pageHash[r]) lastmod[r] = d
+  }
+} catch { /* all pages get today's date */ }
 writeFileSync(join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${routes.map((r) => `  <url><loc>${xml(url(r === '/' ? '/' : r))}</loc><lastmod>${today}</lastmod><changefreq>${r === '/' ? 'weekly' : 'monthly'}</changefreq><priority>${r === '/' ? '1.0' : productSet.has(r) ? '0.8' : '0.6'}</priority></url>`).join('\n')}
+${routes.map((r) => `  <url><loc>${xml(url(r === '/' ? '/' : r))}</loc><lastmod>${lastmod[r] || today}</lastmod><changefreq>${r === '/' ? 'weekly' : 'monthly'}</changefreq><priority>${r === '/' ? '1.0' : productSet.has(r) ? '0.8' : '0.6'}</priority></url>`).join('\n')}
 </urlset>
 `)
+// Search engines and the assistants' crawlers are named on purpose (ChatGPT search, Perplexity, Claude, Gemini, Copilot
+// through Bing): one group, same rules for all, so nobody has to guess whether they are welcome.
 writeFileSync(join(DIST, 'robots.txt'), `User-agent: *
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: GPTBot
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: Google-Extended
+User-agent: Applebot
+User-agent: Applebot-Extended
 Allow: /
 Disallow: /admin
 Disallow: /account
@@ -156,6 +184,11 @@ ${products.filter((p) => p.active !== false).map((p) => {
 }).join('\n')}
 
 `
-writeFileSync(llmsFile, readFileSync(llmsFile, 'utf8').replace(/\n## المدونة/, `\n${llmsServices}## المدونة`))
+const llmsFaq = `## أسئلة شائعة
+
+${FAQ.map((f) => `- ${f.q} ${f.a}`).join('\n')}
+`
+writeFileSync(llmsFile, readFileSync(llmsFile, 'utf8').replace(/\n## المدونة/, `\n${llmsServices}## المدونة`).trimEnd() + `\n\n${llmsFaq}`)
 console.log(`prerendered ${routes.length} pages (${products.length} products), sitemap.xml, robots.txt, merchant-feed.xml, llms.txt`)
+await new Promise((r) => setTimeout(r, 300)) // let open connections close first (Windows aborts otherwise)
 process.exit(0) // the Supabase client keeps timers alive

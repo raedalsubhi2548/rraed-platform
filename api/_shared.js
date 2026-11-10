@@ -89,3 +89,12 @@ export async function confirmCharge(chargeId, browser = {}) {
   }
   return { ok: true, orderId }
 }
+
+// A limit shared by every server instance (table rate_hits, supabase/audit-fixes-2026-11.sql). Until that file is run
+// this answers true, and the per-instance guards in each endpoint stay the only limit.
+export async function rateOk(key, max, seconds) {
+  try {
+    const { data, error } = await admin.rpc('rate_ok', { p_key: String(key), p_max: max, p_seconds: seconds })
+    return error ? true : data !== false
+  } catch { return true }
+}

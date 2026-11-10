@@ -5,6 +5,6 @@ import { confirmCharge } from './_shared.js'
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
   const id = String(req.body?.id || '')
-  if (/^chg_[\w]+$/.test(id)) await confirmCharge(id)
+  if (/^chg_\w{6,80}$/.test(id)) await confirmCharge(id)
   return res.status(200).json({ received: true })
 }

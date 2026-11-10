@@ -103,7 +103,7 @@ export default function Login() {
             </Field>
           )}
           {(mode === 'in' || mode === 'up' || mode === 'reset') && (
-            <Field label={mode === 'reset' ? 'كلمة المرور الجديدة' : 'كلمة المرور'} hint={mode !== 'in' ? '6 أحرف على الأقل' : undefined}><Input type="password" required minLength={6} {...f('password')} dir="ltr" autoComplete={mode === 'in' ? 'current-password' : 'new-password'} /></Field>
+            <Field label={mode === 'reset' ? 'كلمة المرور الجديدة' : 'كلمة المرور'} hint={mode !== 'in' ? '8 أحرف على الأقل' : undefined}><Input type="password" required minLength={mode === 'in' ? 6 : 8} {...f('password')} dir="ltr" autoComplete={mode === 'in' ? 'current-password' : 'new-password'} /></Field>
           )}
           {mode === 'in' && <button type="button" onClick={() => swap('forgot')} className="-mt-2 justify-self-start text-sm font-semibold text-primary underline-offset-4 hover:underline">نسيت كلمة المرور؟</button>}
           <HumanCheck key={mode} ref={human} onToken={setCaptcha} />

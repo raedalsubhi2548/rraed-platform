@@ -299,7 +299,7 @@ export function seoFor(path, data = {}) {
   if (path === '/work') return { ...base, title: t('أعمالنا: متاجر سلة صممناها وتصاميم سوشال ميديا'), description: clip(`نماذج من أعمال ${SITE.name}: 13 متجر سلة صممناها كاملة، وبنرات وتصاميم سوشال ميديا لعملائنا. شوف شغلنا قبل ما تطلب.`), jsonLd: [crumbs([['الرئيسية', '/'], ['أعمالنا', '/work']])] }
   if (path === '/reviews') return { ...base, title: t('آراء العملاء في تصميم متاجر سلة'), description: clip(`${reviews.length} رأي مكتوب من عملاء ${SITE.name} عن تصميم متاجر سلة والخدمات${reviews.every((r) => (r.stars ?? 5) === 5) ? '، وكلها بتقييم 5 من 5' : ''}.`), jsonLd: [crumbs([['الرئيسية', '/'], ['آراء العملاء', '/reviews']])] }
   if (path === '/contact') return { ...base, title: t('تواصل معنا'), description: clip(`تواصل مع ${SITE.name} على واتساب ${WA_LOCAL} أو على البريد ${SITE.email}، ونرد عليك بنفس اليوم.`), jsonLd: [ORG(), crumbs([['الرئيسية', '/'], ['تواصل معنا', '/contact']])] }
-  if (path === '/policies') return { ...base, title: t('السياسات والشروط'), description: clip(`سياسة الاستخدام والإلغاء والاسترجاع والخصوصية في ${SITE.name}: طريقة الدفع، مدة التنفيذ، التعديلات، وحماية بياناتك.`) }
+  if (path === '/policies') return { ...base, title: t('السياسات والشروط'), description: clip(`سياسة الاستخدام والإلغاء والاسترجاع والخصوصية في ${SITE.name}: طريقة الدفع، مدة التنفيذ، التعديلات، وحماية بياناتك.`), jsonLd: [crumbs([['الرئيسية', '/'], ['السياسات والشروط', '/policies']])] }
   // private or transactional pages
   return { ...base, title: SITE.name, description: SITE.description, robots: 'noindex,nofollow' }
 }

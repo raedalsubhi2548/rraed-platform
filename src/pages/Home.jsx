@@ -68,7 +68,7 @@ function Hero({ b: h, first }) {
       {/* the scene */}
       <picture className="absolute inset-0 -z-10">
         <source media="(max-width: 767px)" srcSet={h.imageMobile || h.image || `${ART}/raed-hero-mobile-v3.webp`} />
-        <img src={h.image || `${ART}/raed-hero-v3.webp`} alt={h.image ? h.title1 : 'تصميم متاجر سلة من منصة رائد على الجوال واللابتوب'} width="2800" height="1188" fetchpriority="high"
+        <img src={h.image || `${ART}/raed-hero-v3.webp`} alt={h.image ? h.title1 : 'تصميم متاجر سلة من منصة رائد على الجوال واللابتوب'} width="2800" height="1188" fetchPriority="high"
           className="size-full object-cover object-[50%_100%] md:object-[0%_50%] motion-safe:animate-[kenburns_28s_ease-in-out_infinite_alternate]" />
       </picture>
       {/* melt the scene into the header (top), the text side, and the page (bottom) */}

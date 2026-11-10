@@ -9,9 +9,10 @@ export default defineConfig(({ isSsrBuild }) => ({
   base: '/',
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        ...(isSsrBuild ? {} : { manualChunks: { react: ['react', 'react-dom', 'react-router', 'react-router-dom'] } }), // Supabase loads on demand (src/lib/api.js)
+        // React and the router in one long-cached file. Supabase loads on demand (src/lib/api.js)
+        ...(isSsrBuild ? {} : { codeSplitting: { groups: [{ name: 'react', test: /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/ }] } }),
       },
     },
   },

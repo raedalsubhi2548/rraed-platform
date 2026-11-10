@@ -39,7 +39,8 @@ export default async function handler(req, res) {
   // only from the store's own pages
   const host = String(req.headers.host || '')
   const origin = String(req.headers.origin || '')
-  if (origin && origin !== `https://${host}`) return res.status(204).end()
+  const site = String(req.headers['sec-fetch-site'] || '')
+  if (origin ? origin !== `https://${host}` : site ? site !== 'same-origin' : !String(req.headers.referer || '').startsWith(`https://${host}/`)) return res.status(204).end()
 
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()
   const now = Date.now()
