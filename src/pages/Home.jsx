@@ -119,7 +119,7 @@ function SceneBanner({ img, to, href, kicker, title, accent, body, cta, extra })
   const inner = (
     <>
       <span className="relative block aspect-[16/10] w-full overflow-hidden sm:aspect-auto sm:h-full">
-        <img src={img} srcSet={BUILT_IN.test(img) ? `${img.replace('.webp', '-800.webp')} 800w, ${img} 1600w` : undefined} sizes="(max-width: 640px) 92vw, 50vw" alt="" loading="lazy" decoding="async"
+        <img src={img} srcSet={BUILT_IN.test(img) ? `${img.replace('.webp', '-800.webp')} 800w, ${img} 1600w` : undefined} sizes="(max-width: 640px) 92vw, 50vw" alt={[title, accent].filter(Boolean).join(' ')} loading="lazy" decoding="async"
           className="size-full object-cover object-left transition-transform duration-[2s] ease-[cubic-bezier(.16,1,.3,1)] [mask-image:radial-gradient(ellipse_62%_62%_at_50%_50%,black_38%,transparent_100%)] group-hover:scale-[1.04]" />
       </span>
       <div className="relative flex flex-col justify-center px-2 pb-4 sm:py-10">

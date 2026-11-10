@@ -64,7 +64,7 @@ export default function SiteHeader() {
 
         <Link to="/" className="relative grid h-full w-36 place-items-center sm:w-44" aria-label={`${settings.store.name} — الرئيسية`}>
           {/* white logo melts into the navy hero; the navy one takes over once the header turns white */}
-          <img src={settings.logoLight} alt="" width="458" height="248" className={cn('absolute h-[calc(52px*var(--logo-scale,1))] max-w-full w-auto object-contain transition-[opacity,scale] duration-700 ease-[cubic-bezier(.16,1,.3,1)] sm:h-[calc(62px*var(--logo-scale,1))]', clear ? 'scale-100 opacity-100' : 'pointer-events-none scale-90 opacity-0')} />
+          <img src={settings.logoLight} alt={settings.store.name} aria-hidden="true" width="458" height="248" className={cn('absolute h-[calc(52px*var(--logo-scale,1))] max-w-full w-auto object-contain transition-[opacity,scale] duration-700 ease-[cubic-bezier(.16,1,.3,1)] sm:h-[calc(62px*var(--logo-scale,1))]', clear ? 'scale-100 opacity-100' : 'pointer-events-none scale-90 opacity-0')} />
           <img src={settings.logo} alt={settings.store.name} width="458" height="248" className={cn('relative h-[calc(44px*var(--logo-scale,1))] max-w-full w-auto object-contain transition-[opacity,scale] duration-700 ease-[cubic-bezier(.16,1,.3,1)] sm:h-[calc(48px*var(--logo-scale,1))]', clear ? 'scale-110 opacity-0' : 'scale-100 opacity-100')} />
         </Link>
 

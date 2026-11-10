@@ -46,7 +46,7 @@ export function WorkGallery({ items, className, grid = false, thumb = 600 }) {
               className="group block w-full overflow-hidden rounded-lg bg-sunken shadow-hairline ring-1 ring-border transition-shadow duration-300 hover:shadow-card"
               aria-label={`عرض التصميم ${i + 1} بحجم كبير`}
             >
-              <img src={img(id, 700)} alt="" loading="lazy" decoding="async" className="w-full transition-transform duration-700 ease-emphasized group-hover:scale-[1.02]" />
+              <img src={img(id, 700)} alt={`تصميم ${i + 1} من أعمال منصة رائد`} loading="lazy" decoding="async" className="w-full transition-transform duration-700 ease-emphasized group-hover:scale-[1.02]" />
             </button>
           </li>
         ))}
