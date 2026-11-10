@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Navigate, Outlet, Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Receipt, Package, Tags, Users, TicketPercent, ExternalLink, LogOut, Menu, Plus, Palette, ChartColumn, UsersRound, Newspaper, MessageSquareText } from 'lucide-react'
+import { LayoutDashboard, Receipt, Package, Tags, Users, TicketPercent, ExternalLink, LogOut, Menu, Plus, Palette, ChartColumn, UsersRound, Newspaper, MessageSquareText, ShieldCheck } from 'lucide-react'
 import { useApp } from '@/state.jsx'
 import { api, isDemo } from '@/lib/api.js'
 import { cn } from '@/lib/utils'
@@ -23,12 +23,13 @@ const NAV = [
   { to: '/admin/feedback', icon: MessageSquareText, label: 'التقييمات والأسئلة', badge: 'feedback', area: 'reviews' },
   { to: '/admin/design', icon: Palette, label: 'مصمم المتجر', area: 'design' },
   { to: '/admin/team', icon: UsersRound, label: 'الفريق والصلاحيات', area: 'team' },
+  { to: '/admin/security', icon: ShieldCheck, label: 'الأمان', area: '', needs: 'totp' }, // shown once supabase/totp-2026-11.sql has run
 ]
 
 function Nav({ pending, onNavigate, dark, access }) {
   return (
     <nav className="grid gap-0.5" aria-label="لوحة التحكم">
-      {NAV.filter((n) => can(access, n.area)).map(({ to, end, icon: I, label, badge }) => (
+      {NAV.filter((n) => can(access, n.area) && (!n.needs || access?.[n.needs] !== undefined)).map(({ to, end, icon: I, label, badge }) => (
         <NavLink key={to} to={to} end={end} onClick={onNavigate}
           className={({ isActive }) => cn('group flex h-11 items-center gap-3 rounded-md px-3 text-[15px] font-semibold transition-colors',
             dark ? (isActive ? 'bg-white text-primary shadow-[0_10px_24px_-12px_rgb(0_0_0/0.6)]' : 'text-white/70 hover:bg-white/[0.07] hover:text-white')
@@ -67,6 +68,30 @@ function Brand({ dark }) {
   )
 }
 
+/** The account turned on the authenticator app: its code is the last step before the dashboard opens. */
+function AppCode({ onDone }) {
+  const [code, setCode] = useState('')
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const go = async (e) => {
+    e.preventDefault(); setErr(''); setBusy(true)
+    try { onDone(await api.totpVerify(code)) } catch (x) { setErr(x.message); setCode(''); setBusy(false) }
+  }
+  return (
+    <div className="grid min-h-dvh place-items-center bg-background p-6 text-center">
+      <form onSubmit={go} className="grid w-full max-w-sm justify-items-center gap-4">
+        <Brand />
+        <h1 className="font-display text-2xl font-semibold text-primary">رمز تطبيق التحقق</h1>
+        <input required dir="ltr" inputMode="numeric" autoComplete="one-time-code" maxLength={6} autoFocus aria-label="رمز تطبيق التحقق" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          className="tabular h-14 w-full rounded-lg border-[1.5px] border-border-strong bg-surface text-center text-2xl tracking-[0.5em] text-primary outline-none focus:border-primary" placeholder="••••••" />
+        {err && <p className="w-full rounded-md bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">{err}</p>}
+        <button disabled={busy || code.length < 6} className="h-11 w-full rounded-full bg-primary font-semibold text-primary-foreground disabled:opacity-60">{busy ? 'لحظة…' : 'دخول'}</button>
+        <button type="button" onClick={() => api.signOut()} className="text-sm font-semibold text-muted-foreground underline underline-offset-4">تسجيل خروج</button>
+      </form>
+    </div>
+  )
+}
+
 export default function AdminLayout() {
   useEffect(() => { let m = document.querySelector('meta[name="robots"]'); if (!m) { m = document.createElement('meta'); m.name = 'robots'; document.head.appendChild(m) } m.content = 'noindex,nofollow'; document.title = 'لوحة التحكم | منصة رائد' }, [])
   const { user, authReady } = useApp()
@@ -91,6 +116,7 @@ export default function AdminLayout() {
 
   if (!authReady || (user && !access)) return <div className="p-8"><Skeleton className="h-96" /></div>
   if (!user) return <Navigate to={ADMIN_HOST ? '/admin/login' : '/login?next=/admin'} replace />
+  if (access?.need_totp) return <AppCode onDone={setAccess} />
   if (!isAdmin) {
     if (!ADMIN_HOST) return <Navigate to="/account" replace />
     return (

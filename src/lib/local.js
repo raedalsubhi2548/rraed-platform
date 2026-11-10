@@ -54,9 +54,12 @@ function requireUser() { const u = sessionUser(); if (!u) throw new Error('سج�
 const ALL = ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog', 'reviews']
 function accessOf(u) {
   if (!u) return { owner: false, role: '', perms: [], strong: true }
-  if (u.role === 'admin') return { owner: true, role: 'المالك', perms: [...ALL, 'team'], strong: true }
+  const totp = !!read('totp', {})[u.id]
+  // the app's code is on and not entered yet in this session (demo code: DEMO_CODE)
+  if (totp && read('totp_ok') !== u.id) return { owner: false, role: '', perms: [], strong: false, totp, need_totp: true }
+  if (u.role === 'admin') return { owner: true, role: 'المالك', perms: [...ALL, 'team'], strong: true, totp, need_totp: false }
   const st = read('staff', []).find((x) => x.email === u.email.toLowerCase())
-  return { owner: false, role: st?.role || '', perms: st?.perms || [], strong: true }
+  return { owner: false, role: st?.role || '', perms: st?.perms || [], strong: true, totp, need_totp: false }
 }
 // the owner, or a staff member with that area (no area: the owner only)
 function requireAdmin(area) {
@@ -82,7 +85,7 @@ export const local = {
     await this.ready
     const u = read('users', []).find((x) => x.email.toLowerCase() === email.trim().toLowerCase())
     if (!u || read('pending') !== u.id || code.trim() !== DEMO_CODE) throw new Error('الرمز غير صحيح أو انتهت صلاحيته')
-    localStorage.removeItem(K('pending')); write('session', u.id); emit(); return publicUser(u)
+    localStorage.removeItem(K('pending')); localStorage.removeItem(K('totp_ok')); write('session', u.id); emit(); return publicUser(u)
   },
   // ---------- the blog (articles written in the dashboard; the built-in ones live in the code) ----------
   async getPosts({ full = false } = {}) { await this.ready; return read('blog_posts', []).filter((p) => p.published).map((p) => ({ ...p, custom: true, body: full ? p.body : undefined })) },
@@ -151,7 +154,29 @@ export const local = {
 
   // ---------- the team ----------
   async myAccess() { await this.ready; return accessOf(sessionUser()) },
-  async listStaff() { requireAdmin(); return read('staff', []) },
+  async listStaff() {
+    requireAdmin()
+    const users = read('users', []), totp = read('totp', {})
+    return read('staff', []).map((s) => ({ ...s, totp: !!totp[users.find((u) => u.email.toLowerCase() === s.email)?.id] }))
+  },
+  async resetStaffTotp(email) {
+    requireAdmin()
+    const id = read('users', []).find((u) => u.email.toLowerCase() === email)?.id, totp = read('totp', {})
+    delete totp[id]; write('totp', totp)
+    return { ok: true }
+  },
+  async totpStart() { requireUser(); return { id: 'demo', qr: '', secret: 'DEMO-' + DEMO_CODE } },
+  async totpVerify(code) {
+    const u = requireUser()
+    if (String(code).trim() !== DEMO_CODE) throw new Error('الرمز غير صحيح')
+    write('totp', { ...read('totp', {}), [u.id]: true }); write('totp_ok', u.id)
+    return accessOf(u)
+  },
+  async totpOff() {
+    const u = requireUser(), totp = read('totp', {})
+    delete totp[u.id]; write('totp', totp)
+    return accessOf(u)
+  },
   async saveStaff({ email, name, role, perms }) {
     const me = requireAdmin()
     const e = String(email || '').trim().toLowerCase()
@@ -173,7 +198,7 @@ export const local = {
     const u = { id: uid('u_'), name, email: email.trim(), phone, role: 'customer', pass: await hash(password), createdAt: new Date().toISOString() }
     users.push(u); write('users', users); write('session', u.id); emit(); return publicUser(u)
   },
-  async signOut() { localStorage.removeItem(K('session')); emit() },
+  async signOut() { localStorage.removeItem(K('session')); localStorage.removeItem(K('totp_ok')); emit() },
   async updateProfile(patch) {
     const me = requireUser()
     const users = read('users', []).map((u) => (u.id === me.id ? { ...u, name: patch.name ?? u.name, phone: patch.phone ?? u.phone } : u))

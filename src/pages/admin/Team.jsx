@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Pencil, Trash2, UserPlus, UsersRound, X } from 'lucide-react'
+import { Check, Pencil, ShieldCheck, ShieldOff, Trash2, UserPlus, UsersRound, X } from 'lucide-react'
 import { api } from '@/lib/api.js'
 import { useApp } from '@/state.jsx'
 import { date } from '@/lib/format.js'
@@ -48,6 +48,11 @@ export default function Team() {
   const remove = async (m) => {
     if (!(await confirm({ title: `إزالة ${m.name || m.email} من الفريق؟` }))) return
     try { await api.removeStaff(m.email); if (f.email === m.email) reset(); load(); notify('أُزيل من الفريق') } catch (e) { notify(e.message, 'err') }
+  }
+
+  const resetApp = async (m) => {
+    if (!(await confirm({ title: `إيقاف رمز التطبيق عن ${m.name || m.email}؟`, ok: 'إيقاف' }))) return
+    try { await api.resetStaffTotp(m.email); load(); notify('أُوقف رمز التطبيق') } catch (e) { notify(e.message, 'err') }
   }
 
   return (
@@ -112,6 +117,7 @@ export default function Team() {
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-bold text-primary">{m.name || m.email.split('@')[0]}</p>
                   {m.role && <span className="rounded-full bg-accent/25 px-2.5 py-0.5 text-xs font-bold text-accent-text">{m.role}</span>}
+                  {m.totp && <span className="flex items-center gap-1 rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-bold text-success"><ShieldCheck className="size-3.5" />رمز التطبيق</span>}
                 </div>
                 <p className="truncate text-xs text-muted-foreground" dir="ltr">{m.email}</p>
                 <div className="flex flex-wrap gap-1.5 pt-1">{m.perms.map((p) => <span key={p} className="rounded-md bg-sunken px-2 py-0.5 text-xs font-semibold text-foreground/80">{AREA_LABEL[p] || p}</span>)}</div>
@@ -119,6 +125,7 @@ export default function Team() {
               </div>
               <div className="flex shrink-0 flex-col gap-1">
                 <IconBtn onClick={() => edit(m)} aria-label="تعديل الصلاحيات"><Pencil className="size-4" /></IconBtn>
+                {m.totp && <IconBtn onClick={() => resetApp(m)} aria-label="إيقاف رمز التطبيق"><ShieldOff className="size-4" /></IconBtn>}
                 <IconBtn tone="danger" onClick={() => remove(m)} aria-label="إزالة من الفريق"><Trash2 className="size-4" /></IconBtn>
               </div>
             </li>

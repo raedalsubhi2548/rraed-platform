@@ -1,4 +1,5 @@
-// The team (owner only): GET → list · POST { email, name, role, perms } → add or change · DELETE ?email= → remove.
+// The team (owner only): GET → list · POST { email, name, role, perms } → add or change · DELETE ?email= → remove ·
+// DELETE ?kind=totp&email= → removes a staff member's authenticator app (lost phone); they sign in with the two steps again.
 // A new email gets a store account (no password yet, they set one with «نسيت كلمة المرور؟») and an invite email.
 // Staff sign in like the owner (password, then the emailed code) and see only the areas in their perms.
 import { admin, adminFromRequest, PERMS } from './_shared.js'
@@ -41,6 +42,11 @@ async function customers(req, res) {
   return res.status(405).json({ error: 'Method not allowed' })
 }
 
+const userIdOf = async (email) => (await admin.from('profiles').select('id').ilike('email', email.replace(/[%_\\]/g, '\\$&')).maybeSingle()).data?.id
+const appFactors = async (userId) => {
+  try { const { data } = await admin.auth.admin.mfa.listFactors({ userId }); return (data?.factors || []).filter((f) => f.factor_type === 'totp' && f.status === 'verified') } catch { return [] }
+}
+
 export default async function handler(req, res) {
   res.setHeader('cache-control', 'no-store')
   if (req.query?.kind === 'customer') return customers(req, res)
@@ -50,7 +56,11 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { data, error } = await admin.from('staff').select('*').order('added_at')
     if (error) return res.status(500).json({ error: 'شغّل ملف supabase/staff-2026-10.sql في Supabase أولاً' })
-    return res.status(200).json({ staff: data.map((s) => ({ email: s.email, name: s.name, role: s.role, perms: s.perms, addedAt: s.added_at })) })
+    const staff = await Promise.all(data.map(async (s) => {
+      const id = await userIdOf(s.email)
+      return { email: s.email, name: s.name, role: s.role, perms: s.perms, addedAt: s.added_at, totp: id ? (await appFactors(id)).length > 0 : false }
+    }))
+    return res.status(200).json({ staff })
   }
 
   if (req.method === 'POST') {
@@ -76,6 +86,18 @@ export default async function handler(req, res) {
       try { await sendStaffInviteEmail(email, { ...row, isNew }); invited = true } catch (err) { console.error('staff invite mail', err?.message) }
     }
     return res.status(200).json({ ok: true, invited, added: !before })
+  }
+
+  if (req.method === 'DELETE' && req.query?.kind === 'totp') {
+    const email = String(req.query?.email || '').trim().toLowerCase()
+    const { data: st } = await admin.from('staff').select('email').eq('email', email).maybeSingle()
+    const id = st && await userIdOf(email)
+    if (!id) return res.status(404).json({ error: 'الموظف غير موجود' })
+    for (const f of await appFactors(id)) {
+      const { error } = await admin.auth.admin.mfa.deleteFactor({ id: f.id, userId: id })
+      if (error) return res.status(500).json({ error: 'تعذّر الإيقاف، حاول مرة ثانية' })
+    }
+    return res.status(200).json({ ok: true })
   }
 
   if (req.method === 'DELETE') {

@@ -16,23 +16,27 @@ export async function userFromRequest(req) {
   return data?.user || null
 }
 
-// How the session signed in (the JWT's amr claim; the token itself was just verified by getUser).
-const signIns = (req) => {
-  try { return JSON.parse(Buffer.from((req.headers.authorization || '').split('.')[1] || '', 'base64url').toString()).amr || [] } catch { return [] }
+// How the session signed in (the JWT's amr and aal claims; the token itself was just verified by getUser).
+const claims = (req) => {
+  try { return JSON.parse(Buffer.from((req.headers.authorization || '').split('.')[1] || '', 'base64url').toString()) || {} } catch { return {} }
 }
+const isAppCode = (a) => a.method === 'totp' || String(a.method || '').startsWith('mfa')
 // The dashboard areas a staff member can be given (same list as public.staff.perms and src/lib/perms.js)
 export const PERMS = ['orders', 'reports', 'products', 'categories', 'customers', 'coupons', 'design', 'blog', 'reviews']
 
 /** Who is signed in to the dashboard, only when the session is the code of a two-step sign-in: never a password
  *  session, and the code must follow a correct password that api/login-start.js recorded within the 15 minutes before
- *  it (the same rule as public.strong_session() in supabase/staff-2026-10.sql).
+ *  it. An account that turned on the authenticator-app code must also have entered it in this session (aal2).
+ *  Same rule as public.strong_session() in supabase/totp-2026-11.sql.
  *  → { user, owner, perms } for the owner or a staff member, otherwise null. */
 export async function staffFromRequest(req) {
   const user = await userFromRequest(req)
   if (!user) return null
-  const amr = signIns(req)
-  if (!amr.length || amr.some((a) => a.method === 'password')) return null
-  const at = Math.max(...amr.map((a) => Number(a.timestamp) || 0)) * 1000
+  const { amr = [], aal } = claims(req)
+  const steps = amr.filter((a) => !isAppCode(a)) // the app's code comes later in the same session: not the sign-in time
+  if (!steps.length || amr.some((a) => a.method === 'password')) return null
+  if ((user.factors || []).some((f) => f.factor_type === 'totp' && f.status === 'verified') && aal !== 'aal2') return null
+  const at = Math.max(...steps.map((a) => Number(a.timestamp) || 0)) * 1000
   const { count } = await admin.from('login_checks').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
     .gte('at', new Date(at - 15 * 60_000).toISOString()).lte('at', new Date(at + 60_000).toISOString())
   if (!count) return null

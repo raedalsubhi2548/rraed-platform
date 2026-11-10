@@ -387,6 +387,32 @@ export const supa = {
   async listStaff() { return (await staffCall('GET')).staff },
   async saveStaff(member) { return staffCall('POST', '', member) },
   async removeStaff(email) { return staffCall('DELETE', '?email=' + encodeURIComponent(email)) },
+  async resetStaffTotp(email) { return staffCall('DELETE', '?kind=totp&email=' + encodeURIComponent(email)) },
+  // ---- the authenticator-app code for dashboard accounts (supabase/totp-2026-11.sql) ----
+  async totpStart() {
+    const { data: l } = await sb.auth.mfa.listFactors()
+    for (const f of l?.all || []) if (f.factor_type === 'totp' && f.status !== 'verified') await sb.auth.mfa.unenroll({ factorId: f.id })
+    const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'rraed-' + Date.now(), issuer: 'rraed.com' })
+    if (error) throw new Error('تعذّر بدء التفعيل، حاول مرة ثانية')
+    return { id: data.id, qr: data.totp.qr_code, secret: data.totp.secret }
+  },
+  // the code from the app: finishes turning it on (factorId given), or completes a sign-in
+  async totpVerify(code, factorId) {
+    let id = factorId
+    if (!id) { const { data } = await sb.auth.mfa.listFactors(); id = data?.totp?.[0]?.id }
+    if (!id) throw new Error('رمز التطبيق غير مفعّل لهذا الحساب')
+    const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: id, code: String(code).trim() })
+    if (error) throw new Error('الرمز غير صحيح')
+    return this.myAccess()
+  },
+  async totpOff() {
+    const { data } = await sb.auth.mfa.listFactors()
+    for (const f of data?.totp || []) {
+      const { error } = await sb.auth.mfa.unenroll({ factorId: f.id })
+      if (error) throw new Error('تعذّر الإيقاف، حاول مرة ثانية')
+    }
+    return this.myAccess()
+  },
   // emails for an order moment (server checks who may send what, and sends each one once)
   async notifyOrder(orderId, event) {
     const { data } = await sb.auth.getSession()

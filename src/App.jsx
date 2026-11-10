@@ -53,6 +53,7 @@ const AdminLogin = lazy(() => import('./pages/admin/AdminLogin.jsx'))
 const Reports = lazy(() => import('./pages/admin/Reports.jsx'))
 const Designer = lazy(() => import('./pages/admin/Designer.jsx'))
 const Team = lazy(() => import('./pages/admin/Team.jsx'))
+const Security = lazy(() => import('./pages/admin/Security.jsx'))
 const AdminBlog = lazy(() => import('./pages/admin/Blog.jsx'))
 const BlogEditor = lazy(() => import('./pages/admin/BlogEditor.jsx'))
 const Feedback = lazy(() => import('./pages/admin/Feedback.jsx'))
@@ -136,6 +137,7 @@ export default function App({ Router, routerProps = {}, initialCatalog }) {
             <Route path="blog/:slug" element={<BlogEditor />} />
             <Route path="feedback" element={<Feedback />} />
             <Route path="team" element={<Team />} />
+            <Route path="security" element={<Security />} />
           </Route>
         </Routes>
         <Toast />
