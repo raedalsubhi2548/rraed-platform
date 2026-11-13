@@ -61,7 +61,11 @@ if (adsOn) {
   // every wa.me / api.whatsapp.com link on the store, wherever it sits (header, service pages, footer, floating button)
   document.addEventListener('click', (e) => {
     const a = e.target.closest?.('a[href*="wa.me/"], a[href*="api.whatsapp.com/"]')
-    if (a && !location.pathname.startsWith('/admin')) window.gtag('event', 'conversion', { send_to: ADS_WHATSAPP, value: 1.0, currency: 'SAR' })
+    if (!a || location.pathname.startsWith('/admin')) return
+    window.gtag('event', 'conversion', { send_to: ADS_WHATSAPP, value: 1.0, currency: 'SAR' })
+    // GA4 too (13 Nov 2026): WhatsApp is the main way customers reach Raed, and GA only counted orders, so pages and
+    // channels that bring chats looked worthless. GA4's recommended lead event, sent to GA only.
+    window.gtag('event', 'generate_lead', { send_to: GA_ID, method: 'whatsapp' })
   }, true)
 }
 
