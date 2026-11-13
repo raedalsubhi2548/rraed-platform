@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS = {
 // ---------- store identity, fonts, corners ----------
 export const DEFAULT_STORE = {
   name: 'منصة رائد', nameEn: 'Raed', description: '', whatsapp: '966536090915', email: 'info@rraed.com',
-  social: { instagram: '', x: '', tiktok: '', snapchat: '' },
+  social: { instagram: '', x: '', tiktok: 'https://www.tiktok.com/@raed.platform', snapchat: '' }, // official TikTok (13 Nov 2026): shown even when the saved field is empty
 }
 export const FONTS = {
   heading: [['marhey', 'مرحي (الأصلي)', "'Marhey'"], ['plex', 'آي بي إم بلكس', "'IBM Plex Sans Arabic'"], ['cairo', 'القاهرة', "'Cairo'"], ['tajawal', 'تجوال', "'Tajawal'"], ['almarai', 'المراعي', "'Almarai'"], ['elmessiri', 'المسيري', "'El Messiri'"], ['reemkufi', 'ريم كوفي', "'Reem Kufi'"]],
@@ -187,7 +187,7 @@ export function mergeSettings(raw) {
       description: text(s.store?.description, '', 300).trim(), // empty: the built-in SEO description
       whatsapp: /^\d{9,15}$/.test(normPhone(s.store?.whatsapp)) ? normPhone(s.store.whatsapp) : DEFAULT_STORE.whatsapp,
       email: typeof s.store?.email === 'string' && /^[^\s@<>"]+@[^\s@<>"]+\.[a-z]{2,}$/i.test(s.store.email.trim()) ? s.store.email.trim() : DEFAULT_STORE.email,
-      social: Object.fromEntries(Object.keys(DEFAULT_STORE.social).map((k) => [k, /^https:\/\//i.test(s.store?.social?.[k] || '') ? safeLink(s.store.social[k], '') : ''])),
+      social: Object.fromEntries(Object.keys(DEFAULT_STORE.social).map((k) => [k, /^https:\/\//i.test(s.store?.social?.[k] || '') ? safeLink(s.store.social[k], DEFAULT_STORE.social[k]) : DEFAULT_STORE.social[k]])),
     },
     fonts: {
       heading: FONTS.heading.some(([k]) => k === s.fonts?.heading) ? s.fonts.heading : 'marhey',

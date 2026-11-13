@@ -20,7 +20,7 @@ export const SITE = {
   phone: '+' + WA,
   email: 'info@rraed.com',
   // the same business elsewhere: Google Business Profile (verified Oct 2026); add the official social accounts here
-  sameAs: ['https://www.google.com/maps?cid=13261550770911996180'],
+  sameAs: ['https://www.google.com/maps?cid=13261550770911996180', 'https://www.tiktok.com/@raed.platform'],
   map: 'https://www.google.com/maps?cid=13261550770911996180',
   logo: '/logo.png',
   ogImage: '/og-v2.jpg', // new file name: WhatsApp and others cache link previews by image URL
