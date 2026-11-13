@@ -49,7 +49,10 @@ export async function readSallaCustomers(file) {
 
 /** A CSV that opens correctly in Excel (UTF-8 with BOM), for an email or SMS tool. */
 export function downloadCsv(name, header, rows) {
-  const esc = (v) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v))
+  // names and cities were typed by Salla's shoppers: a cell starting with = + - @ (or tab/CR) would run as a formula
+  // in Excel or Sheets, so it gets a leading ' (shown as plain text). Plain numbers (+9665…) stay as they are.
+  const cell = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^[+-]?\d+$/.test(s) ? "'" + s : s }
+  const esc = (v) => { const s = cell(v); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s }
   const blob = new Blob(['﻿' + [header, ...rows].map((r) => r.map(esc).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' })
   const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: name })
   a.click()

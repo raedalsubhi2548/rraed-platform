@@ -4,6 +4,7 @@ import { Star, Check } from 'lucide-react'
 import { api } from '@/lib/api.js'
 import { cn } from '@/lib/utils'
 import { GOOGLE_REVIEW_URL } from '@/lib/feedback.js'
+import { hideReviewToken, reviewToken } from '@/lib/analytics.js'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea, Skeleton } from '@/components/ui/kit.jsx'
 
@@ -40,7 +41,9 @@ function GoogleCard() {
 export default function Review() {
   const { id } = useParams()
   const [params] = useSearchParams()
-  const token = params.get('t') || ''
+  // the key is taken out of the address bar (analytics.js), so after that it comes from this tab's memory
+  const token = params.get('t') || reviewToken(id)
+  useEffect(() => { hideReviewToken() }, [])
   const [form, setForm] = useState(null)
   const [service, setService] = useState(0)
   const [store, setStore] = useState(0)

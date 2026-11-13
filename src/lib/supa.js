@@ -283,7 +283,7 @@ export const supa = {
   async deleteCoupon(code) { check(await sb.from('coupons').delete().eq('code', code)) },
   async validateCoupon(code) {
     const r = check(await sb.rpc('check_coupon', { p_code: code.trim().toUpperCase() }))
-    if (!r) throw new Error('الكود غير صالح أو منتهي')
+    if (!r?.code) throw new Error('الكود غير صالح أو منتهي') // a refused code comes back as null, or as a row of nulls
     return coupon(r)
   },
 

@@ -8,6 +8,30 @@ export const GA_ID = 'G-CX5HXTP046'
 const on = typeof window !== 'undefined' && location.hostname === 'rraed.com'
 const PAY_RETURN = typeof document !== 'undefined' && /(^|\.)(tap\.company|gotapnow\.com|tamara\.co|tabby\.(ai|sa)|moyasar\.com)$/.test((() => { try { return new URL(document.referrer).hostname } catch { return '' } })())
 
+// The review link (/review/<order>?t=…) carries a private key: whoever has it can review that order. It is moved out of
+// the address bar before GA, Google Ads or Snap read the page address (security audit, 13 Nov 2026), and Review.jsx
+// reads it back with reviewToken(). Runs at load (link from the email) and again from Review.jsx (link inside the site).
+const REVIEW_T = 'raed:review-t:'
+let reviewT = null
+export function hideReviewToken() {
+  if (typeof window === 'undefined') return
+  const m = location.pathname.match(/^\/review\/([^/?#]+)/)
+  if (!m) return
+  const u = new URL(location.href)
+  const t = u.searchParams.get('t')
+  if (!t) return
+  reviewT = { id: m[1], t }
+  try { sessionStorage.setItem(REVIEW_T + m[1], t) } catch { /* kept in memory for this page */ }
+  u.searchParams.delete('t')
+  history.replaceState(history.state, '', u.pathname + u.search + u.hash)
+}
+export const reviewToken = (id) => {
+  if (reviewT?.id === id) return reviewT.t
+  try { return sessionStorage.getItem(REVIEW_T + id) || '' } catch { return '' }
+}
+hideReviewToken()
+const noToken = (search) => { const q = new URLSearchParams(search); q.delete('t'); const s = q.toString(); return s ? '?' + s : '' }
+
 if (on) {
   window.dataLayer = window.dataLayer || []
   window.gtag = function gtag() { window.dataLayer.push(arguments) } // eslint-disable-line prefer-rest-params
@@ -136,7 +160,8 @@ export function usePageViews() {
   useEffect(() => {
     if (!on || loc.pathname.startsWith('/admin')) return
     // let the page set its <title> first
-    const t = setTimeout(() => { track('page_view', { page_location: location.href, page_path: loc.pathname + loc.search, page_title: document.title }); snap('PAGE_VIEW') }, 50)
+    // never the review key (?t=), even if it is still in the router's address
+    const t = setTimeout(() => { const s = noToken(loc.search); track('page_view', { page_location: location.origin + loc.pathname + s + location.hash, page_path: loc.pathname + s, page_title: document.title }); snap('PAGE_VIEW') }, 50)
     return () => clearTimeout(t)
   }, [loc.pathname, loc.search])
 }
