@@ -9,7 +9,7 @@ const on = typeof window !== 'undefined' && location.hostname === 'rraed.com'
 const PAY_RETURN = typeof document !== 'undefined' && /(^|\.)(tap\.company|gotapnow\.com|tamara\.co|tabby\.(ai|sa)|moyasar\.com)$/.test((() => { try { return new URL(document.referrer).hostname } catch { return '' } })())
 
 // The review link (/review/<order>?t=…) carries a private key: whoever has it can review that order. It is moved out of
-// the address bar before GA, Google Ads or Snap read the page address (security audit, 13 Nov 2026), and Review.jsx
+// the address bar before GA, Google Ads, Snap or TikTok read the page address (security audit, 13 Nov 2026), and Review.jsx
 // reads it back with reviewToken(). Runs at load (link from the email) and again from Review.jsx (link inside the site).
 const REVIEW_T = 'raed:review-t:'
 let reviewT = null
@@ -78,6 +78,31 @@ if (snapOn) {
 }
 export const snap = (name, params = {}) => { if (snapOn) window.snaptr('track', name, params) }
 
+// ---- TikTok Pixel (13 Nov 2026) ----------------------------------------------------------------------------------
+// TikTok's own snippet, written as a file so the strict CSP stays on (analytics.tiktok.com is allowed in vercel.json).
+// Only on the real store, never on admin. No identify(): no email or phone is sent, only the page and the event.
+export const TIKTOK_PIXEL = 'DBRLJDRC77U32OQMOSI0'
+const ttOn = on && !location.pathname.startsWith('/admin')
+if (ttOn) {
+  window.TiktokAnalyticsObject = 'ttq'
+  const ttq = (window.ttq = window.ttq || [])
+  ttq.methods = ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie', 'holdConsent', 'revokeConsent', 'grantConsent']
+  ttq.setAndDefer = (t, e) => { t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } } // eslint-disable-line prefer-rest-params
+  ttq.methods.forEach((m) => ttq.setAndDefer(ttq, m))
+  ttq.instance = (t) => { const e = ttq._i[t] || []; ttq.methods.forEach((m) => ttq.setAndDefer(e, m)); return e }
+  ttq.load = (id, opts) => {
+    const src = 'https://analytics.tiktok.com/i18n/pixel/events.js'
+    ttq._i = ttq._i || {}; ttq._i[id] = []; ttq._i[id]._u = src
+    ttq._t = ttq._t || {}; ttq._t[id] = +new Date()
+    ttq._o = ttq._o || {}; ttq._o[id] = opts || {}
+    document.head.appendChild(Object.assign(document.createElement('script'), { async: true, src: `${src}?sdkid=${id}&lib=ttq` }))
+  }
+  ttq.load(TIKTOK_PIXEL)
+}
+const ttPage = () => { if (ttOn) window.ttq.page() }
+const tiktok = (name, params = {}, opts) => { if (ttOn) window.ttq.track(name, params, opts) }
+const ttItem = (id, name, price, qty = 1) => ({ content_id: String(id), content_type: 'product', content_name: name, price: Number(price) || 0, quantity: qty })
+
 // ---- Our own visitor count (لوحة التحكم ← التقارير) --------------------------------------------------------------
 // Sent to /api/hit on the store's own domain, so ad blockers and missing cookie consent don't hide visitors.
 // The owner's own visits are left out: «عرض المتجر» in the dashboard opens the store with ?notrack=1, which marks that browser.
@@ -136,13 +161,18 @@ export const trackAddToCart = (p, qty, unit) => {
   hit('cart')
   track('add_to_cart', { currency: 'SAR', value: unit * qty, items: [{ item_id: p.id, item_name: p.name, price: unit, quantity: qty }] })
   snap('ADD_CART', { item_ids: [p.id], item_category: p.categoryId, price: unit * qty, currency: 'SAR', number_items: qty })
+  tiktok('AddToCart', { contents: [ttItem(p.id, p.name, unit, qty)], value: unit * qty, currency: 'SAR' })
 }
 export const trackBeginCheckout = (lines, value) => {
   hit('checkout')
   track('begin_checkout', { currency: 'SAR', value, items: lines.map(item) })
   snap('START_CHECKOUT', { item_ids: lines.map((l) => l.productId || l.product?.id), price: value, currency: 'SAR', number_items: lines.reduce((n, l) => n + (l.qty || 1), 0) })
+  tiktok('InitiateCheckout', { contents: lines.map((l) => ttItem(l.productId || l.product?.id, l.name || l.product?.name, l.unit ?? l.price, l.qty || 1)), value, currency: 'SAR' })
 }
-export const trackViewProduct = (p, price) => snap('VIEW_CONTENT', { item_ids: [p.id], item_category: p.categoryId, price, currency: 'SAR' })
+export const trackViewProduct = (p, price) => {
+  snap('VIEW_CONTENT', { item_ids: [p.id], item_category: p.categoryId, price, currency: 'SAR' })
+  tiktok('ViewContent', { contents: [ttItem(p.id, p.name, price)], value: Number(price) || 0, currency: 'SAR' })
+}
 export const trackPurchase = (order) => {
   // once per order, even if the return page is reloaded
   const k = 'raed:ga-purchase:' + order.id
@@ -151,6 +181,7 @@ export const trackPurchase = (order) => {
   if (adsOn) window.gtag('event', 'conversion', { send_to: ADS_PURCHASE, value: Number(order.total) || 0, currency: 'SAR', transaction_id: String(order.number) })
   // client_dedup_id = the order id, the same event_id the server sends to the Conversions API
   snap('PURCHASE', { transaction_id: String(order.number), client_dedup_id: String(order.id), price: Number(order.total) || 0, currency: 'SAR', item_ids: (order.items || []).map((l) => l.productId), number_items: (order.items || []).reduce((n, l) => n + (l.qty || 1), 0) })
+  tiktok('Purchase', { contents: (order.items || []).map((l) => ttItem(l.productId, l.name, l.unit ?? l.price, l.qty || 1)), value: Number(order.total) || 0, currency: 'SAR' }, { event_id: String(order.id) })
 }
 
 /** Sends a page_view for each page the visitor opens. */
@@ -161,7 +192,7 @@ export function usePageViews() {
     if (!on || loc.pathname.startsWith('/admin')) return
     // let the page set its <title> first
     // never the review key (?t=), even if it is still in the router's address
-    const t = setTimeout(() => { const s = noToken(loc.search); track('page_view', { page_location: location.origin + loc.pathname + s + location.hash, page_path: loc.pathname + s, page_title: document.title }); snap('PAGE_VIEW') }, 50)
+    const t = setTimeout(() => { const s = noToken(loc.search); track('page_view', { page_location: location.origin + loc.pathname + s + location.hash, page_path: loc.pathname + s, page_title: document.title }); snap('PAGE_VIEW'); ttPage() }, 50)
     return () => clearTimeout(t)
   }, [loc.pathname, loc.search])
 }
