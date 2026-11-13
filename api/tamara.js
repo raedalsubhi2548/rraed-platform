@@ -7,7 +7,7 @@
 // is kept in orders.payment_ref as "tamara:<id>" (payment_method stays "card"; no database change needed).
 // Env (Vercel): TAMARA_API_TOKEN, TAMARA_NOTIFICATION_TOKEN, TAMARA_PUBLIC_KEY, TAMARA_SANDBOX=1 while testing.
 import crypto from 'node:crypto'
-import { admin, siteUrl, userFromRequest } from './_shared.js'
+import { admin, siteUrl, userFromRequest, adminFromRequest } from './_shared.js'
 import { browserOf } from './_snap.js'
 import { tamaraRules, tamaraBlock, tamaraBlockText } from '../src/lib/payrules.js'
 
@@ -15,14 +15,10 @@ const BASE = () => (process.env.TAMARA_SANDBOX ? 'https://api-sandbox.tamara.co'
 const enabled = () => !!process.env.TAMARA_API_TOKEN
 // sandbox keys, or TAMARA_TEAM_ONLY=1 (first live test): only the owner and the team see Tamara
 const teamOnly = () => !!(process.env.TAMARA_SANDBOX || process.env.TAMARA_TEAM_ONLY)
-// while testing (sandbox) only the owner and the team see and use Tamara: a test approval moves no real money
-async function isTeam(user) {
-  if (!user) return false
-  const { data: me } = await admin.from('profiles').select('role').eq('id', user.id).maybeSingle()
-  if (me?.role === 'admin') return true
-  const { data: st } = await admin.from('staff').select('email').eq('email', String(user.email || '').toLowerCase()).maybeSingle()
-  return !!st
-}
+// while testing (sandbox) only the owner and the team see and use Tamara: a test approval moves no real money.
+// Same gate as the dashboard: a full two-step session (+ app code when on), and the owner or staff with the orders area.
+// A password-only session, or staff without orders, must not mark their own orders paid with a sandbox approval.
+const isTeam = async (req) => !!(await adminFromRequest(req, 'orders'))
 const sar = (n) => ({ amount: Math.round(Number(n) * 100) / 100, currency: 'SAR' })
 
 async function tamara(path, method = 'GET', body) {
@@ -130,7 +126,7 @@ async function start(req, res) {
   const user = await userFromRequest(req)
   if (!user) return res.status(401).json({ error: 'سجّل دخولك أولاً' })
   // while testing (sandbox), only the owner's account can use it: a test approval moves no real money
-  if (teamOnly() && !(await isTeam(user))) return res.status(403).json({ error: 'التقسيط مع تمارا غير متاح الحين' })
+  if (teamOnly() && !(await isTeam(req))) return res.status(403).json({ error: 'التقسيط مع تمارا غير متاح الحين' })
   const { orderId, city } = req.body || {}
   // Tamara needs an address; services are delivered online, so the city is the customer's if given, else the store's
   const town = String(city || '').replace(/[<>]/g, '').trim().slice(0, 60) || 'الرس'
@@ -211,7 +207,7 @@ export default async function handler(req, res) {
   const op = String(req.query?.op || '')
   if (op === 'config') {
     const sandbox = !!process.env.TAMARA_SANDBOX
-    const on = enabled() && (!teamOnly() || (await isTeam(await userFromRequest(req))))
+    const on = enabled() && (!teamOnly() || (await isTeam(req)))
     return res.status(200).json({ enabled: on, publicKey: on ? process.env.TAMARA_PUBLIC_KEY || '' : '', sandbox, plans: on ? await plans() : [] })
   }
   if (!enabled()) return res.status(503).json({ error: 'التقسيط مع تمارا غير متاح الحين' })

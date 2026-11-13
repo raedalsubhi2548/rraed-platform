@@ -66,10 +66,12 @@ for (const path of routes) {
     .replace(/<meta name="description"[^>]*>\s*/, '')
     // title, description and Open Graph come first in <head>: link previews (WhatsApp, X…) read only the start of the
     // page, and the inlined stylesheet would otherwise push them past that point
-    .replace(/(<meta name="viewport"[^>]*>\r?\n)/, `$1    ${headHtml(s)}\n    ${EARLY}\n`)
-    .replace('</head>', `${path === '/' ? HERO_PRELOAD : ''}  </head>`)
+    // replacer functions, never replacement strings: page text (customer reviews, titles) may hold $` $' $& which
+    // String.replace would expand into pieces of the template and break every page
+    .replace(/(<meta name="viewport"[^>]*>\r?\n)/, (m) => `${m}    ${headHtml(s)}\n    ${EARLY}\n`)
+    .replace('</head>', () => `${path === '/' ? HERO_PRELOAD : ''}  </head>`)
   const body = await render(path, catalogFor(path))
-  html = html.replace('<div id="root"></div>', `<div id="root">${body}</div>${catalogJson(catalogFor(path))}`)
+  html = html.replace('<div id="root"></div>', () => `<div id="root">${body}</div>${catalogJson(catalogFor(path))}`)
   const file = path === '/' ? join(DIST, 'index.html') : join(DIST, path.slice(1) + '.html')
   mkdirSync(dirname(file), { recursive: true })
   writeFileSync(file, html)
@@ -81,19 +83,20 @@ writeFileSync(join(DIST, 'indexnow.json'), JSON.stringify({ host: new URL(SITE.u
 
 // The SPA fallback for every other route keeps a neutral, crawlable head.
 writeFileSync(join(DIST, '200.html'), SITE.name === 'منصة رائد' ? template : template
-  .replace(/<title>[\s\S]*?<\/title>/, `<title>${SITE.name.replace(/</g, '')}</title>`)
-  .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${SITE.description.replace(/["<>]/g, '')}" />`)
-  .replace(/<meta name="author"[^>]*>/, `<meta name="author" content="${SITE.name.replace(/["<>]/g, '')}" />`))
+  .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${SITE.name.replace(/</g, '')}</title>`)
+  .replace(/<meta name="description"[^>]*>/, () => `<meta name="description" content="${SITE.description.replace(/["<>]/g, '')}" />`)
+  .replace(/<meta name="author"[^>]*>/, () => `<meta name="author" content="${SITE.name.replace(/["<>]/g, '')}" />`))
 
 // Addresses that match no page get this file with a real 404 status (vercel.json only sends app routes to 200.html),
 // so search engines drop dead links instead of reporting them as soft 404s.
+const notFoundBody = await render('/404/missing', catalogFor('/404/missing'))
 writeFileSync(join(DIST, '404.html'), template
   .replace(/<title>[\s\S]*?<\/title>\s*/, '')
   .replace(/<meta name="description"[^>]*>\s*/, '')
   .replace(/<meta name="robots"[^>]*>\s*/, '')
-  .replace(/(<meta name="viewport"[^>]*>\r?\n)/, `$1    ${headHtml({ ...seoFor('/404'), title: `الصفحة غير موجودة | ${SITE.name}`, robots: 'noindex,follow' })}\n`)
+  .replace(/(<meta name="viewport"[^>]*>\r?\n)/, (m) => `${m}    ${headHtml({ ...seoFor('/404'), title: `الصفحة غير موجودة | ${SITE.name}`, robots: 'noindex,follow' })}\n`)
   // no embedded catalog: the browser renders this page fresh for whatever address it was served at, instead of hydrating
-  .replace('<div id="root"></div>', `<div id="root">${await render('/404/missing', catalogFor('/404/missing'))}</div>`))
+  .replace('<div id="root"></div>', () => `<div id="root">${notFoundBody}</div>`))
 
 const today = new Date().toISOString().slice(0, 10)
 const url = (p) => SITE.url.replace(/\/$/, '') + p
@@ -188,7 +191,7 @@ const llmsFaq = `## أسئلة شائعة
 
 ${FAQ.map((f) => `- ${f.q} ${f.a}`).join('\n')}
 `
-writeFileSync(llmsFile, readFileSync(llmsFile, 'utf8').replace(/\n## المدونة/, `\n${llmsServices}## المدونة`).trimEnd() + `\n\n${llmsFaq}`)
+writeFileSync(llmsFile, readFileSync(llmsFile, 'utf8').replace(/\n## المدونة/, () => `\n${llmsServices}## المدونة`).trimEnd() + `\n\n${llmsFaq}`)
 console.log(`prerendered ${routes.length} pages (${products.length} products), sitemap.xml, robots.txt, merchant-feed.xml, llms.txt`)
 await new Promise((r) => setTimeout(r, 300)) // let open connections close first (Windows aborts otherwise)
 process.exit(0) // the Supabase client keeps timers alive

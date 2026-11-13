@@ -65,6 +65,16 @@ The owner's order copies go to ORDER_NOTIFY_TO, else every admin account's email
 - Logo/image uploads: PNG, JPG, WebP, GIF, AVIF only (no SVG). New passwords: 8 characters minimum.
 - Left as is on purpose: Tap webhook hashstring check (confirmation already re-reads the charge from Tap), `img-src https:`.
 - Authenticator-app code (TOTP, 10 Nov 2026, Raed agreed): optional per dashboard account, on Supabase's own MFA. لوحة التحكم ← الأمان (`src/pages/admin/Security.jsx`; the nav item shows only once `my_access` returns `totp`, i.e. after `totp-2026-11.sql` has run) turns it on (QR + secret, then a code) or off. An account that turned it on gets a third step: `AdminLayout` shows the code screen while `my_access.need_totp`, and `strong_session()` / `staffFromRequest` refuse the dashboard until the session is `aal2`. The app's code is left out when matching the sign-in time to `login_checks` (it is a later step of the same session). Lost phone: the owner removes a staff member's app from الفريق والصلاحيات (`api/staff.js?kind=totp`, DELETE); for the owner's own account the factor is removed in Supabase (Authentication → Users), as written at the top of the SQL file. Demo mode fakes it with the code 000000.
+- Security audit 13 Nov 2026 (report outside the repo: `~/security-audit-skill/rraed-platform/run-1/REPORT.md`):
+  - No critical or high findings.
+  - Fixed:
+    - The Tamara team-only gate (`isTeam` in `api/tamara.js`) now uses `adminFromRequest(req, 'orders')`. A password-only session, or staff without the orders area, can no longer use sandbox Tamara. `TAMARA_SANDBOX` / `TAMARA_TEAM_ONLY` are not set in Production (Raed checked): Tamara is live for everyone.
+    - `scripts/prerender.mjs` uses replacer functions in every `.replace` that carries page text. A `` $` `` in a customer review used to splice the template into every page. Keep it that way.
+  - Still open (low):
+    - The review token `?t=` reaches GA and Snap.
+    - A limited coupon is counted at order creation, so unpaid orders can use it up.
+    - The Salla CSV export has no formula guard.
+    - Third-party scripts (Tap b-cdn, seal.js) have no SRI.
 - Checking hydration locally: `vite preview` serves `dist/<page>.html` at `/<page>` (no trailing slash; with a slash it serves the home page and React reports a false #418).
 
 ## Deploy checklist
